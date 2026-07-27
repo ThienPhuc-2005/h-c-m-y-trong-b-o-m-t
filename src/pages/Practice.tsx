@@ -18,7 +18,7 @@ import { href } from '../lib/router';
 import { ALL_QUIZ } from '../content';
 import { shuffle } from '../lib/utils';
 
-type Mode = 'auto' | 'weak' | 'all' | 'flagged';
+type Mode = 'auto' | 'weak' | 'all';
 
 export function PracticePage() {
   const p = useProgress();

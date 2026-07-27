@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import type { Block, CalloutKind } from '../content/types';
+import type { Block, CalloutKind, Quiz } from '../content/types';
 import { Markdown, MarkdownP } from './Markdown';
 import { Figure } from './Figures';
 import { QuizItem } from './Quiz';
@@ -242,7 +242,7 @@ function Predict({ question, reveal }: { question: string; reveal: string }) {
   );
 }
 
-function Checkpoint({ questions }: { questions: Parameters<typeof QuizItem>[0]['quiz'][] }) {
+function Checkpoint({ questions }: { questions: Quiz[] }) {
   return (
     <div className="stack">
       <div className="row" style={{ gap: 'var(--s-2)' }}>

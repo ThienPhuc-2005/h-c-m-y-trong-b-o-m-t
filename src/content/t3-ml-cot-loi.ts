@@ -632,5 +632,586 @@ export const track3: Track = {
         },
       ],
     },
+
+    /* ====================================================================== */
+    {
+      id: 't3-l3',
+      trackId: 'ml-cot-loi',
+      title: 'Naive Bayes và lọc thư rác',
+      subtitle: 'Một giả định sai rành rành, vậy mà đã dọn sạch hộp thư của cả thế giới',
+      minutes: 16,
+      level: 'co-ban',
+      prereqs: ['t3-l2', 't1-l2'],
+      why: {
+        short:
+          'Naive Bayes là mô hình rẻ nhất, nhanh nhất và dễ cập nhật nhất cho dữ liệu văn bản — đúng loại dữ liệu chiếm phần lớn bảo mật: email, dòng log, tên miền, dòng lệnh.',
+        scenario:
+          'Một chiến dịch phishing mới đang chạy. Bạn có 300 email đã xác nhận là độc và 40.000 email lành tính, cần một bộ lọc chạy được trong 30 phút tới trên máy chủ mail. Không có GPU, không có thời gian tinh chỉnh, và mỗi giờ chậm trễ là thêm người bấm vào liên kết.',
+        roles: ['Detection Engineer', 'SOC Analyst', 'Security Data Scientist'],
+        costOfNotKnowing:
+          'Bạn hoặc bỏ qua một công cụ chạy trong vài giây, hoặc tin tuyệt đối vào con số 0,999 mà nó in ra — và rồi đặt ngưỡng theo một xác suất hoàn toàn không đáng tin.',
+      },
+      objectives: [
+        'Phát biểu được giả định độc lập có điều kiện và chỉ ra chính xác nó sai ở đâu trong email thật',
+        'Giải thích được vì sao mô hình vẫn xếp hạng đúng dù xác suất nó đưa ra sai lệch nặng',
+        'Áp dụng được làm mượt Laplace và tính bằng log để tránh hai lỗi khiến bộ lọc chết lặng',
+      ],
+      blocks: [
+        {
+          t: 'p',
+          md: 'Năm 2002, Paul Graham đăng bài luận **A Plan for Spam**. Ý tưởng đơn giản đến mức khó tin: đếm xem mỗi từ xuất hiện bao nhiêu lần trong thư rác so với thư thường, rồi cộng bằng chứng lại theo định lý Bayes. Trong vòng một năm, bộ lọc Bayes có mặt trong SpamAssassin, bogofilter, dspam và hộp thư của hàng triệu người. Trước đó, nghiên cứu của Sahami, Dumais, Heckerman và Horvitz (1998) đã đặt nền móng học thuật cho chính ý tưởng này.',
+        },
+        {
+          t: 'callout',
+          kind: 'story',
+          title: 'Vì sao nó thắng nhanh đến thế',
+          md: 'Trước Bayes, lọc thư rác là danh sách từ khoá do người viết tay: chặn "VIAGRA", chặn "FREE MONEY". Kẻ gửi thư rác chỉ cần viết "V1AGRA" là xong. Bộ lọc Bayes **học từ chính hộp thư của bạn**, cập nhật sau mỗi email bạn đánh dấu, và mang tính cá nhân hoá — từ "hoá đơn" là dấu hiệu rác với người này nhưng hoàn toàn bình thường với nhân viên kế toán. Đó là lần đầu tiên phòng thủ có tốc độ thích nghi ngang với tấn công.',
+        },
+        { t: 'h', text: 'Giả định "ngây thơ" là gì', level: 2 },
+        {
+          t: 'p',
+          md: 'Ta muốn biết `P(rác | các từ trong email)`. Bayes cho: `P(rác | từ) ∝ P(rác) × P(từ | rác)`. Vấn đề nằm ở `P(từ | rác)` — xác suất của **toàn bộ tổ hợp từ**. Với 200 từ, số tổ hợp lớn hơn số nguyên tử trong vũ trụ quan sát được; không dữ liệu nào ước lượng nổi.',
+        },
+        {
+          t: 'p',
+          md: 'Naive Bayes cắt phăng nút thắt bằng một giả định: **các từ độc lập với nhau khi đã biết nhãn**. Nghĩa là `P(t1, t2, ..., tn | rác) = P(t1|rác) × P(t2|rác) × ... × P(tn|rác)`. Từ chỗ phải ước lượng một bảng khổng lồ, bạn chỉ còn phải đếm tần suất từng từ. Bài toán từ bất khả thi thành một vòng lặp đếm.',
+        },
+        {
+          t: 'predict',
+          question:
+            'Giả định trên rõ ràng sai: trong email thật, "khuyến" và "mãi" gần như luôn đi cùng nhau, "tài" và "khoản" cũng vậy. Theo bạn, hậu quả cụ thể của việc đếm hai từ phụ thuộc như thể chúng độc lập là gì?',
+          reveal:
+            '**Bằng chứng bị đếm hai lần.** Cụm "khuyến mãi" thực chất là một tín hiệu, nhưng mô hình cộng nó vào hai lần, rồi cụm "giảm giá" thêm hai lần nữa. Kết quả: xác suất bị đẩy về hai cực — bạn sẽ liên tục thấy 0,99999 và 0,00001, gần như không bao giờ thấy 0,63. Nhưng đây mới là điểm hay: **thứ tự xếp hạng phần lớn vẫn đúng.** Email rác vẫn được điểm cao hơn email thường, chỉ là con số bị phóng đại. Domingos và Pazzani (1997) đã phân tích chính hiện tượng này: khi bạn chỉ cần chọn lớp có điểm cao nhất, sai lệch trong ước lượng xác suất có thể rất lớn mà quyết định vẫn đúng.',
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Bài học rộng hơn cả Naive Bayes',
+          md: 'Một mô hình có thể **sai về xác suất mà vẫn đúng về thứ hạng**. Trong bảo mật, bạn thường chỉ cần thứ hạng: xem cái nào trước, chặn 100 cái đáng ngờ nhất. Nhưng ngay khi bạn muốn nhân xác suất với chi phí để ra quyết định kinh tế, sai lệch đó trở thành vấn đề nghiêm trọng. Đây là lý do hiệu chuẩn có hẳn một bài riêng ở chặng 4.',
+        },
+        { t: 'h', text: 'Hai lỗi khiến bộ lọc chết lặng', level: 2 },
+        {
+          t: 'steps',
+          title: 'Lỗi 1 — Xác suất bằng 0 giết cả tích số',
+          steps: [
+            {
+              title: 'Hiện tượng',
+              md: 'Từ `ransomware` xuất hiện 41 lần trong 300 email độc, và **0 lần** trong 40.000 email lành. Ước lượng thô cho `P(ransomware | lành) = 0/40000 = 0`.',
+            },
+            {
+              title: 'Hậu quả',
+              md: 'Vì mô hình nhân các xác suất lại, chỉ cần MỘT thừa số bằng 0 là toàn bộ tích bằng 0. Một email lành tính hoàn toàn bình thường, chỉ vì có chữ `ransomware` trong bản tin nội bộ về an toàn thông tin, sẽ nhận `P(lành) = 0` và bị chặn thẳng. Một từ phủ quyết cả trăm từ khác.',
+            },
+            {
+              title: 'Cách chữa: làm mượt Laplace (additive smoothing)',
+              md: 'Cộng thêm `alpha` vào mọi số đếm: `P(từ|lớp) = (đếm + alpha) / (tổng + alpha × V)`, với `V` là kích thước từ vựng. Với `alpha = 1`: `P(ransomware|lành) = 1/(40000 + V)` — rất nhỏ nhưng khác 0. Bằng chứng vẫn mạnh, không còn quyền phủ quyết.',
+            },
+            {
+              title: 'Chọn alpha thế nào',
+              md: '`alpha = 1` là mặc định an toàn. `alpha` nhỏ hơn (0,01–0,1) cho mô hình tin tưởng dữ liệu hơn, hợp khi bạn có nhiều dữ liệu; `alpha` lớn hơn làm mô hình thận trọng hơn, hợp khi dữ liệu ít. Đây là siêu tham số duy nhất đáng chỉnh của Naive Bayes.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Lỗi 2 — Tràn số dưới (underflow)',
+          md: 'Nhân 300 xác suất, mỗi cái cỡ 0,001, cho ra một số nhỏ hơn `10^-900`. Kiểu float64 làm tròn nó thành đúng **0,0**, và mọi email đều có điểm 0. Cách chữa chuẩn: làm việc trong **không gian log**. Thay vì nhân xác suất, cộng log của chúng: `log P = log P(lớp) + Σ log P(từ|lớp)`. Mọi thư viện nghiêm túc, kể cả scikit-learn, đều làm thế. Nếu bạn tự cài đặt Naive Bayes mà quên bước này, bộ lọc sẽ im lặng trả về kết quả vô nghĩa mà không báo lỗi dòng nào.',
+        },
+        {
+          t: 'table',
+          caption: 'Bốn biến thể Naive Bayes trong scikit-learn và chỗ dùng đúng của từng cái.',
+          head: ['Biến thể', 'Đầu vào phù hợp', 'Ví dụ trong bảo mật'],
+          rows: [
+            ['MultinomialNB', 'Số đếm hoặc TF-IDF không âm', 'Nội dung email, dòng lệnh, thân HTTP request'],
+            ['BernoulliNB', 'Đặc trưng nhị phân có/không', 'Tập imports của tệp PE, cờ bật/tắt trong header'],
+            ['ComplementNB', 'Văn bản với lớp rất mất cân bằng', 'Phishing hiếm trong biển email lành tính'],
+            ['GaussianNB', 'Đặc trưng liên tục xấp xỉ chuẩn', 'Ít dùng trong bảo mật — dữ liệu hiếm khi chuẩn'],
+          ],
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Bộ lọc chạy được trong vài giây, kèm đọc các từ có sức nặng nhất',
+          code:
+            "import numpy as np\n" +
+            "from sklearn.feature_extraction.text import CountVectorizer\n" +
+            "from sklearn.naive_bayes import MultinomialNB\n" +
+            "from sklearn.pipeline import make_pipeline\n" +
+            "from sklearn.metrics import classification_report\n" +
+            "\n" +
+            "# emails_train: list các chuỗi. y_train: 1 = độc, 0 = lành.\n" +
+            "vec = CountVectorizer(lowercase=True, min_df=3, max_features=50000,\n" +
+            "                      ngram_range=(1, 2))   # 1-gram + 2-gram bắt được cụm từ\n" +
+            "clf = MultinomialNB(alpha=1.0)               # alpha = làm mượt Laplace\n" +
+            "pipe = make_pipeline(vec, clf)\n" +
+            "pipe.fit(emails_train, y_train)\n" +
+            "print(classification_report(y_test, pipe.predict(emails_test), digits=3))\n" +
+            "\n" +
+            "# Từ nào kéo email về phía độc hại mạnh nhất?\n" +
+            "# feature_log_prob_ có dạng (n_lop, n_tu); hiệu hai hàng chính là trọng số bằng chứng.\n" +
+            "tu = np.array(vec.get_feature_names_out())\n" +
+            "trong_so = clf.feature_log_prob_[1] - clf.feature_log_prob_[0]\n" +
+            "top = np.argsort(trong_so)[-15:][::-1]\n" +
+            "for i in top:\n" +
+            "    print(f'{tu[i]:<24} {trong_so[i]:+.2f}')\n",
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't3l3-cp1',
+              kind: 'mcq',
+              tags: ['naive-bayes'],
+              q: 'Bộ lọc Naive Bayes tự cài đặt của bạn trả về xác suất 0,0 cho MỌI email, kể cả thư rác rõ ràng. Nguyên nhân khả dĩ nhất?',
+              options: [
+                'Dữ liệu huấn luyện quá mất cân bằng',
+                'Tràn số dưới do nhân hàng trăm xác suất nhỏ mà không chuyển sang không gian log',
+                'Giả định độc lập bị vi phạm quá nặng',
+                'Từ vựng quá lớn nên mô hình không hội tụ',
+              ],
+              answer: 1,
+              why: 'Nhân 200–500 số cỡ 0,001 cho kết quả nhỏ hơn giới hạn biểu diễn của float64 (khoảng 10^-308), và nó bị làm tròn thành đúng 0. Triệu chứng đặc trưng là **mọi** mẫu đều ra 0, không phân biệt gì. Cách chữa duy nhất là cộng log thay vì nhân xác suất. Naive Bayes không có bước hội tụ nào, nên phương án cuối cũng vô lý về mặt cơ chế.',
+              distractorWhy: [
+                'Mất cân bằng làm lệch dự đoán về lớp đa số, không làm mọi giá trị bằng 0.',
+                '',
+                'Vi phạm giả định độc lập làm xác suất bị đẩy về hai cực, nhưng vẫn có mẫu ra gần 1.',
+                'Naive Bayes chỉ đếm tần suất, không có quá trình lặp nên không có khái niệm hội tụ.',
+              ],
+            },
+            {
+              id: 't3l3-cp2',
+              kind: 'truefalse',
+              tags: ['naive-bayes', 'hieu-chuan'],
+              q: 'Naive Bayes cho một email điểm 0,9997 nghĩa là trong 10.000 email tương tự, khoảng 9.997 email thực sự là thư rác.',
+              answer: false,
+              why: 'Không. Vì giả định độc lập bị vi phạm, bằng chứng của các từ tương quan bị cộng dồn nhiều lần, đẩy xác suất về sát 0 hoặc sát 1. Con số 0,9997 chỉ có nghĩa "rất cao trong thang điểm nội bộ của mô hình này", không phải tần suất thực tế. Muốn có xác suất đọc được, phải hiệu chuẩn lại trên tập giữ riêng.',
+            },
+          ],
+        },
+        { t: 'lab', id: 'lab-naive-bayes', intro: 'Huấn luyện bộ lọc thư rác của riêng bạn, chỉnh alpha và xem chuyện gì xảy ra khi tắt hẳn làm mượt Laplace.' },
+        { t: 'h', text: 'Chỗ đứng của Naive Bayes năm 2026', level: 2 },
+        {
+          t: 'compare',
+          title: 'Vẫn dùng ở đâu, đã bị thay ở đâu',
+          left: {
+            title: '✅ Vẫn là lựa chọn tốt',
+            items: [
+              'Cần một bộ phân loại văn bản trong vòng vài phút, không GPU',
+              'Dữ liệu huấn luyện rất ít (vài trăm mẫu) — NB chịu ít dữ liệu tốt hơn hầu hết mô hình',
+              'Cần cập nhật liên tục theo từng email người dùng đánh dấu',
+              'Làm một trong nhiều tín hiệu đầu vào cho hệ thống chấm điểm lớn hơn, như trong SpamAssassin',
+              'Cần đường cơ sở để biết bài toán văn bản này dễ hay khó',
+            ],
+          },
+          right: {
+            title: '❌ Đã bị vượt qua',
+            items: [
+              'Cần xác suất hiệu chuẩn để nhân với chi phí',
+              'Ngữ nghĩa quan trọng hơn từ khoá (mô hình transformer thắng rõ)',
+              'Đặc trưng số liên tục và tương tác phức tạp (cây tăng cường thắng)',
+              'Đối thủ chủ động chèn từ vô hại để pha loãng bằng chứng',
+              'Bài toán mà thứ tự từ mang thông tin (dòng lệnh, mã nguồn)',
+            ],
+          },
+        },
+        {
+          t: 'callout',
+          kind: 'warn',
+          title: 'Đầu độc Bayes — đòn né tránh cổ điển vẫn còn hiệu lực',
+          md: 'Kẻ gửi thư rác phát hiện ra rằng chỉ cần chèn một đoạn văn bản bình thường (trích tin tức, đoạn Wikipedia) bằng chữ trắng trên nền trắng là kéo được điểm về phía lành tính. Kỹ thuật này gọi là **Bayesian poisoning** và nó tấn công đúng vào điểm yếu cấu trúc: mô hình cộng bằng chứng của **mọi** từ như nhau, nên thêm 500 từ vô hại sẽ pha loãng 20 từ đáng ngờ. Bài học tổng quát cho chặng 8: mô hình nào cộng dồn tín hiệu tuyến tính thì đều pha loãng được.',
+        },
+        { t: 'terms', ids: ['naive-bayes', 'hieu-chuan', 'ne-tranh', 'duong-co-so'] },
+      ],
+      keyTakeaways: [
+        'Naive Bayes giả định các đặc trưng độc lập khi đã biết nhãn — sai rành rành, nhưng biến bài toán bất khả thi thành phép đếm.',
+        'Vi phạm giả định làm xác suất bị đẩy về hai cực, nhưng thứ hạng phần lớn vẫn đúng; đó là lý do nó vẫn dùng được.',
+        'Không làm mượt Laplace thì một từ chưa từng thấy sẽ đưa cả tích số về 0 và phủ quyết mọi bằng chứng khác.',
+        'Luôn tính trong không gian log: nhân hàng trăm xác suất nhỏ gây tràn số dưới và trả về 0 im lặng.',
+        'MultinomialNB cho số đếm, BernoulliNB cho cờ nhị phân, ComplementNB cho lớp rất mất cân bằng.',
+        'Bayesian poisoning cho thấy mọi mô hình cộng dồn tín hiệu tuyến tính đều bị pha loãng bằng nội dung vô hại.',
+      ],
+      cards: [
+        {
+          id: 't3l3-c1',
+          front: 'Giả định "ngây thơ" của Naive Bayes phát biểu chính xác là gì?',
+          back: 'Các đặc trưng độc lập với nhau khi đã biết nhãn lớp — nhờ đó xác suất của cả tổ hợp bằng tích các xác suất riêng lẻ.',
+          tags: ['naive-bayes'],
+        },
+        {
+          id: 't3l3-c2',
+          front: 'Giả định độc lập sai, vậy vì sao Naive Bayes vẫn hoạt động tốt?',
+          back: 'Vì bằng chứng bị đếm trùng chỉ làm sai lệch độ lớn của xác suất, còn thứ tự xếp hạng giữa các lớp phần lớn vẫn giữ nguyên.',
+          tags: ['naive-bayes'],
+        },
+        {
+          id: 't3l3-c3',
+          front: 'Làm mượt Laplace giải quyết vấn đề gì, và bằng cách nào?',
+          back: 'Ngăn một từ chưa từng thấy trong một lớp làm cả tích số bằng 0, bằng cách cộng alpha vào mọi số đếm trước khi chia.',
+          tags: ['naive-bayes'],
+        },
+        {
+          id: 't3l3-c4',
+          front: 'Vì sao phải tính Naive Bayes trong không gian log?',
+          back: 'Nhân hàng trăm xác suất nhỏ gây tràn số dưới, kết quả bị làm tròn thành 0 cho mọi mẫu. Cộng log tránh hoàn toàn chuyện đó.',
+          tags: ['naive-bayes'],
+        },
+        {
+          id: 't3l3-c5',
+          front: 'Bayesian poisoning là gì?',
+          back: 'Kẻ tấn công chèn nhiều văn bản vô hại vào email độc để pha loãng bằng chứng, kéo điểm tổng về phía lành tính.',
+          tags: ['ne-tranh', 'doi-khang'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't3l3-q1',
+          kind: 'input',
+          tags: ['naive-bayes'],
+          q: 'Kỹ thuật cộng một hằng số alpha vào mọi số đếm để không có xác suất nào bằng 0 gọi là gì?',
+          accept: ['laplace smoothing', 'lam muot laplace', 'additive smoothing', 'laplace', 'lam muot cong'],
+          placeholder: 'Tên kỹ thuật…',
+          hint: 'Mang tên một nhà toán học người Pháp.',
+          why: 'Làm mượt Laplace, còn gọi additive smoothing. Ý tưởng sâu hơn công thức: bạn đang nói với mô hình rằng "chưa thấy" không đồng nghĩa với "không thể xảy ra". Với alpha = 1, bạn giả vờ đã thấy mỗi từ đúng một lần trong mỗi lớp trước khi nhìn dữ liệu thật.',
+        },
+        {
+          id: 't3l3-q2',
+          kind: 'mcq',
+          tags: ['naive-bayes'],
+          q: 'Bạn có 300 email độc và 40.000 email lành tính, cần bộ lọc chạy trong 30 phút tới. Biến thể Naive Bayes nào hợp lý nhất?',
+          options: [
+            'GaussianNB trên độ dài email và số liên kết',
+            'ComplementNB trên số đếm từ, vì lớp độc rất hiếm',
+            'BernoulliNB trên toàn bộ nội dung HTML thô',
+            'Không nên dùng Naive Bayes, phải chờ đủ dữ liệu để huấn luyện transformer',
+          ],
+          answer: 1,
+          why: 'ComplementNB được thiết kế riêng cho văn bản mất cân bằng: nó ước lượng tham số từ **phần bù** của mỗi lớp nên ít bị lớp đa số áp đảo hơn MultinomialNB. GaussianNB giả định phân phối chuẩn, sai hoàn toàn với số đếm từ. BernoulliNB trên HTML thô bỏ mất thông tin tần suất. Còn chờ transformer thì chiến dịch phishing đã kết thúc từ lâu.',
+          distractorWhy: [
+            'Độ dài và số liên kết không xấp xỉ phân phối chuẩn, và hai đặc trưng thì quá ít.',
+            '',
+            'Nhị phân hoá làm mất thông tin tần suất, vốn là tín hiệu mạnh nhất trong lọc thư rác.',
+            'Trong ứng cứu sự cố, một mô hình chạy trong 5 phút thắng một mô hình hoàn hảo sau 3 tuần.',
+          ],
+        },
+        {
+          id: 't3l3-q3',
+          kind: 'multi',
+          tags: ['naive-bayes', 'hieu-chuan'],
+          q: 'Phát biểu nào ĐÚNG về Naive Bayes? (Chọn tất cả)',
+          options: [
+            'Huấn luyện chỉ cần một lượt duyệt qua dữ liệu để đếm tần suất',
+            'Xác suất đầu ra của nó đã được hiệu chuẩn tốt và dùng trực tiếp để tính chi phí kỳ vọng được',
+            'Nó hoạt động tương đối tốt ngay cả khi chỉ có vài trăm mẫu huấn luyện',
+            'Nó nắm bắt được tương tác giữa các đặc trưng, ví dụ "cụm từ A xuất hiện CÙNG với B"',
+          ],
+          answers: [0, 2],
+          why: 'Naive Bayes chỉ đếm nên huấn luyện một lượt là xong, và vì mỗi tham số chỉ ước lượng từ tần suất một đặc trưng nên nó chịu được dữ liệu ít tốt hơn nhiều mô hình khác. Hai phát biểu còn lại sai và sai theo cùng một nguyên nhân: giả định độc lập. Nó khiến xác suất bị đẩy về hai cực (nên không hiệu chuẩn) và khiến mô hình về bản chất không thể biểu diễn tương tác giữa các đặc trưng — bạn phải tự đưa tương tác vào dưới dạng n-gram.',
+        },
+        {
+          id: 't3l3-q4',
+          kind: 'truefalse',
+          tags: ['ne-tranh', 'doi-khang'],
+          q: 'Chèn thêm 500 từ vô hại vào một email độc hại có thể kéo điểm Naive Bayes về phía lành tính.',
+          answer: true,
+          why: 'Đúng — đây là Bayesian poisoning, đã được kẻ gửi thư rác dùng từ đầu những năm 2000 và vẫn còn hiệu lực. Nguyên nhân nằm ở cấu trúc: mô hình cộng log-bằng-chứng của mọi từ, nên 500 từ hơi nghiêng về lành tính có thể áp đảo 20 từ rất nghiêng về độc hại. Cách chống một phần: giới hạn số từ đóng góp (chỉ lấy N từ cực đoan nhất, đúng như Paul Graham đề xuất), hoặc chuẩn hoá theo độ dài văn bản.',
+        },
+      ],
+      terms: ['naive-bayes', 'hieu-chuan', 'ne-tranh', 'duong-co-so', 'doi-khang'],
+      further: [
+        {
+          title: 'A Plan for Spam — Paul Graham (2002)',
+          note: 'Bài luận đã khởi động cả một làn sóng. Đọc để thấy một ý tưởng thống kê đơn giản thay đổi hạ tầng email toàn cầu nhanh thế nào.',
+        },
+        {
+          title: 'On the Optimality of the Simple Bayesian Classifier under Zero-One Loss — Domingos & Pazzani (1997)',
+          note: 'Phân tích chặt chẽ vì sao một giả định sai vẫn cho quyết định đúng. Nền tảng cho trực giác "sai xác suất, đúng thứ hạng".',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't3-l4',
+      trackId: 'ml-cot-loi',
+      title: 'Cây quyết định',
+      subtitle: 'Mô hình duy nhất bạn in ra giấy đưa cho analyst và họ dùng được ngay',
+      minutes: 16,
+      level: 'co-ban',
+      prereqs: ['t3-l1', 't1-l5'],
+      why: {
+        short:
+          'Cây quyết định là viên gạch xây nên Random Forest và XGBoost — hai thứ bạn sẽ dùng nhiều nhất — và là mô hình duy nhất dịch thẳng được thành luật SIEM mà không mất mát gì.',
+        scenario:
+          'Bạn cần biến một mô hình phát hiện thành luật Sigma để đội SOC ở ba quốc gia triển khai trên hạ tầng khác nhau. Hạ tầng đó không chạy được Python. Một cây quyết định sâu 4 tầng chuyển thành 12 điều kiện `if` — chuyển được, kiểm thử được, và bảo trì được.',
+        roles: ['Detection Engineer', 'SOC Analyst', 'Threat Hunter', 'Security Data Scientist'],
+        costOfNotKnowing:
+          'Bạn dùng cây đơn không giới hạn độ sâu, thấy 100% trên tập huấn luyện, tưởng đã thắng, rồi triển khai một mô hình đã học thuộc lòng 40.000 mẫu và không tổng quát hoá được gì.',
+      },
+      objectives: [
+        'Tính được Gini và information gain của một phép chia cụ thể bằng tay',
+        'Giải thích được cơ chế khiến cây quá khớp, và nêu bốn tham số chặn nó lại',
+        'Nhận ra cái bẫy đặc trưng có lực lượng cao khi đọc một cây đã huấn luyện',
+      ],
+      blocks: [
+        {
+          t: 'p',
+          md: 'Mọi analyst SOC đều đã viết cây quyết định trong đầu: *Cảnh báo PowerShell à? Xem tiến trình cha. Là Word hay Excel? Nghiêm trọng. Là explorer.exe? Xem dòng lệnh có `-enc` không. Có? Nghiêm trọng. Không? Xem tài khoản có phải admin không...* Thuật toán cây quyết định làm đúng việc đó, chỉ khác là nó chọn thứ tự câu hỏi bằng dữ liệu thay vì bằng kinh nghiệm.',
+        },
+        { t: 'h', text: 'Cách cây chọn câu hỏi tiếp theo', level: 2 },
+        {
+          t: 'p',
+          md: 'Ở mỗi nút, thuật toán thử **mọi đặc trưng** với **mọi ngưỡng có thể**, và chọn phép chia làm giảm **độ vẩn đục (impurity)** nhiều nhất. Độ vẩn đục đo mức độ trộn lẫn của hai lớp trong một nút: nút chỉ toàn mẫu độc hại có độ vẩn đục 0, nút 50-50 có độ vẩn đục cực đại.',
+        },
+        {
+          t: 'callout',
+          kind: 'math',
+          title: 'Hai thước đo, cùng một ý tưởng',
+          md: '**Gini:** `G = 1 - Σ p_k²`. Đọc thành lời: xác suất bạn gán sai nhãn nếu bốc ngẫu nhiên một mẫu và gán nhãn theo tỉ lệ trong nút.\n\n**Entropy:** `H = -Σ p_k × log2(p_k)`. Số bit trung bình cần để mô tả nhãn của một mẫu trong nút (đúng thứ bạn đã học ở bài t1-l5).\n\nHai thước đo gần như luôn chọn cùng một phép chia. Gini rẻ hơn vì không phải tính logarit, nên scikit-learn để nó làm mặc định.',
+        },
+        {
+          t: 'steps',
+          title: 'Tính bằng tay: 100 tiến trình PowerShell, 40 độc hại',
+          steps: [
+            {
+              title: 'Bước 1 — Độ vẩn đục của nút gốc',
+              md: '`p_độc = 0,4`, `p_lành = 0,6`. Gini gốc = `1 - 0,4² - 0,6² = 1 - 0,16 - 0,36 = 0,48`. Entropy gốc = `-0,4×log2(0,4) - 0,6×log2(0,6) = 0,529 + 0,442 = 0,971` bit.',
+            },
+            {
+              title: 'Bước 2 — Thử phép chia "tiến trình cha là Office"',
+              md: 'Nhánh trái (cha KHÔNG phải Office): 50 mẫu, 5 độc + 45 lành. Nhánh phải (cha LÀ Office): 50 mẫu, 35 độc + 15 lành.',
+            },
+            {
+              title: 'Bước 3 — Gini của từng nhánh',
+              md: 'Trái: `1 - 0,1² - 0,9² = 1 - 0,01 - 0,81 = 0,18`. Phải: `1 - 0,7² - 0,3² = 1 - 0,49 - 0,09 = 0,42`.',
+            },
+            {
+              title: 'Bước 4 — Gini có trọng số của phép chia',
+              md: 'Trọng số theo số mẫu: `(50/100)×0,18 + (50/100)×0,42 = 0,09 + 0,21 = 0,30`. Mức giảm độ vẩn đục = `0,48 - 0,30 = 0,18`. Con số 0,18 này chính là điểm số mà thuật toán dùng để so sánh phép chia này với hàng nghìn phép chia khác.',
+            },
+            {
+              title: 'Bước 5 — Cùng phép chia, tính bằng entropy',
+              md: 'Entropy trái = `-0,1×log2(0,1) - 0,9×log2(0,9) = 0,332 + 0,137 = 0,469`. Entropy phải = `-0,7×log2(0,7) - 0,3×log2(0,3) = 0,360 + 0,521 = 0,881`. Trung bình có trọng số = `0,675`. **Information gain** = `0,971 - 0,675 = 0,296` bit. Cùng một kết luận: đây là phép chia có giá trị.',
+            },
+            {
+              title: 'Bước 6 — Lặp lại cho tới khi dừng',
+              md: 'Thuật toán làm y hệt trên từng nhánh con, đệ quy, cho tới khi gặp điều kiện dừng (độ sâu tối đa, số mẫu tối thiểu, hoặc nút đã thuần). Đây gọi là chia nhánh **tham lam** — nó chọn phép chia tốt nhất ở bước hiện tại mà không nhìn xa hơn, nên cây thu được không đảm bảo là cây tối ưu toàn cục.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Vì sao cây khác hẳn mô hình tuyến tính',
+          md: 'Hồi quy logistic vẽ **một** siêu phẳng cắt toàn bộ không gian. Cây cắt không gian thành các **hộp chữ nhật** song song với trục, mỗi hộp một dự đoán. Hệ quả rất thực tế: cây bắt được tương tác kiểu "cổng 443 **và** thời lượng dài **và** ít byte gửi" một cách tự nhiên, còn mô hình tuyến tính phải được bạn đưa tay tương tác đó vào. Đổi lại, cây rất kém khi ranh giới thật là một đường chéo — nó phải xấp xỉ bằng hàng chục bậc thang.',
+        },
+        {
+          t: 'predict',
+          question:
+            'Bạn huấn luyện một cây không đặt bất kỳ giới hạn nào (max_depth = None) trên 40.000 sự kiện. Kết quả: độ chính xác 100,0% trên tập huấn luyện. Đây là tin tốt hay tin xấu, và vì sao?',
+          reveal:
+            'Tin xấu, và gần như luôn là tin xấu. Một cây không giới hạn sẽ tiếp tục chia cho tới khi mỗi lá chỉ còn **một** mẫu — lúc đó nó không học quy luật nữa mà **ghi nhớ bảng dữ liệu**. Nó đúng 100% trên những gì đã thấy và không có cơ sở nào để đúng trên cái chưa thấy. Trong bảo mật còn tệ hơn một bậc: 100% cũng có thể là dấu hiệu **rò rỉ nhãn** — có một cột nào đó trong dữ liệu chứa sẵn câu trả lời (trường `verdict`, tên thư mục chứa mẫu, hay timestamp trùng với thời điểm gắn nhãn). Nguyên tắc: mỗi khi thấy một con số hoàn hảo, hãy đi tìm lỗi trước khi đi ăn mừng.',
+        },
+        { t: 'lab', id: 'lab-tree', intro: 'Kéo ngưỡng chia, xem information gain thay đổi, và tự tay làm cây quá khớp rồi cắt tỉa nó lại.' },
+        { t: 'h', text: 'Bốn cái phanh bạn phải biết', level: 2 },
+        {
+          t: 'table',
+          caption: 'Tham số kiểm soát độ phức tạp của cây trong scikit-learn, kèm khoảng giá trị thường dùng cho dữ liệu bảo mật.',
+          head: ['Tham số', 'Ý nghĩa', 'Khoảng thường dùng', 'Khi nào siết'],
+          rows: [
+            ['max_depth', 'Số tầng tối đa', '3–8 nếu cần đọc được, 10–20 nếu chỉ cần chính xác', 'Cây quá sâu để giải thích'],
+            ['min_samples_leaf', 'Số mẫu tối thiểu ở mỗi lá', '20–200 với dữ liệu triệu dòng', 'Có lá chỉ chứa 1–2 mẫu'],
+            ['min_samples_split', 'Số mẫu tối thiểu để được chia tiếp', '50–500', 'Nhánh phân mảnh vụn vặt'],
+            ['ccp_alpha', 'Cắt tỉa theo chi phí – độ phức tạp', '0,0001–0,01, chọn bằng CV', 'Muốn cắt tỉa có cơ sở thay vì đoán'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Cái bẫy lớn nhất: đặc trưng có lực lượng cao',
+          md: 'Nếu bạn để `src_ip`, `hostname`, `user_agent` hay `session_id` vào cây dưới dạng hạng mục, thuật toán sẽ mê chúng ngay. Lý do thuần cơ học: một đặc trưng có 50.000 giá trị khác nhau luôn tìm được cách chia làm giảm độ vẩn đục nhiều hơn một đặc trưng chỉ có 2 giá trị — kể cả khi nó hoàn toàn vô nghĩa. Cây sẽ tạo ra luật kiểu "nếu `src_ip = 10.4.1.77` thì độc hại", tức là ghi nhớ máy tính, không phải học hành vi. Kiểm tra nhanh: nhìn 10 phép chia đầu tiên; nếu có bất kỳ định danh nào ở đó, hãy bỏ hoặc thay bằng đặc trưng dẫn xuất (số kết nối, độ tuổi tài khoản, thuộc dải mạng nào).',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Cây đọc được, in ra dạng chữ để chuyển thành luật',
+          code:
+            "from sklearn.tree import DecisionTreeClassifier, export_text\n" +
+            "from sklearn.metrics import classification_report\n" +
+            "\n" +
+            "cay = DecisionTreeClassifier(\n" +
+            "    criterion='gini',\n" +
+            "    max_depth=4,               # đủ nông để con người đọc hết\n" +
+            "    min_samples_leaf=100,      # mỗi luật phải dựa trên ít nhất 100 sự kiện\n" +
+            "    class_weight='balanced',   # lớp tấn công hiếm\n" +
+            "    random_state=42,           # cây rất nhạy với ngẫu nhiên, luôn cố định hạt giống\n" +
+            ")\n" +
+            "cay.fit(X_train, y_train)\n" +
+            "\n" +
+            "print(classification_report(y_test, cay.predict(X_test), digits=3))\n" +
+            "print('Sâu thật sự:', cay.get_depth(), '| Số lá:', cay.get_n_leaves())\n" +
+            "\n" +
+            "# In cây thành văn bản: mỗi đường từ gốc tới lá là một luật chuyển được sang Sigma\n" +
+            "print(export_text(cay, feature_names=list(X_train.columns), max_depth=4))\n",
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't3l4-cp1',
+              kind: 'mcq',
+              tags: ['cay-quyet-dinh'],
+              q: 'Nút gốc có 200 mẫu: 100 độc, 100 lành. Phép chia A cho hai nhánh 100/100 với tỉ lệ 90-10 và 10-90. Phép chia B cho hai nhánh 100/100 với tỉ lệ 60-40 và 40-60. Cây chọn cái nào?',
+              options: [
+                'Phép chia A, vì nó tách hai lớp rõ hơn nhiều',
+                'Phép chia B, vì nó cân bằng hơn',
+                'Cả hai như nhau vì kích thước nhánh bằng nhau',
+                'Không đủ dữ kiện để xác định',
+              ],
+              answer: 0,
+              why: 'Gini gốc = 0,5. Với A: mỗi nhánh có Gini `1 - 0,9² - 0,1² = 0,18`, trung bình 0,18, mức giảm = 0,32. Với B: mỗi nhánh có Gini `1 - 0,6² - 0,4² = 0,48`, trung bình 0,48, mức giảm chỉ 0,02. A tốt hơn gấp 16 lần. Điểm cần nắm: cây không quan tâm nhánh cân bằng hay không — nó chỉ quan tâm mỗi nhánh **thuần** đến đâu.',
+              distractorWhy: [
+                '',
+                'Cân bằng về kích thước nhánh không phải mục tiêu; độ thuần của nhánh mới là mục tiêu.',
+                'Kích thước bằng nhau chỉ quyết định trọng số, không quyết định độ vẩn đục.',
+                'Đủ dữ kiện — chỉ cần tỉ lệ lớp và kích thước nhánh là tính được Gini.',
+              ],
+            },
+            {
+              id: 't3l4-cp2',
+              kind: 'truefalse',
+              tags: ['cay-quyet-dinh'],
+              q: 'Nếu bạn thêm 3% dữ liệu mới rồi huấn luyện lại, cây quyết định thu được thường gần giống cây cũ.',
+              answer: false,
+              why: 'Ngược lại — cây quyết định nổi tiếng **bất ổn định**. Chỉ cần phép chia ở nút gốc đổi sang một đặc trưng khác là toàn bộ cấu trúc bên dưới thay đổi theo, vì mọi nhánh con đều được xây trên tập con do nút cha tạo ra. Hệ quả rất thực tế: bạn không được nói "cây này giải thích hiện tượng" — nó chỉ là một trong nhiều cây gần như tương đương. Chính tính bất ổn định này lại là **tài nguyên** cho Random Forest ở bài sau: nhiều cây khác nhau trung bình lại thì hết dao động.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Mẹo thực chiến: cây nông làm ngôn ngữ chung',
+          md: 'Ngay cả khi mô hình sản xuất của bạn là LightGBM, hãy huấn luyện thêm một cây `max_depth=3` trên cùng dữ liệu và in nó ra. Không phải để triển khai, mà để **nói chuyện**: nó cho bạn một bức tranh 8 luật mà analyst, quản lý và kiểm toán viên đều đọc được trong 30 giây. Nhiều đội gọi đây là "cây giải thích" và nó thường tạo ra nhiều lòng tin hơn bất kỳ biểu đồ SHAP nào.',
+        },
+        { t: 'terms', ids: ['cay-quyet-dinh', 'entropy', 'qua-khop', 'sigma'] },
+      ],
+      keyTakeaways: [
+        'Cây chọn phép chia làm giảm độ vẩn đục nhiều nhất; Gini và entropy là hai cách đo cùng một ý tưởng và gần như luôn cho cùng kết quả.',
+        'Cây cắt không gian thành hộp song song với trục, nên bắt tương tác rất tự nhiên nhưng xấp xỉ ranh giới chéo rất tệ.',
+        'Cây không giới hạn độ sâu sẽ ghi nhớ dữ liệu: 100% trên tập huấn luyện là dấu hiệu xấu, không phải thành tích.',
+        'Bốn cái phanh: max_depth, min_samples_leaf, min_samples_split, ccp_alpha.',
+        'Đặc trưng có lực lượng cao (IP, hostname, session id) làm cây ghi nhớ định danh thay vì học hành vi.',
+        'Cây rất bất ổn định trước thay đổi nhỏ của dữ liệu — điểm yếu này chính là nguyên liệu cho Random Forest.',
+      ],
+      cards: [
+        {
+          id: 't3l4-c1',
+          front: 'Cây quyết định chọn phép chia ở mỗi nút dựa trên tiêu chí gì?',
+          back: 'Mức giảm độ vẩn đục lớn nhất (Gini hoặc entropy), tính bằng độ vẩn đục nút cha trừ trung bình có trọng số của các nút con.',
+          tags: ['cay-quyet-dinh'],
+        },
+        {
+          id: 't3l4-c2',
+          front: 'Một nút có 40 mẫu độc và 60 mẫu lành. Gini bằng bao nhiêu?',
+          back: '1 - 0,4² - 0,6² = 1 - 0,16 - 0,36 = 0,48.',
+          hint: 'Gini = 1 trừ tổng bình phương tỉ lệ các lớp.',
+          tags: ['cay-quyet-dinh'],
+        },
+        {
+          id: 't3l4-c3',
+          front: 'Vì sao cây quyết định 100% chính xác trên tập huấn luyện là dấu hiệu xấu?',
+          back: 'Vì cây đã chia tới mức mỗi lá chỉ còn vài mẫu — nó ghi nhớ dữ liệu chứ không học quy luật. Trong bảo mật còn có thể là dấu hiệu rò rỉ nhãn.',
+          tags: ['cay-quyet-dinh', 'qua-khop'],
+        },
+        {
+          id: 't3l4-c4',
+          front: 'Vì sao không nên đưa src_ip hay hostname vào cây dưới dạng hạng mục?',
+          back: 'Đặc trưng lực lượng cao luôn tìm được phép chia giảm vẩn đục nhiều nhất, nên cây sẽ ghi nhớ định danh cụ thể thay vì học hành vi tổng quát.',
+          tags: ['cay-quyet-dinh', 'dac-trung'],
+        },
+        {
+          id: 't3l4-c5',
+          front: 'Vì sao cây quyết định bất ổn định, và điều đó dẫn tới thuật toán nào?',
+          back: 'Đổi phép chia ở nút gốc là đổi toàn bộ cây bên dưới. Chính phương sai cao này được Random Forest khai thác bằng cách trung bình nhiều cây khác nhau.',
+          tags: ['cay-quyet-dinh', 'random-forest'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't3l4-q1',
+          kind: 'mcq',
+          tags: ['cay-quyet-dinh'],
+          q: 'Nút gốc có 100 mẫu (40 độc, 60 lành), Gini = 0,48. Một phép chia tạo hai nhánh 50 mẫu: nhánh A có 5 độc/45 lành, nhánh B có 35 độc/15 lành. Mức giảm độ vẩn đục là bao nhiêu?',
+          options: ['0,48', '0,30', '0,18', '0,12'],
+          answer: 2,
+          why: 'Gini nhánh A = `1 - 0,1² - 0,9² = 0,18`. Gini nhánh B = `1 - 0,7² - 0,3² = 0,42`. Trung bình có trọng số = `0,5×0,18 + 0,5×0,42 = 0,30`. Mức giảm = `0,48 - 0,30 = 0,18`. Đáp án 0,30 là bẫy dành cho người dừng ở bước tính Gini sau khi chia mà quên trừ.',
+          distractorWhy: [
+            'Đây là Gini của nút gốc, chưa phải mức giảm.',
+            'Đây là Gini có trọng số sau khi chia — bạn còn thiếu bước lấy 0,48 trừ đi nó.',
+            '',
+            'Không khớp với phép tính nào trong bài toán.',
+          ],
+        },
+        {
+          id: 't3l4-q2',
+          kind: 'mcq',
+          tags: ['cay-quyet-dinh', 'dac-trung'],
+          q: 'Bạn in cây ra và thấy phép chia đầu tiên là `session_id <= 8412773`. Kết luận đúng?',
+          options: [
+            'Tuyệt vời — mô hình đã tìm ra một quy luật mạnh mà con người bỏ sót',
+            'session_id là định danh gần như duy nhất cho mỗi bản ghi; cây đang ghi nhớ chứ không học, phải bỏ cột này',
+            'Cần đổi criterion từ gini sang entropy để phép chia hợp lý hơn',
+            'Cần tăng max_depth để cây nhìn xa hơn session_id',
+          ],
+          answer: 1,
+          why: 'Định danh tăng dần theo thời gian, nên `session_id <= X` thực chất là "xảy ra trước thời điểm X". Nếu dữ liệu độc hại tập trung vào một khoảng thời gian nhất định (điều gần như luôn đúng khi bạn gộp mẫu tấn công từ một chiến dịch), cây sẽ dùng nó như một đồng hồ và đạt điểm rất cao — trên tập kiểm tra được chia ngẫu nhiên. Triển khai thật thì vô dụng ngay lập tức. Đây đồng thời là một dạng rò rỉ dữ liệu qua đặc trưng thời gian.',
+          distractorWhy: [
+            'Quy luật mạnh trên tập kiểm tra chia ngẫu nhiên nhưng vô nghĩa ngoài đời — đây là dạng rò rỉ kinh điển.',
+            '',
+            'Đổi tiêu chí vẩn đục không sửa được vấn đề gốc là cột dữ liệu sai.',
+            'Tăng độ sâu chỉ làm cây bám vào định danh sâu hơn nữa.',
+          ],
+        },
+        {
+          id: 't3l4-q3',
+          kind: 'order',
+          tags: ['cay-quyet-dinh'],
+          q: 'Sắp xếp các bước mà thuật toán CART thực hiện tại một nút.',
+          items: [
+            'Tính độ vẩn đục hiện tại của nút',
+            'Duyệt qua mọi đặc trưng và mọi ngưỡng ứng viên',
+            'Với mỗi phép chia, tính độ vẩn đục có trọng số của hai nhánh con',
+            'Chọn phép chia có mức giảm độ vẩn đục lớn nhất',
+            'Lặp lại đệ quy trên từng nhánh cho tới khi gặp điều kiện dừng',
+          ],
+          why: 'Đây là thuật toán tham lam: nó tối ưu từng bước một mà không nhìn xa. Hệ quả quan trọng là cây thu được **không đảm bảo tối ưu toàn cục** — có thể tồn tại một cây nhỏ hơn và chính xác hơn mà thuật toán không bao giờ tìm ra, vì bước đầu tiên đã đi hướng khác. Tìm cây tối ưu toàn cục là bài toán NP-khó, nên trong thực tế ai cũng dùng tham lam.',
+        },
+        {
+          id: 't3l4-q4',
+          kind: 'multi',
+          tags: ['cay-quyet-dinh', 'qua-khop'],
+          q: 'Cây của bạn đạt F1 = 0,99 trên tập huấn luyện và 0,62 trên tập kiểm tra. Hành động nào hợp lý? (Chọn tất cả)',
+          options: [
+            'Giảm max_depth và tăng min_samples_leaf',
+            'Thử ccp_alpha khác nhau và chọn bằng cross-validation',
+            'Tăng max_depth để mô hình mạnh hơn',
+            'Kiểm tra xem có cột nào rò rỉ nhãn hoặc mang thông tin thời gian không',
+          ],
+          answers: [0, 1, 3],
+          why: 'Khoảng cách 0,99 và 0,62 là dấu hiệu quá khớp điển hình. Hai cách chữa trực tiếp là siết độ phức tạp trước khi xây (max_depth, min_samples_leaf) hoặc cắt tỉa sau khi xây (ccp_alpha chọn bằng CV). Việc kiểm tra rò rỉ luôn đáng làm khi chỉ số huấn luyện gần hoàn hảo. Tăng max_depth đi đúng hướng ngược lại: nó làm mô hình phức tạp hơn và khoảng cách rộng thêm.',
+        },
+      ],
+      terms: ['cay-quyet-dinh', 'entropy', 'qua-khop', 'sigma', 'ro-ri-du-lieu'],
+      further: [
+        {
+          title: 'Classification and Regression Trees — Breiman, Friedman, Olshen, Stone (1984)',
+          note: 'Nguồn gốc của CART, thuật toán mà scikit-learn cài đặt. Chương về cắt tỉa theo chi phí – độ phức tạp vẫn là tài liệu tham chiếu tốt nhất.',
+        },
+        {
+          title: 'scikit-learn — Decision Trees, mục Tips on practical use',
+          note: 'Danh sách ngắn các lời khuyên thực tế, trong đó có cảnh báo về đặc trưng lực lượng cao.',
+        },
+      ],
+    },
   ],
 };
