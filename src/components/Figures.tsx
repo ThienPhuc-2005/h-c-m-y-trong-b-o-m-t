@@ -33,7 +33,10 @@ function Svg({ children, vb = '0 0 600 300', h }: { children: ReactNode; vb?: st
   return (
     <svg
       viewBox={vb}
-      role="img"
+      // Tên gọi cho trình đọc màn hình nằm ở thẻ <figure> bao ngoài (xem Figure),
+      // nên bản thân SVG được ẩn khỏi cây trợ năng để không đọc trùng.
+      aria-hidden="true"
+      focusable="false"
       style={{ width: '100%', maxWidth: 760, margin: '0 auto', height: h ? undefined : 'auto', maxHeight: h ?? 340 }}
       preserveAspectRatio="xMidYMid meet"
     >
@@ -850,7 +853,11 @@ export function Figure({ id, caption }: { id: string; caption?: string }) {
   }
   return (
     <figure className="figure">
-      <Comp />
+      {/* role="img" + aria-label ở đây: người dùng trình đọc màn hình nghe được
+          ý nghĩa của hình thay vì một khối đồ hoạ câm. */}
+      <div role="img" aria-label={caption ?? 'Hình minh hoạ khái niệm trong bài'}>
+        <Comp />
+      </div>
       {caption && <figcaption className="figure-caption">{caption}</figcaption>}
     </figure>
   );

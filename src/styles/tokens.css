@@ -118,7 +118,7 @@
 
   --text: #16192a; /* 15.8:1 trên --bg */
   --text-muted: #4d5570; /* 7.4:1  — vẫn đạt AA cho chữ thường */
-  --text-faint: #6b7490; /* 4.7:1  — ngưỡng tối thiểu, chỉ cho siêu dữ liệu */
+  --text-faint: #5f6782; /* 5.4:1 trên --bg, 4.9:1 trên --bg-sunken — vẫn đạt AA ở 11px */
   --text-inverse: #ffffff;
 
   --brand: #4f46e5;
@@ -186,13 +186,12 @@
 
   --text: #e8eaf2;
   --text-muted: #a3abc2;
-  --text-faint: #7d859c;
+  --text-faint: #868ea5; /* đủ tương phản cả trên nền tối lẫn trên các nền màu nhạt (warn-soft, ok-soft) */
   --text-inverse: #0f1117;
 
   --brand: #8b8cf9;
   --brand-strong: #a5a6ff;
   --brand-soft: #1c1e3a;
-  --brand-border: #383a६e;
   --brand-border: #383a6e;
   --brand-text: #b9baff;
 
