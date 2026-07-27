@@ -58,10 +58,29 @@
   --measure: 68ch;
   --measure-wide: 82ch;
 
-  --ff-sans: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    'Roboto', 'Helvetica Neue', system-ui, sans-serif;
-  --ff-mono: 'JetBrains Mono', 'SFMono-Regular', 'Cascadia Code', Menlo, Consolas,
-    'Liberation Mono', monospace;
+  /* --------------------------------------------------------------------------
+     PHÔNG CHỮ — dùng phông hệ thống, có chủ đích.
+
+     Bản trước khai báo 'Inter var' đứng đầu nhưng KHÔNG hề có @font-face, không
+     link CDN, không tệp .woff nào trong repo — nghĩa là Inter chưa bao giờ được
+     tải, trên máy nào cũng vậy. Hệ quả không chỉ là "rơi về phông hệ thống":
+     hệ thống thiết kế dùng tới BẢY cấp đậm (500, 550, 600, 650, 680, 700, 750),
+     các giá trị lẻ vốn chỉ tồn tại với phông biến thiên. Đo thật trên bản đang
+     chạy: bảy cấp đó render thành đúng HAI bề rộng khác nhau. Toàn bộ thứ bậc
+     chữ sụp thành một mặt phẳng đậm.
+
+     Lựa chọn ở đây là cam kết dùng phông hệ thống, vì ba lý do:
+       - Ứng dụng phải chạy ngoại tuyến từ USB; tự host phông là thêm 40–100 KB
+         và một điểm hỏng nữa cho lời hứa đó.
+       - Phông hệ thống là phông mà chính hệ điều hành dùng để dựng chữ tiếng
+         Việt, nên dấu phụ chồng tầng được xử lý tốt nhất trên từng nền tảng.
+       - Không phông nào phải tải nghĩa là không có chớp chữ (FOUT/FOIT).
+
+     Đổi lại, thang đậm phải giới hạn ở những cấp mà phông tĩnh THẬT SỰ có:
+     400 / 500 / 600 / 700. Đừng thêm giá trị lẻ vào đây nữa. */
+  --ff-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue',
+    system-ui, sans-serif;
+  --ff-mono: 'SFMono-Regular', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono', monospace;
 
   /* ---- Nhịp khoảng cách (thang 4px) ------------------------------------- */
   --s-1: 0.25rem;

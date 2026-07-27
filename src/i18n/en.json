@@ -505,7 +505,10 @@
     "resultMid": "The foundation is there but there are gaps. Do not redo the whole lesson — let the review system bring back exactly what you missed.",
     "resultLow": "This one needs another read. That is fine: finding out now is far cheaper than finding out in an interview or during a real incident.",
     "defaultTitle": "Check",
-    "questionN": "Question {n}/{total}"
+    "questionN": "Question {n}/{total}",
+    "srCorrect": "Correct answer, you picked this",
+    "srWrong": "You picked this — wrong",
+    "srMissed": "This was the correct answer, you missed it"
   },
   "callout": {
     "why": "Why this matters",

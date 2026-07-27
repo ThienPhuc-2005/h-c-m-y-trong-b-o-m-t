@@ -28,7 +28,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'cv05' 1, 'ss03' 1, 'tnum' 0;
+  /* Bỏ 'cv05' và 'ss03': đó là các stylistic set RIÊNG của Inter, và Inter chưa
+     bao giờ được tải nên hai dòng đó chưa từng có tác dụng nào. Xem chú thích
+     về phông trong tokens.css. */
   min-height: 100dvh;
   overflow-wrap: break-word;
   transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
@@ -71,7 +73,7 @@ h2,
 h3,
 h4 {
   line-height: var(--lh-tight);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.018em;
   text-wrap: balance;
 }

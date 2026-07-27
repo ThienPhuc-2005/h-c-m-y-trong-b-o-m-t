@@ -72,7 +72,7 @@
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  font-weight: 750;
+  font-weight: 700;
   font-size: var(--fs-md);
   letter-spacing: -0.03em;
   color: var(--text);
@@ -91,7 +91,10 @@
   font-weight: 500;
   letter-spacing: 0.02em;
   display: block;
-  line-height: 1.1;
+  /* Chữ càng nhỏ, leading tương đối càng phải LỚN với tiếng Việt — ngược với
+     thói quen sắp chữ tiếng Anh. Ở 11px và 1.1 thì dấu của "Ọ" và "á" trong
+     "Học máy cho An ninh mạng" bị ép sát mép hộp dòng. */
+  line-height: 1.5;
 }
 
 .nav-links {
@@ -110,7 +113,7 @@
   padding: var(--s-2) var(--s-3);
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
-  font-weight: 550;
+  font-weight: 500;
   color: var(--text-muted);
   text-decoration: none;
   white-space: nowrap;
@@ -360,7 +363,7 @@
   align-items: center;
   gap: 4px;
   font-size: var(--fs-2xs);
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.01em;
 }
@@ -475,7 +478,7 @@
   font-weight: 500;
 }
 .prose strong {
-  font-weight: 680;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -485,7 +488,7 @@
   color: inherit;
   cursor: help;
   text-decoration: none;
-  font-weight: 550;
+  font-weight: 500;
   background: none;
   padding: 0;
 }
@@ -582,7 +585,12 @@
    Bảng
    -------------------------------------------------------------------------- */
 .table-wrap {
-  overflow-x: auto;
+  /* `overflow-x` một mình KHÔNG tạo vùng cuộn dọc, nên `position: sticky` trên
+     <th> dính theo viewport chứ không theo bảng: cuộn trang thì hàng tiêu đề
+     trôi lên và chui xuống dưới thanh điều hướng. Cho nó một trần chiều cao là
+     đủ để sticky bám đúng thứ nó cần bám. */
+  max-height: 70dvh;
+  overflow: auto;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
 }
@@ -593,7 +601,7 @@ table.data {
 }
 table.data th {
   text-align: left;
-  font-weight: 650;
+  font-weight: 600;
   padding: var(--s-3);
   background: var(--bg-sunken);
   border-bottom: 1px solid var(--border);
@@ -997,6 +1005,22 @@ textarea {
   padding: var(--s-5);
   overflow: hidden;
 }
+@media (max-width: 640px) {
+  /* Hình vẽ dùng viewBox 600 đơn vị với chữ 10–12 đơn vị. Trên màn 375px, phần
+     còn lại sau lề chỉ 303px — tỉ lệ thu nhỏ 0,5× biến chữ 11px thành 5,6px,
+     và tiếng Việt ở cỡ đó thì dấu dính thành vệt. Ba mươi hình minh hoạ là
+     khoản đầu tư lớn nhất của dự án; thà cho cuộn ngang còn hơn để chúng vô
+     dụng trên điện thoại. */
+  .figure {
+    overflow-x: auto;
+    padding: var(--s-3);
+  }
+  /* Bộ chọn hậu duệ, không phải con trực tiếp: mỗi hình được bọc trong một
+     div nên `.figure > svg` không khớp gì cả. */
+  .figure svg {
+    min-width: 560px;
+  }
+}
 .figure-caption {
   margin-top: var(--s-3);
   font-size: var(--fs-xs);
@@ -1011,7 +1035,7 @@ textarea {
 }
 .svg-label-strong {
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   fill: var(--text);
 }
 .svg-axis {
@@ -1063,7 +1087,7 @@ textarea {
   background: var(--border);
 }
 .step-title {
-  font-weight: 650;
+  font-weight: 600;
   margin-bottom: var(--s-1);
 }
 
@@ -1274,7 +1298,7 @@ details.acc > summary:hover {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-faint);
-  font-weight: 650;
+  font-weight: 600;
 }
 .stat-v {
   font-size: var(--fs-2xl);
@@ -1313,6 +1337,19 @@ details.acc > summary:hover {
   background: var(--ok-soft);
   border-color: var(--ok-border);
   color: var(--ok-text);
+  /* Ngày đã học và chưa học trước đây CHỈ khác nhau ở màu, mà --ok-soft
+     (#e6f6ef) và --bg-sunken (#eef0f6) thì gần như không phân biệt được với
+     người mù màu đỏ–lục. Chấm đặc là tín hiệu thứ hai, không phụ thuộc màu. */
+  position: relative;
+}
+.streak-day.on::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: currentColor;
 }
 .streak-day.today {
   outline: 2px solid var(--brand);
@@ -1354,13 +1391,15 @@ details.acc > summary:hover {
 }
 .badge-name {
   font-size: var(--fs-xs);
-  font-weight: 650;
+  font-weight: 600;
 }
 .badge-desc {
   font-size: var(--fs-2xs);
   color: var(--text-faint);
   margin-top: 2px;
-  line-height: 1.35;
+  /* Mô tả huy hiệu là văn bản tiếng Việt NHIỀU DÒNG ở cỡ 11px: với 1.35 thì
+     dấu mũ và dấu thanh ở dòng dưới chạm chân chữ dòng trên. */
+  line-height: 1.5;
 }
 
 /* --------------------------------------------------------------------------

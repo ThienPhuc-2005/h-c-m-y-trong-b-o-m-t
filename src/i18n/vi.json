@@ -505,7 +505,10 @@
     "resultMid": "Nền tảng đã có nhưng còn lỗ hổng. Đừng học lại cả bài — hãy để hệ thống ôn tập đưa đúng phần bạn sai quay lại.",
     "resultLow": "Phần này cần đọc lại. Không sao cả: nhận ra sớm rẻ hơn nhiều so với phát hiện lúc phỏng vấn hay lúc có sự cố thật.",
     "defaultTitle": "Kiểm tra",
-    "questionN": "Câu {n}/{total}"
+    "questionN": "Câu {n}/{total}",
+    "srCorrect": "Đáp án đúng, bạn đã chọn",
+    "srWrong": "Bạn chọn cái này — sai",
+    "srMissed": "Đây mới là đáp án đúng, bạn đã bỏ qua"
   },
   "callout": {
     "why": "Vì sao quan trọng",

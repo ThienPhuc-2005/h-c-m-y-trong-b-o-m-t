@@ -125,6 +125,24 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
     return isRight ? 'missed' : 'idle';
   };
 
+  /**
+   * Dấu hiệu KHÔNG PHẢI MÀU cho từng phương án sau khi chấm.
+   *
+   * `correct` và `wrong` trước đây chỉ khác nhau ở màu viền và nền — cùng nét
+   * liền, cùng độ dày. Khoảng 8% nam giới mù màu đỏ–lục biết mình đúng hay sai
+   * nhờ khối phản hồi bên dưới, nhưng KHÔNG xác định được đáp án đúng là phương
+   * án nào, tức là mất đúng phần có giá trị học tập nhất của thao tác.
+   *
+   * Thêm nữa các nút bị `disabled` sau khi chấm nên nhiều trình đọc màn hình
+   * bỏ qua chúng; nhãn chỉ-đọc-màn-hình ở đây trả lại thông tin đó.
+   */
+  const mark = (state: string) => {
+    if (state === 'correct') return { icon: 'check' as const, srKey: 'quiz.srCorrect' };
+    if (state === 'wrong') return { icon: 'x' as const, srKey: 'quiz.srWrong' };
+    if (state === 'missed') return { icon: 'arrow-right' as const, srKey: 'quiz.srMissed' };
+    return null;
+  };
+
   const toggle = (i: number, single: boolean) => {
     if (submitted) return;
     setPicked((p) => (single ? [i] : p.includes(i) ? p.filter((x) => x !== i) : [...p, i]));
@@ -164,7 +182,16 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
               disabled={submitted || needConfidence}
               onClick={() => toggle(i, true)}
             >
-              <span className="opt-key">{KEYS[i]}</span>
+              <span className="opt-key">
+                {(() => {
+                  const m = mark(optState(i, i === quiz.answer));
+                  return m ? <Icon name={m.icon} size={13} stroke={3} /> : KEYS[i];
+                })()}
+              </span>
+              {(() => {
+                const m = mark(optState(i, i === quiz.answer));
+                return m ? <span className="sr-only">{t(m.srKey)}. </span> : null;
+              })()}
               <span>
                 <Markdown>{o}</Markdown>
                 {submitted && quiz.distractorWhy?.[i] && i !== quiz.answer && picked.includes(i) && (
@@ -191,7 +218,17 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
                 disabled={submitted || needConfidence}
                 onClick={() => toggle(i, false)}
               >
-                <span className="opt-key" style={{ borderRadius: 4 }}>{picked.includes(i) && <Icon name="check" size={13} stroke={3} />}</span>
+                <span className="opt-key" style={{ borderRadius: 4 }}>
+                  {(() => {
+                    const m = mark(optState(i, quiz.answers.includes(i)));
+                    if (m) return <Icon name={m.icon} size={13} stroke={3} />;
+                    return picked.includes(i) ? <Icon name="check" size={13} stroke={3} /> : null;
+                  })()}
+                </span>
+                {(() => {
+                  const m = mark(optState(i, quiz.answers.includes(i)));
+                  return m ? <span className="sr-only">{t(m.srKey)}. </span> : null;
+                })()}
                 <span><Markdown>{o}</Markdown></span>
               </button>
             ))}
@@ -333,7 +370,10 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
 
       {/* ---- Phản hồi ---- */}
       {submitted && (
-        <div className={cx('feedback', correct ? 'feedback-ok' : 'feedback-bad')}>
+        /* Phản hồi xuất hiện SAU khi bấm, tức là nội dung mới chèn vào trang.
+           Không có vùng sống thì trình đọc màn hình không công bố gì, và người
+           dùng không biết mình vừa đúng hay sai. */
+        <div className={cx('feedback', correct ? 'feedback-ok' : 'feedback-bad')} role="status">
           <div className="feedback-head">
             <Icon name={correct ? 'check' : 'x'} size={18} stroke={2.5} />
             <span>{t(correct ? 'quiz.correct' : 'quiz.incorrect')}</span>
