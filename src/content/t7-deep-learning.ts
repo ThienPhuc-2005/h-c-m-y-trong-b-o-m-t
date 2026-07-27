@@ -34,7 +34,8 @@ export const track7: Track = {
       trackId: 'deep-learning',
       title: 'Mạng nơ-ron từ con số 0',
       subtitle: 'Một nơ-ron chính là hồi quy logistic. Điều thú vị bắt đầu khi bạn xếp chồng chúng lại.',
-      minutes: 18,
+      minutes: 23,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t3-l2', 't1-l6', 't1-l7'],
       why: {
@@ -395,7 +396,8 @@ export const track7: Track = {
       trackId: 'deep-learning',
       title: 'Huấn luyện mạng nơ-ron',
       subtitle: 'Lan truyền ngược bằng trực giác, và mười cái núm bạn phải vặn đúng thứ tự',
-      minutes: 22,
+      minutes: 26,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t7-l1', 't1-l7', 't3-l7'],
       why: {
@@ -747,7 +749,8 @@ export const track7: Track = {
       trackId: 'deep-learning',
       title: 'CNN trên byte thô và ảnh hoá mã độc',
       subtitle: 'Cho mạng ăn cả tệp EXE — ý tưởng đẹp, và cái giá rất thật',
-      minutes: 21,
+      minutes: 24,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t7-l2', 't5-l3', 't6-l2'],
       why: {
@@ -1073,7 +1076,8 @@ export const track7: Track = {
       trackId: 'deep-learning',
       title: 'Mô hình chuỗi: RNN, LSTM, Transformer',
       subtitle: 'Khi thứ tự chính là tín hiệu: chuỗi lời gọi API, dòng log, phiên làm việc',
-      minutes: 22,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t7-l2', 't6-l3', 't5-l6'],
       why: {
@@ -1416,7 +1420,8 @@ export const track7: Track = {
       trackId: 'deep-learning',
       title: 'Học biểu diễn và autoencoder',
       subtitle: 'Khi bạn có 8 triệu mẫu và đúng 300 nhãn xác nhận',
-      minutes: 21,
+      minutes: 24,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t7-l2', 't5-l6', 't3-l1'],
       why: {
@@ -1742,7 +1747,8 @@ export const track7: Track = {
       trackId: 'deep-learning',
       title: 'Khi nào KHÔNG nên dùng deep learning',
       subtitle: 'Bài quan trọng nhất chặng này: phần lớn bài toán bảo mật là dữ liệu bảng, và cây vẫn thắng',
-      minutes: 19,
+      minutes: 27,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t7-l3', 't7-l5', 't3-l5', 't6-l2'],
       why: {

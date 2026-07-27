@@ -136,7 +136,7 @@ export function RoadmapPage() {
                               <span className="faint" style={{ display: 'block' }}>{l.subtitle}</span>
                             </span>
                             <LevelBadge level={l.level} />
-                            <span className="faint nowrap">{l.minutes}′</span>
+                            <span className="faint nowrap">{l.minutes + l.practiceMinutes}′</span>
                           </a>
                         );
                       })}

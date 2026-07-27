@@ -51,7 +51,7 @@ function buildIndex(): { hit: Omit<Hit, 'score'>; hay: string }[] {
         kind: 'bai',
         id: l.id,
         title: l.title,
-        sub: t('search.lessonSub', { track: track?.title ?? '', n: l.minutes }),
+        sub: t('search.lessonSub', { track: track?.title ?? '', n: l.minutes + l.practiceMinutes }),
         icon: 'book',
         path: `/hoc/${l.id}`,
       },

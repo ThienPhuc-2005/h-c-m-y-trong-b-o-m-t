@@ -34,7 +34,8 @@ export const track10: Track = {
       title: 'Đưa mô hình vào sản xuất trong SOC',
       subtitle:
         'Khoảng cách giữa notebook và hệ thống trực 24/7 không nằm ở thuật toán — nó nằm ở độ trễ, ở đặc trưng lúc chạy thật, và ở cái analyst nhìn thấy.',
-      minutes: 21,
+      minutes: 25,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t4-l4', 't4-l7'],
       why: {
@@ -434,7 +435,8 @@ def dau_van_tay(dt: DacTrungKetNoi) -> str:
       title: 'Trôi dữ liệu và trôi khái niệm',
       subtitle:
         'Mọi mô hình đều hỏng dần theo thời gian. Trong bảo mật, có người được trả tiền để làm nó hỏng nhanh hơn.',
-      minutes: 20,
+      minutes: 23,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t10-l1'],
       why: {
@@ -805,7 +807,8 @@ def psi(ky_goc: np.ndarray, ky_moi: np.ndarray, so_o: int = 10) -> float:
       title: 'Giám sát, phản hồi và huấn luyện lại',
       subtitle:
         'Mô hình chỉ học được từ những gì nó đã cảnh báo. Nếu bạn không phá vòng lặp đó, nó sẽ ngày càng giỏi ở đúng chỗ nó đã giỏi.',
-      minutes: 21,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t10-l2'],
       why: {
@@ -1182,7 +1185,8 @@ bat_buoc_hop_rut_kinh_nghiem_trong: 3 ngay lam viec`,
       title: 'Khả năng giải thích cho analyst',
       subtitle:
         'Analyst có 30 giây cho mỗi cảnh báo. Một con số 0,93 không giúp gì cả — ba dòng lý do thì có.',
-      minutes: 19,
+      minutes: 22,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t10-l1'],
       why: {
@@ -1541,7 +1545,8 @@ def ly_do(i: int, k: int = 3) -> list[str]:
       title: 'Quản trị, tuân thủ và tài liệu',
       subtitle:
         'Ngày kiểm toán viên hỏi "mô hình này quyết định thế nào và ai chịu trách nhiệm", câu trả lời phải có sẵn trong tài liệu chứ không nằm trong đầu bạn.',
-      minutes: 19,
+      minutes: 24,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t10-l3'],
       why: {
@@ -1901,7 +1906,8 @@ def ly_do(i: int, k: int = 3) -> list[str]:
       title: 'Dự án đầu-cuối và hồ sơ năng lực',
       subtitle:
         'Một dự án làm tử tế với kết quả trung thực đánh bại mười notebook có AUC 0,99 mà không ai kiểm chứng được.',
-      minutes: 21,
+      minutes: 23,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t10-l3'],
       why: {
@@ -2254,7 +2260,8 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
       title: 'Lộ trình nghề nghiệp và phỏng vấn',
       subtitle:
         'Các vai trò thật, phần chồng lấn giữa chúng, những câu hỏi bạn sẽ bị hỏi, và cách trả lời khiến người ta muốn làm việc cùng bạn.',
-      minutes: 18,
+      minutes: 22,
+      practiceMinutes: 3,
       level: 'co-ban',
       prereqs: ['t10-l6'],
       why: {

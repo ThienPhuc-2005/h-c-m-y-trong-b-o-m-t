@@ -42,7 +42,8 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'ROC-AUC và PR-AUC',
       subtitle: 'Hai đường cong, hai câu chuyện — và một trong hai sẽ nói dối bạn',
-      minutes: 21,
+      minutes: 20,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t4-l2'],
       why: {
@@ -347,7 +348,8 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'Chọn ngưỡng theo chi phí, không theo 0,5',
       subtitle: 'Nơi chỉ số biến thành quyết định, và là bài quan trọng nhất của cả chặng',
-      minutes: 22,
+      minutes: 24,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t4-l3'],
       why: {
@@ -655,7 +657,8 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'Xử lý mất cân bằng lớp',
       subtitle: 'Vì sao câu trả lời đầu tiên là đổi ngưỡng, và vì sao SMOTE thường phản tác dụng',
-      minutes: 19,
+      minutes: 22,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t4-l4'],
       why: {
@@ -990,7 +993,8 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'Hiệu chuẩn xác suất',
       subtitle: 'Điểm 0,9 có nghĩa là gì, và vì sao câu trả lời quyết định mọi phép tính chi phí',
-      minutes: 20,
+      minutes: 21,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t4-l5'],
       why: {
@@ -1293,7 +1297,8 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'Toán học của mệt mỏi cảnh báo',
       subtitle: 'Quy mọi chỉ số về đơn vị mà tổ chức thực sự chi trả: giờ người và vụ bị bỏ lọt',
-      minutes: 19,
+      minutes: 23,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t4-l4', 't4-l2'],
       why: {

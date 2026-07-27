@@ -29,7 +29,8 @@ export const track0: Track = {
       trackId: 'khoi-dong',
       title: 'Học máy trong bảo mật thực sự là gì',
       subtitle: 'Bỏ qua lời quảng cáo, nhìn thẳng vào cái máy đang làm gì',
-      minutes: 14,
+      minutes: 13,
+      practiceMinutes: 3,
       level: 'nen-tang',
       why: {
         short:
@@ -294,7 +295,8 @@ export const track0: Track = {
       trackId: 'khoi-dong',
       title: 'Vì sao bảo mật là sân chơi khó nhất của ML',
       subtitle: 'Bốn đặc tính khiến mọi giáo trình ML phổ thông không dùng được nguyên xi',
-      minutes: 16,
+      minutes: 11,
+      practiceMinutes: 7,
       level: 'nen-tang',
       prereqs: ['t0-l1'],
       why: {
@@ -493,7 +495,8 @@ export const track0: Track = {
       trackId: 'khoi-dong',
       title: 'Bản đồ các bài toán bảo mật dùng ML',
       subtitle: 'Mười hai bài toán, mỗi bài toán một dạng dữ liệu và một loại mô hình',
-      minutes: 13,
+      minutes: 7,
+      practiceMinutes: 1,
       level: 'nen-tang',
       prereqs: ['t0-l2'],
       why: {
@@ -645,7 +648,8 @@ export const track0: Track = {
       trackId: 'khoi-dong',
       title: 'Cách học để sáu tháng sau vẫn còn nhớ',
       subtitle: 'Bài học về chính việc học — và cách app này được thiết kế quanh nó',
-      minutes: 12,
+      minutes: 9,
+      practiceMinutes: 6,
       level: 'nen-tang',
       why: {
         short:

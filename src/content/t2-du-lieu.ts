@@ -45,7 +45,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Bản đồ nguồn dữ liệu bảo mật',
       subtitle: 'Chín nguồn, mỗi nguồn trả lời được câu hỏi gì và tốn bao nhiêu',
-      minutes: 18,
+      minutes: 20,
+      practiceMinutes: 3,
       level: 'nen-tang',
       prereqs: ['t0-l3'],
       why: {
@@ -403,7 +404,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Python và pandas cho dữ liệu bảo mật',
       subtitle: 'Đủ để làm việc thật: đọc log, gộp theo thời gian, ghép threat intel',
-      minutes: 20,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'co-ban',
       prereqs: ['t2-l1'],
       why: {
@@ -812,7 +814,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Làm sạch và chuẩn hoá log',
       subtitle: 'Chỗ mọi con số bị làm sai trước khi mô hình kịp nhìn thấy dữ liệu',
-      minutes: 19,
+      minutes: 23,
+      practiceMinutes: 3,
       level: 'co-ban',
       prereqs: ['t2-l2'],
       why: {
@@ -1202,7 +1205,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Bài toán nhãn: lấy nhãn ở đâu',
       subtitle: 'Thứ khan hiếm nhất trong ML bảo mật không phải dữ liệu, mà là câu trả lời đúng',
-      minutes: 21,
+      minutes: 23,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t2-l1'],
       why: {
@@ -1568,7 +1572,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Bộ dữ liệu chuẩn và cạm bẫy của chúng',
       subtitle: 'Sáu bộ dữ liệu bạn chắc chắn sẽ gặp, và vấn đề thật của từng bộ',
-      minutes: 20,
+      minutes: 19,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t2-l1'],
       why: {
@@ -1843,7 +1848,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Rò rỉ dữ liệu và cách chia tập đúng',
       subtitle: 'Vì sao con số đẹp nhất của bạn thường là con số sai nhất',
-      minutes: 22,
+      minutes: 24,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t2-l5'],
       why: {
@@ -2227,7 +2233,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Ma trận nhầm lẫn và bốn con số nền tảng',
       subtitle: 'Bốn ô vuông chứa toàn bộ sự thật về một bộ phát hiện',
-      minutes: 16,
+      minutes: 20,
+      practiceMinutes: 7,
       level: 'co-ban',
       prereqs: ['t1-l3'],
       why: {
@@ -2540,7 +2547,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Precision, Recall, F1 — và vì sao accuracy là cái bẫy',
       subtitle: 'Hai câu hỏi khác nhau về cùng một mô hình, và cái giá của việc trộn lẫn chúng',
-      minutes: 18,
+      minutes: 21,
+      practiceMinutes: 3,
       level: 'co-ban',
       prereqs: ['t4-l1'],
       why: {

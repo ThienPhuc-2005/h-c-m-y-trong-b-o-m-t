@@ -17,6 +17,8 @@ npm test          # vitest, chạy một lượt
 npm run test:watch
 npm run lint      # oxlint
 npx tsc -b --noEmit
+node scripts/calibrate-minutes.mjs        # hiệu chỉnh lại thời lượng bài học
+node scripts/calibrate-minutes.mjs --dry  # xem thay đổi, không ghi
 ```
 
 Trước khi commit, chạy đủ ba thứ: `npx tsc -b --noEmit`, `npm run lint`, `npm test`.
@@ -29,6 +31,7 @@ src/
 ├── content/          Toàn bộ giáo trình dưới dạng dữ liệu thuần
 │   ├── types.ts        Lược đồ — nguyên tắc sư phạm mã hoá thành kiểu dữ liệu
 │   ├── registry.ts     Danh sách id hình vẽ / phòng lab hợp lệ
+│   ├── reading-time.ts Mô hình ước lượng thời lượng — script và test dùng chung
 │   ├── glossary.ts     Từ điển thuật ngữ song ngữ
 │   ├── index.ts        Điểm tập hợp + truy vấn dùng chung + auditCourse()
 │   └── t0…t10*.ts      11 chặng học, mỗi chặng một tệp
@@ -54,6 +57,7 @@ src/
 public/sw.js          Service worker: nạp sẵn, cache-first, tái dùng chunk cũ
 public/manifest.webmanifest + icon.svg + icon-maskable.svg
 scripts/build-sw.mjs  Nhúng danh sách tệp thật + phiên bản băm sau mỗi lần build
+scripts/calibrate-minutes.mjs  Hiệu chỉnh minutes/practiceMinutes từ nội dung thật
 ```
 
 ## Ba quy ước dễ vi phạm
@@ -79,6 +83,17 @@ dùng (`content.noticeLong`).
 trực quan, có thẻ ghi nhớ; mọi câu hỏi phải có `why`. `content.test.ts` sẽ trượt
 nếu thiếu. Id thẻ và câu hỏi là **khoá lưu tiến độ của người học** — đổi id là
 xoá tiến độ của họ.
+
+**Thời lượng.** `minutes` (đọc) và `practiceMinutes` (làm) **không viết tay**.
+Mô hình nằm ở `src/content/reading-time.ts`; sửa nội dung xong thì chạy
+`node scripts/calibrate-minutes.mjs`. `content.test.ts` đối chiếu số đã ghi với
+số mô hình tính ra, nên quên chạy là test trượt kèm tên bài và lệnh cần gõ.
+Bộ lập kế hoạch ngày cộng **cả hai** số, vì đó là thứ người học thật sự phải bỏ ra.
+
+Một bài có thể nằm trong tệp của chặng khác: `t4-l1` và `t4-l2` mang id chặng 4
+nhưng sống trong `t2-du-lieu.ts`. Id giữ nguyên vì id là khoá tiến độ, còn chỗ
+đứng đổi vì chặng 3 cần từ vựng đo lường mà chặng 4 mới dạy. **Đừng suy tệp từ
+tiền tố id** — tra theo chặng đang chứa bài.
 
 ## Dữ liệu người học
 

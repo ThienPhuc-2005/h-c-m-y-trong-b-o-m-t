@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { TRACKS, ALL_LESSONS, ALL_CARDS, ALL_QUIZ, auditCourse, getLesson } from './index';
 import { isKnownFigure, isKnownLab } from './registry';
+import { estimate } from './reading-time';
 import { ALL_TERMS } from './glossary';
 
 describe('cấu trúc khoá học', () => {
@@ -72,9 +73,17 @@ describe('bất biến sư phạm — mọi bài học phải đạt', () => {
     expect(l.quiz.length).toBeGreaterThanOrEqual(2);
     expect(l.blocks.length).toBeGreaterThanOrEqual(5);
 
-    // Thời lượng phải trung thực và vừa sức một phiên học.
+    // Thời lượng phải trung thực và vừa sức một phiên học. Hai con số này do
+    // scripts/calibrate-minutes.mjs sinh ra từ nội dung thật; ngưỡng ở đây chỉ
+    // để bắt bài phình quá khổ, không phải để chốt con số.
     expect(l.minutes).toBeGreaterThan(4);
-    expect(l.minutes).toBeLessThanOrEqual(30);
+    expect(l.minutes).toBeLessThanOrEqual(35);
+    expect(l.practiceMinutes).toBeGreaterThanOrEqual(0);
+    expect(l.practiceMinutes).toBeLessThanOrEqual(20);
+    expect(l.minutes + l.practiceMinutes).toBeLessThanOrEqual(45);
+
+    // Mọi bài đều có câu hỏi cuối, nên không bài nào được có 0 phút làm.
+    expect(l.practiceMinutes).toBeGreaterThan(0);
 
     // Phải có ít nhất một điểm truy hồi giữa bài (predict hoặc checkpoint).
     expect(l.blocks.some((b) => b.t === 'predict' || b.t === 'checkpoint')).toBe(true);
@@ -191,11 +200,38 @@ describe('bộ kiểm tra nội dung tích hợp', () => {
   });
 });
 
+describe('thời lượng đã hiệu chỉnh', () => {
+  /**
+   * Bài kiểm thử này tồn tại vì quy ước "nhớ chạy lại script" không bao giờ đủ.
+   * Thêm ba đoạn văn vào một bài rồi commit là `minutes` lập tức nói dối, mà
+   * không có gì kêu lên. Ở đây nó kêu, và câu sửa nằm ngay trong thông báo lỗi.
+   */
+  it('khớp với nội dung thật — nếu trượt, chạy: node scripts/calibrate-minutes.mjs', () => {
+    const lech = ALL_LESSONS.flatMap((l) => {
+      const e = estimate(l);
+      const out: string[] = [];
+      if (l.minutes !== e.reading) out.push(`${l.id}: minutes ghi ${l.minutes}, nội dung cho ${e.reading}`);
+      if (l.practiceMinutes !== e.practice) {
+        out.push(`${l.id}: practiceMinutes ghi ${l.practiceMinutes}, nội dung cho ${e.practice}`);
+      }
+      return out;
+    });
+    expect(lech).toEqual([]);
+  });
+
+  it('không bài nào có thời gian làm mà lại không có việc để làm', () => {
+    for (const l of ALL_LESSONS) {
+      const e = estimate(l);
+      if (e.labs === 0 && e.questions === 0) expect(l.practiceMinutes).toBe(0);
+    }
+  });
+});
+
 describe('quy mô khoá học', () => {
   it('đủ lớn để đưa người học từ số 0 tới trình độ làm việc được', () => {
     expect(ALL_LESSONS.length).toBeGreaterThanOrEqual(60);
     expect(ALL_CARDS.length).toBeGreaterThanOrEqual(250);
     expect(ALL_QUIZ.length).toBeGreaterThanOrEqual(300);
-    expect(ALL_LESSONS.reduce((s, l) => s + l.minutes, 0)).toBeGreaterThanOrEqual(700);
+    expect(ALL_LESSONS.reduce((s, l) => s + l.minutes + l.practiceMinutes, 0)).toBeGreaterThanOrEqual(700);
   });
 });

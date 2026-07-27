@@ -99,7 +99,10 @@ export const COURSE_STATS = {
   lessons: ALL_LESSONS.length,
   cards: ALL_CARDS.length,
   questions: ALL_QUIZ.length,
-  minutes: ALL_LESSONS.reduce((s, l) => s + l.minutes, 0),
+  /** Tổng thời lượng: đọc + làm. Đây là con số công bố ra ngoài. */
+  minutes: ALL_LESSONS.reduce((s, l) => s + l.minutes + l.practiceMinutes, 0),
+  readingMinutes: ALL_LESSONS.reduce((s, l) => s + l.minutes, 0),
+  practiceMinutes: ALL_LESSONS.reduce((s, l) => s + l.practiceMinutes, 0),
   labs: new Set(ALL_LESSONS.flatMap((l) => l.blocks.filter((b) => b.t === 'lab').map((b) => b.id))).size,
 };
 

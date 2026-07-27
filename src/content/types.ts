@@ -186,8 +186,25 @@ export interface Lesson {
   title: string;
   /** Một câu mô tả — hiện trên thẻ bài, giúp người học quyết định nhanh. */
   subtitle: string;
-  /** Thời lượng ước tính (phút). Tôn trọng thời gian người học: nói thật. */
+  /**
+   * Thời gian ĐỌC ước tính (phút): văn xuôi ở ~140 từ/phút cho văn kỹ thuật
+   * tiếng Việt, cộng ~5 giây mỗi dòng mã. KHÔNG bao gồm thời gian làm.
+   *
+   * Con số này sinh ra từ `scripts/calibrate-minutes.mjs` chứ không phải ước
+   * chừng bằng tay. Sửa nội dung bài xong thì chạy lại script, đừng chỉnh tay.
+   */
   minutes: number;
+
+  /**
+   * Thời gian LÀM ước tính (phút): phòng lab (~4 phút mỗi lab) cộng thời gian
+   * suy nghĩ và trả lời câu hỏi (~25 giây mỗi câu, gồm cả predict, checkpoint
+   * và bài kiểm tra cuối).
+   *
+   * Tách khỏi `minutes` vì bộ lập kế hoạch ngày so tổng hai số này với quỹ thời
+   * gian người học tự đặt. Gộp làm một thì thẻ bài nói "18 phút" trong khi bài
+   * thật sự ngốn 26 — đó là phá lời hứa ở khoá `home.p6d`.
+   */
+  practiceMinutes: number;
   level: Level;
 
   /** ĐIỀU KIỆN BẮT BUỘC CỦA APP: mọi bài đều trả lời "học để làm gì". */
@@ -295,7 +312,12 @@ export function auditLesson(l: Lesson): ContentIssue[] {
   if (!l.keyTakeaways?.length) err('Thiếu ý chính.');
   if (!l.cards?.length) err('Thiếu thẻ ghi nhớ — bài học không có neo chống quên.');
   if (!l.quiz?.length) err('Thiếu bài kiểm tra cuối.');
-  if (l.minutes <= 0 || l.minutes > 45) warn(`Thời lượng ${l.minutes} phút nằm ngoài khoảng tối ưu (5–45).`);
+  if (l.minutes <= 0 || l.minutes > 45) warn(`Thời gian đọc ${l.minutes} phút nằm ngoài khoảng tối ưu (5–45).`);
+  if (l.practiceMinutes < 0) err('practiceMinutes âm.');
+  // Bài có lab hoặc câu hỏi mà practiceMinutes bằng 0 nghĩa là số chưa được
+  // hiệu chỉnh lại sau khi thêm nội dung — chạy scripts/calibrate-minutes.mjs.
+  const hasWork = l.blocks.some((b) => b.t === 'lab' || b.t === 'checkpoint' || b.t === 'predict') || l.quiz.length > 0;
+  if (hasWork && l.practiceMinutes === 0) err('Bài có lab hoặc câu hỏi nhưng practiceMinutes bằng 0 — chưa hiệu chỉnh.');
 
   const hasRetrieval = l.blocks.some((b) => b.t === 'checkpoint' || b.t === 'predict');
   if (!hasRetrieval) warn('Không có điểm truy hồi giữa bài (predict/checkpoint).');

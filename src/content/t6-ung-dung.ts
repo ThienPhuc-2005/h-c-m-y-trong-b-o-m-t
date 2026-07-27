@@ -34,7 +34,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phát hiện phishing đầu-cuối',
       subtitle: 'Từ URL thô tới một hệ thống chặn thư, với đầy đủ các chỗ nó sẽ hỏng',
-      minutes: 19,
+      minutes: 30,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t2-l6', 't4-l4'],
       why: {
@@ -428,7 +429,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phân loại mã độc bằng phân tích tĩnh',
       subtitle: 'EMBER, LightGBM, và vì sao mô hình của bạn hết hạn sau sáu tháng',
-      minutes: 20,
+      minutes: 28,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t6-l1'],
       why: {
@@ -815,7 +817,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phân tích động và chuỗi lời gọi API',
       subtitle: 'Cho mã độc chạy thật, ghi lại nó làm gì — và đối phó với việc nó biết mình đang bị nhìn',
-      minutes: 20,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t6-l2'],
       why: {
@@ -1173,7 +1176,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phát hiện tên miền DGA',
       subtitle: 'Entropy bắt được Conficker nhưng thua Matsnu — và vì sao ngữ cảnh thắng từ vựng',
-      minutes: 18,
+      minutes: 24,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t1-l5'],
       why: {
@@ -1520,7 +1524,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phát hiện xâm nhập mạng (NIDS)',
       subtitle: 'Zeek và Suricata làm phần nặng, ML làm phần còn lại — và phần còn lại nhỏ hơn bạn tưởng',
-      minutes: 21,
+      minutes: 30,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t6-l4'],
       why: {
@@ -1900,7 +1905,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phát hiện bất thường: Isolation Forest, LOF, autoencoder',
       subtitle: 'Ba thuật toán, ba giả định khác nhau — và một sự thật khó chịu: bất thường không phải độc hại',
-      minutes: 21,
+      minutes: 26,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t6-l5'],
       why: {
@@ -2217,7 +2223,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'UEBA và mối đe doạ nội bộ',
       subtitle: 'Đường cơ sở cá nhân, nhóm đồng cấp, và câu hỏi bạn phải trả lời trước khi bật hệ thống',
-      minutes: 20,
+      minutes: 26,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t6-l6'],
       why: {
@@ -2548,7 +2555,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phát hiện bất thường trong log và chuỗi sự kiện',
       subtitle: 'Từ dòng log tự do tới template, rồi tới chuỗi — và vì sao đếm tần suất vẫn thắng',
-      minutes: 20,
+      minutes: 26,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t6-l6'],
       why: {
@@ -2903,7 +2911,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Gian lận và chiếm đoạt tài khoản',
       subtitle: 'Mất cân bằng 1 trên 20.000, quyết định trong 80 mili-giây, và nhãn tới sau ba tháng',
-      minutes: 20,
+      minutes: 31,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t4-l4', 't6-l1'],
       why: {

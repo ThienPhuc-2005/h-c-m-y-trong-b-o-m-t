@@ -31,7 +31,7 @@ export function TrackPage({ id }: { id?: string }) {
   const prev = idx > 0 ? TRACKS[idx - 1] : undefined;
   const next = idx < TRACKS.length - 1 ? TRACKS[idx + 1] : undefined;
   const trackLabs = LABS.filter((l) => l.track === track.id);
-  const totalMinutes = track.lessons.reduce((s, l) => s + l.minutes, 0);
+  const totalMinutes = track.lessons.reduce((s, l) => s + l.minutes + l.practiceMinutes, 0);
 
   return (
     <div className="container stack" data-hue={track.hue} style={{ '--gap': 'var(--s-8)' } as React.CSSProperties}>

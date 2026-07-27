@@ -155,7 +155,7 @@ export function trackProgress(trackId: string, p: Progress = getProgress()): Tra
     } else if (st === 'da-xong') done++;
     else {
       if (st === 'dang-hoc') inProgress++;
-      minutesLeft += l.minutes;
+      minutesLeft += l.minutes + l.practiceMinutes;
     }
   }
   return {

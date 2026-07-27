@@ -128,7 +128,8 @@ export function LessonPage({ id }: { id?: string }) {
           </div>
           <div className="row-wrap" style={{ gap: 'var(--s-2)' }}>
             <LevelBadge level={lesson.level} />
-            <span className="chip"><Icon name="hourglass" size={12} /> {lesson.minutes} {t('common.minutes')}</span>
+            <span className="chip"><Icon name="hourglass" size={12} /> {t('common.readMinutes', { n: lesson.minutes })}</span>
+            <span className="chip"><Icon name="flask" size={12} /> {t('common.practiceMinutes', { n: lesson.practiceMinutes })}</span>
             <span className="chip"><Icon name="brain" size={12} /> {lesson.cards.length} {t('common.cards')}</span>
             <span className="chip"><Icon name="help-circle" size={12} /> {lesson.quiz.length} {t('common.questions')}</span>
             {st === 'thanh-thao' && (

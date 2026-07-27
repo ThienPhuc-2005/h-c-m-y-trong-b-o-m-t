@@ -102,9 +102,14 @@ export function buildPlan(p: Progress = getProgress()): DailyPlan {
   /* ---- 4. Luyện tập xen kẽ ---------------------------------------------- */
   const drills = buildDrills(p, 8);
 
+  // Bài học tốn CẢ thời gian đọc lẫn thời gian làm. Chỉ cộng `minutes` là nói
+  // thiếu khoảng một phần tư, và người đặt quỹ 20 phút mỗi ngày sẽ liên tục vỡ
+  // kế hoạch mà không hiểu vì sao.
+  const lessonMinutes = lesson ? lesson.minutes + lesson.practiceMinutes : 0;
+
   const minutes = Math.round(
     ((due.length * SEC_REVIEW + fresh.length * SEC_NEW + drills.length * SEC_DRILL) / 60 +
-      (lesson?.minutes ?? 0)) *
+      lessonMinutes) *
       10,
   ) / 10;
 

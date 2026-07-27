@@ -100,7 +100,9 @@ export function LessonCard({ lesson, track, showTrack }: { lesson: Lesson; track
         )}
         <LevelBadge level={lesson.level} />
         <span className="spacer" />
-        <span className="faint nowrap">{lesson.minutes} {t('common.minutes')}</span>
+        <span className="faint nowrap">
+          {t('common.readPlusPractice', { read: lesson.minutes, practice: lesson.practiceMinutes })}
+        </span>
         {st !== 'moi' && (
           <span className={cx('chip', chip.cls)}>
             {chip.icon && <Icon name={chip.icon} size={13} filled={chip.icon === 'star'} />}

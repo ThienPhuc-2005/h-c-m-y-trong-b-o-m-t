@@ -32,7 +32,8 @@ export const track5: Track = {
       trackId: 'dac-trung',
       title: 'Nguyên tắc thiết kế đặc trưng chống né tránh',
       subtitle: 'Ba câu hỏi bạn phải trả lời cho mỗi đặc trưng trước khi nó được phép vào mô hình',
-      minutes: 18,
+      minutes: 23,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t2-l6', 't3-l1'],
       why: {
@@ -368,7 +369,8 @@ export const track5: Track = {
       trackId: 'dac-trung',
       title: 'Đặc trưng cho URL, tên miền và email',
       subtitle: 'Từ một dòng text tới ba mươi con số — và bốn con số trong đó làm gần hết việc',
-      minutes: 20,
+      minutes: 25,
+      practiceMinutes: 7,
       level: 'co-ban',
       prereqs: ['t5-l1', 't1-l5'],
       why: {
@@ -709,7 +711,8 @@ export const track5: Track = {
       trackId: 'dac-trung',
       title: 'Đặc trưng tệp thực thi (PE)',
       subtitle: 'Biến 340 kilobyte nhị phân thành 2.381 con số mà không cần chạy tệp',
-      minutes: 20,
+      minutes: 25,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t5-l1', 't1-l5'],
       why: {
@@ -1056,7 +1059,8 @@ export const track5: Track = {
       trackId: 'dac-trung',
       title: 'Đặc trưng luồng mạng',
       subtitle: 'Khi bạn không đọc được nội dung, hình dạng của cuộc trò chuyện là tất cả những gì bạn có',
-      minutes: 20,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t5-l1', 't2-l1'],
       why: {
@@ -1403,7 +1407,8 @@ export const track5: Track = {
       trackId: 'dac-trung',
       title: 'Đặc trưng hành vi người dùng và thời gian',
       subtitle: 'Bất thường so với ai — so với chính bạn hôm qua, hay so với 40 đồng nghiệp cùng phòng?',
-      minutes: 20,
+      minutes: 25,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t5-l1', 't1-l4'],
       why: {
@@ -1740,7 +1745,8 @@ export const track5: Track = {
       trackId: 'dac-trung',
       title: 'Từ TF-IDF tới embedding cho log và dòng lệnh',
       subtitle: 'Cách biến văn bản không phải tiếng người thành số — và cách biết khi nào bạn đang dùng dao mổ trâu',
-      minutes: 22,
+      minutes: 26,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t5-l1', 't3-l2', 't1-l5'],
       why: {

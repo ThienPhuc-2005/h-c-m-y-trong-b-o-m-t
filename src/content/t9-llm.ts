@@ -34,7 +34,8 @@ export const track9: Track = {
       trackId: 'llm-genai',
       title: 'LLM hoạt động thế nào — đủ để bảo vệ nó',
       subtitle: 'Không cần biết backpropagation. Cần biết đúng một điều: mô hình không phân biệt được chỉ dẫn với dữ liệu.',
-      minutes: 17,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'co-ban',
       prereqs: ['t0-l1'],
       why: {
@@ -408,7 +409,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
       trackId: 'llm-genai',
       title: 'Prompt injection trực tiếp và gián tiếp',
       subtitle: 'Kẻ tấn công không cần nói chuyện với hệ thống của bạn. Chỉ cần gửi cho nó một tài liệu.',
-      minutes: 20,
+      minutes: 25,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t9-l1'],
       why: {
@@ -768,7 +770,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
       trackId: 'llm-genai',
       title: 'Jailbreak, rò rỉ dữ liệu và ảo giác như rủi ro bảo mật',
       subtitle: 'Ba thứ hay bị gộp làm một, ba mô hình mối đe doạ khác nhau, ba cách xử lý khác nhau.',
-      minutes: 19,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t9-l2'],
       why: {
@@ -1144,7 +1147,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
       trackId: 'llm-genai',
       title: 'Rủi ro của RAG và tác tử (agent)',
       subtitle: 'Khi mô hình được nối vào kho tri thức và được cấp công cụ, mỗi kết nối là một cửa mới cho kẻ tấn công.',
-      minutes: 22,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t9-l2'],
       why: {
@@ -1501,7 +1505,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
       trackId: 'llm-genai',
       title: 'OWASP Top 10 cho ứng dụng LLM',
       subtitle: 'Danh sách mà mọi báo cáo đánh giá rủi ro AI đều trích dẫn — học cách dùng nó đúng, không phải học thuộc.',
-      minutes: 20,
+      minutes: 21,
+      practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t9-l4'],
       why: {
@@ -1877,7 +1882,8 @@ cursor.execute('SELECT * FROM nguoi_dung WHERE ma = %s', (ket_qua['ma_nguoi_dung
       trackId: 'llm-genai',
       title: 'Guardrails, đánh giá và red teaming LLM',
       subtitle: 'Không có viên đạn bạc. Có một kiến trúc chịu được đạn, và một cách đo xem nó còn chịu được không.',
-      minutes: 22,
+      minutes: 25,
+      practiceMinutes: 3,
       level: 'nang-cao',
       prereqs: ['t9-l4'],
       why: {
@@ -2212,7 +2218,8 @@ def thuc_thi(ten_cong_cu, tham_so, nguoi_dung):
       trackId: 'llm-genai',
       title: 'Dùng LLM để phòng thủ',
       subtitle: 'Nó viết bản tóm tắt sự cố trong 8 giây. Câu hỏi là bạn có dám ký tên dưới bản đó không.',
-      minutes: 20,
+      minutes: 28,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t9-l3'],
       why: {
