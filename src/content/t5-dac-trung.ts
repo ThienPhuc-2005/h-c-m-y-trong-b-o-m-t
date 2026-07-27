@@ -724,7 +724,7 @@ export const track5: Track = {
       objectives: [
         'Chỉ ra được các trường của PE header mang tín hiệu và giải thích vì sao',
         'Tính entropy theo từng section và đọc đúng ý nghĩa của nó, kể cả khi nó gây hiểu nhầm',
-        'Liệt kê tám nhóm đặc trưng của EMBER và nêu vai trò của từng nhóm',
+        'Liệt kê chín nhóm đặc trưng của EMBER và nêu vai trò của từng nhóm',
       ],
       blocks: [
         {

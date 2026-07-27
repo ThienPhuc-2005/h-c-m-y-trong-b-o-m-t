@@ -74,11 +74,13 @@ export function Slider({
   hint?: string;
 }) {
   const id = useId();
+  const hintId = `${id}-hint`;
+  const shown = format ? format(value) : String(value);
   return (
     <div className="field">
       <label htmlFor={id}>
         <span>{label}</span>
-        <var>{format ? format(value) : value}</var>
+        <var>{shown}</var>
       </label>
       <input
         id={id}
@@ -88,8 +90,14 @@ export function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        /* Trình đọc màn hình mặc định chỉ đọc con số thô. Với những thanh trượt
+           mà `format` trả về CHỮ — "nhanh (đối thủ tích cực)", "2,4 giờ" — thì
+           nghe thấy "2" là vô nghĩa. `aria-valuetext` thay con số bằng đúng thứ
+           người sáng mắt đang nhìn. */
+        aria-valuetext={shown}
+        aria-describedby={hint ? hintId : undefined}
       />
-      {hint && <div className="field-hint">{hint}</div>}
+      {hint && <div className="field-hint" id={hintId}>{hint}</div>}
     </div>
   );
 }
@@ -128,7 +136,20 @@ export function Readout({
             ? 'var(--info-text)'
             : 'var(--text)';
   return (
-    <div className="grid grid-4">
+    /**
+     * `aria-live` ở ĐÂY là thay đổi có sức đòn bẩy lớn nhất trong toàn bộ phần
+     * trợ năng: Readout là thành phần dùng chung của cả 24 phòng lab, nên một
+     * dòng này làm cho mọi thanh trượt trong app công bố được kết quả.
+     *
+     * Không có nó, lời hứa "kéo một thanh trượt và thấy hệ thống phát hiện sụp
+     * đổ" đơn giản là không thực hiện được với người khiếm thị — họ kéo, và
+     * không có gì xảy ra cả.
+     *
+     * `polite` chứ không phải `assertive`: kéo thanh trượt sinh ra hàng chục
+     * lần cập nhật liên tiếp, và `assertive` sẽ cắt ngang lời đọc mỗi lần.
+     * `aria-atomic` để nghe trọn cụm "Độ chính xác 96,7%" thay vì mỗi con số rời.
+     */
+    <div className="grid grid-4" aria-live="polite" aria-atomic="true">
       {items.map((it) => (
         <div className="stat" key={it.k}>
           <div className="stat-k">{it.k}</div>

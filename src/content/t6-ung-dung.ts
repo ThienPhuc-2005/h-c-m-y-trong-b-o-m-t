@@ -62,7 +62,7 @@ export const track6: Track = {
         },
         {
           t: 'p',
-          md: 'Bắt đầu bằng con số của tình huống. 120.000 thư/ngày, giả sử tỉ lệ phishing lọt qua lớp lọc thương mại là 1 trên 20.000 — tức khoảng **6 thư độc mỗi ngày**. Ngân sách của bạn là 50 cảnh báo/ngày. Nghĩa là bạn cần precision tối thiểu quanh 12% ở mức cảnh báo đó, và tỉ lệ báo động giả (false positive rate) phải dưới **0,04%**. Mọi quyết định kỹ thuật phía sau đều bị hai con số này ràng buộc.',
+          md: 'Bắt đầu bằng con số của tình huống. 120.000 thư/ngày, giả sử tỉ lệ phishing lọt qua lớp lọc thương mại là 1 trên 20.000 — tức khoảng **6 thư độc mỗi ngày**. Ngân sách của bạn là 50 cảnh báo/ngày. Sáu thư độc chia cho 50 cảnh báo cho bạn **trần precision là 12%** — và đó là con số chỉ đạt được nếu bộ dò bắt được cả 6 thư, tức recall 100%. Thực tế recall 70% thì precision trần chỉ còn 8,4%. Đây là điều ngược với trực giác của phần lớn người mới: trong bài toán hiếm, **precision bị chặn trên bởi chính tỉ lệ nền và ngân sách cảnh báo**, chứ không phải bởi chất lượng mô hình. Tỉ lệ báo động giả tương ứng phải dưới **0,04%**. Mọi quyết định kỹ thuật phía sau đều bị hai con số này ràng buộc.',
         },
         { t: 'h', text: 'Bước 1 — Dữ liệu: nơi mọi thứ hỏng trước tiên', level: 2 },
         {
@@ -228,7 +228,7 @@ export const track6: Track = {
           head: ['Chỉ số', 'Ý nghĩa với đội SOC', 'Con số mục tiêu trong tình huống của bài'],
           rows: [
             ['Cảnh báo mỗi ngày ở ngưỡng đã chọn', 'Khối lượng công việc thật', 'Dưới 50'],
-            ['Precision ở mức 50 cảnh báo/ngày', 'Cứ 10 cảnh báo thì mấy cái đáng xem', 'Trên 0,15 là chấp nhận được để bắt đầu'],
+            ['Precision ở mức 50 cảnh báo/ngày', 'Cứ 10 cảnh báo thì mấy cái đáng xem', '0,08–0,12; trần lý thuyết là 0,12 nên đừng đặt mục tiêu cao hơn'],
             ['Recall trên tập phishing được xác nhận', 'Bao nhiêu phần trăm chiến dịch bị bắt', 'Đo riêng cho phishing hàng loạt và phishing nhắm mục tiêu'],
             ['Thời gian từ khi tên miền xuất hiện tới khi bị chặn', 'Cửa sổ mà nhân viên còn có thể nhập mật khẩu', 'Tính bằng phút, không phải giờ'],
             ['PR-AUC theo tuần', 'Mô hình đang xuống cấp hay không', 'Theo dõi xu hướng, không phải giá trị tuyệt đối'],
@@ -461,7 +461,7 @@ export const track6: Track = {
           rows: [
             [
               'EMBER 2018 (Anderson & Roth)',
-              '1,1 triệu tệp PE, 2.381 đặc trưng đã trích sẵn',
+              '1 triệu tệp PE (bản 2018), 2.381 đặc trưng đã trích sẵn',
               'Không phát hành tệp thô, chỉ phát hành vector đặc trưng và mã trích xuất; tập kiểm tra tách theo thời gian; kèm mô hình LightGBM cơ sở',
               'Học nghề, so sánh phương pháp, kiểm chứng ý tưởng nhanh',
             ],
@@ -687,7 +687,7 @@ export const track6: Track = {
       ],
       keyTakeaways: [
         'Mã độc đi theo họ; chia ngẫu nhiên khiến mẫu cùng họ nằm ở cả hai tập và tạo ra điểm số ảo — bắt buộc chia theo thời gian, tốt hơn nữa là theo họ.',
-        'EMBER cung cấp 2.381 đặc trưng chia thành tám nhóm; nhóm imports gần với hành vi bắt buộc của mã độc nhất nên đắt giá nhất.',
+        'EMBER cung cấp 2.381 đặc trưng chia thành chín nhóm; nhóm imports gần với hành vi bắt buộc của mã độc nhất nên đắt giá nhất.',
         'Packing không đồng nghĩa với độc hại; phải đưa phần mềm lành đã đóng gói vào tập huấn luyện và báo cáo hiệu năng tách riêng theo nhóm.',
         'Đo trôi bằng cách giữ NGƯỠNG cố định và vẽ tỉ lệ phát hiện theo tuần, tách riêng họ đã biết và họ mới.',
         'Chu kỳ huấn luyện lại thực tế cho mã độc PE nằm trong khoảng hằng tuần tới hằng tháng, và phải được suy ra từ đường trôi chứ không phải từ cảm tính.',

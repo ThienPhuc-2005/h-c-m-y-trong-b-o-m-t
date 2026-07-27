@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from 'react';
 import { LabShell, Slider, Readout, Chart, Axes, Line, Dots, mkPlot, px, py, COLORS, Toggle } from './kit';
-import { mulberry32, gaussian, sigmoid, clamp } from '../lib/utils';
+import { mulberry32, gaussian, sigmoid, clamp, shuffle } from '../lib/utils';
 import { retrievability, intervalForRetention } from '../lib/srs';
 import { Icon } from '../components/Icon';
 
@@ -17,19 +17,34 @@ import { Icon } from '../components/Icon';
 /*  lab-adversarial — Tấn công né tránh                                        */
 /* ========================================================================== */
 
+/**
+ * Trọng số ở đây là THAM SỐ SƯ PHẠM, không phải số đo từ một mô hình thật: cả
+ * bài lab tồn tại để chứng minh rằng đặt trọng số lớn lên đặc trưng rẻ tiền là
+ * một mô hình yếu. Vì vậy hai đặc trưng chi phí 0 phải đủ nặng để kéo được mẫu
+ * qua ranh giới — nếu không, người học làm đúng hướng dẫn lại thấy điều ngược
+ * lại và rút ra kết luận sai rằng mô hình này bền.
+ *
+ * Bản trước đặt w = −1,1 và −0,9: kéo hết cả hai chỉ đưa điểm từ 0,990 xuống
+ * 0,809, vẫn bị chặn. `labs.test.ts` nay chốt cứng con số này.
+ */
 const MAL_FEATURES = [
   { k: 'Entropy section .text', base: 0.82, w: 2.1, cost: 'Cao — phải viết lại bộ nén', costN: 3 },
   { k: 'Số API mã hoá được gọi', base: 0.75, w: 1.8, cost: 'Rất cao — mất chức năng lõi', costN: 4 },
-  { k: 'Kích thước tệp (chuẩn hoá)', base: 0.22, w: -1.1, cost: 'Gần bằng 0 — chèn byte rác', costN: 0 },
+  { k: 'Kích thước tệp (chuẩn hoá)', base: 0.22, w: -1.7, cost: 'Gần bằng 0 — chèn byte rác', costN: 0 },
   { k: 'Có chữ ký số hợp lệ', base: 0.0, w: -2.4, cost: 'Trung bình — cần trộm/mua chứng chỉ', costN: 2 },
-  { k: 'Số chuỗi ký tự đọc được', base: 0.18, w: -0.9, cost: 'Gần bằng 0 — thêm chuỗi giả', costN: 0 },
+  { k: 'Số chuỗi ký tự đọc được', base: 0.18, w: -1.5, cost: 'Gần bằng 0 — thêm chuỗi giả', costN: 0 },
 ];
+
+/** Điểm mô hình gán cho một vector đặc trưng. Tách ra để kiểm chứng được bằng số. */
+export const malScore = (vals: number[]): number =>
+  sigmoid(vals.reduce((s, v, i) => s + v * MAL_FEATURES[i].w, -0.35) * 2);
+
+export const MAL_BASE = MAL_FEATURES.map((f) => f.base);
 
 export function LabAdversarial() {
   const [vals, setVals] = useState(MAL_FEATURES.map((f) => f.base));
-  const bias = -0.35;
-  const score = sigmoid(vals.reduce((s, v, i) => s + v * MAL_FEATURES[i].w, bias) * 2);
-  const baseScore = sigmoid(MAL_FEATURES.reduce((s, f) => s + f.base * f.w, bias) * 2);
+  const score = malScore(vals);
+  const baseScore = malScore(MAL_BASE);
   const effort = vals.reduce((s, v, i) => s + Math.abs(v - MAL_FEATURES[i].base) * MAL_FEATURES[i].costN, 0);
 
   return (
@@ -106,59 +121,128 @@ export function LabAdversarial() {
 /*  lab-poison — Đầu độc dữ liệu                                               */
 /* ========================================================================== */
 
+export interface PoisonPoint {
+  x: number;
+  y: number;
+  c: 0 | 1;
+  poisoned: boolean;
+}
+
+export interface PoisonResult {
+  data: PoisonPoint[];
+  /** Xác suất mô hình gán cho lớp "độc" tại một điểm bất kỳ. */
+  predict: (x: number, y: number) => number;
+  /** Độ chính xác đo trên phần dữ liệu SẠCH — chỉ số đội vận hành nhìn thấy. */
+  acc: number;
+  /** Điểm cửa hậu có bị xếp là "lành" không — chỉ số không ai theo dõi. */
+  backdoorHit: boolean;
+}
+
+/**
+ * Tách khỏi component để KIỂM CHỨNG ĐƯỢC BẰNG SỐ. Lời kết luận in ra cho người
+ * học là một khẳng định về hành vi của chính đoạn mã này; nếu không có cách
+ * chạy nó trong một bài kiểm thử, không gì ngăn hai thứ trôi xa nhau — và một
+ * bài học dạy sai thì không ai phát hiện ra.
+ */
+export function poisonModel(poisonPct: number, targeted: boolean): PoisonResult {
+  const rng = mulberry32(31337);
+  const pts: PoisonPoint[] = [];
+  for (let i = 0; i < 120; i++) {
+    const c: 0 | 1 = i % 2 === 0 ? 0 : 1;
+    pts.push({
+      x: clamp(gaussian(rng, c ? 0.68 : 0.32, 0.12), 0, 1),
+      y: clamp(gaussian(rng, c ? 0.64 : 0.36, 0.12), 0, 1),
+      c,
+      poisoned: false,
+    });
+  }
+  const nPoison = Math.round((poisonPct / 100) * 120);
+  for (let i = 0; i < nPoison; i++) {
+    pts.push(
+      targeted
+        ? // Tấn công có chủ đích: dán nhãn "lành" cho một vùng cụ thể → tạo cửa hậu
+          { x: clamp(gaussian(rng, 0.82, 0.04), 0, 1), y: clamp(gaussian(rng, 0.8, 0.04), 0, 1), c: 0, poisoned: true }
+        : // Tấn công phá hoại: lật nhãn ngẫu nhiên
+          { x: rng(), y: rng(), c: (rng() < 0.5 ? 0 : 1) as 0 | 1, poisoned: true },
+    );
+  }
+
+  /**
+   * VÌ SAO LÀ MẠNG CÓ LỚP ẨN, KHÔNG PHẢI HỒI QUY LOGISTIC:
+   *
+   * Lab này từng dùng hồi quy logistic, và lời kết luận hứa "độ chính xác gần
+   * như không giảm nhưng cửa hậu đã mở". Chạy thật thì cả hai vế đều ngược:
+   * độ chính xác sụp từ 96,7% xuống 64,2%, còn cửa hậu KHÔNG BAO GIỜ mở.
+   *
+   * Đó không phải lỗi cài đặt mà là giới hạn toán học. Ranh giới của một mô
+   * hình tuyến tính là một NỬA MẶT PHẲNG; nó không khoét được một vùng cục bộ.
+   * Muốn ép điểm (0,82; 0,80) thành "lành" thì phải lật cả một mảng lớn mẫu
+   * độc thật, nên thiệt hại buộc phải hiện ra trên chỉ số tổng thể.
+   *
+   * Cửa hậu giấu được là ĐẶC QUYỀN CỦA MÔ HÌNH ĐỦ DUNG LƯỢNG — mạng nơ-ron ghi
+   * nhớ được một vùng nhỏ mà gần như không đụng tới phần còn lại của ranh giới.
+   * Đó chính là bài học, nên mô hình ở đây phải có lớp ẩn thì hiện tượng mới
+   * xảy ra thật thay vì được kể lại.
+   */
+  const H = 8;
+  const rw = mulberry32(4242);
+  let W1 = Array.from({ length: H }, () => [rw() * 2 - 1, rw() * 2 - 1]);
+  let b1 = Array.from({ length: H }, () => rw() * 2 - 1);
+  let W2 = Array.from({ length: H }, () => rw() * 2 - 1);
+  let b2 = rw() * 2 - 1;
+  const lr = 0.5;
+
+  const forward = (x: number, y: number) => {
+    const h = W1.map((w, i) => sigmoid(w[0] * x + w[1] * y + b1[i]));
+    return { h, o: sigmoid(h.reduce((a, hi, i) => a + hi * W2[i], b2)) };
+  };
+
+  for (let e = 0; e < 260; e++) {
+    for (const p of shuffle(pts, mulberry32(e + 1))) {
+      const { h, o } = forward(p.x, p.y);
+      const d2 = o - p.c;
+      const dh = W2.map((w, i) => d2 * w * h[i] * (1 - h[i]));
+      W2 = W2.map((w, i) => w - lr * d2 * h[i]);
+      b2 -= lr * d2;
+      W1 = W1.map((w, i) => [w[0] - lr * dh[i] * p.x, w[1] - lr * dh[i] * p.y]);
+      b1 = b1.map((bb, i) => bb - lr * dh[i]);
+    }
+  }
+
+  const predict = (x: number, y: number) => forward(x, y).o;
+  const clean = pts.filter((d) => !d.poisoned);
+  const acc = clean.filter((d) => ((predict(d.x, d.y) >= 0.5 ? 1 : 0) as 0 | 1) === d.c).length / clean.length;
+  return { data: pts, predict, acc, backdoorHit: predict(0.82, 0.8) < 0.5 };
+}
+
 export function LabPoison() {
   const [poisonPct, setPoisonPct] = useState(0);
   const [targeted, setTargeted] = useState(true);
 
-  const { data, w, b } = useMemo(() => {
-    const rng = mulberry32(31337);
-    const pts: { x: number; y: number; c: 0 | 1; poisoned: boolean }[] = [];
-    for (let i = 0; i < 120; i++) {
-      const c: 0 | 1 = i % 2 === 0 ? 0 : 1;
-      pts.push({
-        x: clamp(gaussian(rng, c ? 0.68 : 0.32, 0.12), 0, 1),
-        y: clamp(gaussian(rng, c ? 0.64 : 0.36, 0.12), 0, 1),
-        c,
-        poisoned: false,
-      });
-    }
-    const nPoison = Math.round((poisonPct / 100) * 120);
-    for (let i = 0; i < nPoison; i++) {
-      pts.push(
-        targeted
-          ? // Tấn công có chủ đích: dán nhãn "lành" cho một vùng cụ thể → tạo cửa hậu
-            { x: clamp(gaussian(rng, 0.82, 0.04), 0, 1), y: clamp(gaussian(rng, 0.8, 0.04), 0, 1), c: 0, poisoned: true }
-          : // Tấn công phá hoại: lật nhãn ngẫu nhiên
-            { x: rng(), y: rng(), c: (rng() < 0.5 ? 0 : 1) as 0 | 1, poisoned: true },
-      );
-    }
-
-    // Huấn luyện hồi quy logistic
-    let W = [0, 0];
-    let B = 0;
-    for (let e = 0; e < 900; e++) {
-      const g = [0, 0];
-      let gb = 0;
-      for (const p of pts) {
-        const err = sigmoid((p.x * W[0] + p.y * W[1] + B) * 4) - p.c;
-        g[0] += err * p.x;
-        g[1] += err * p.y;
-        gb += err;
-      }
-      W = [W[0] - (0.9 * g[0]) / pts.length, W[1] - (0.9 * g[1]) / pts.length];
-      B -= (0.9 * gb) / pts.length;
-    }
-    return { data: pts, w: W, b: B };
-  }, [poisonPct, targeted]);
+  const { data, predict, acc, backdoorHit } = useMemo(
+    () => poisonModel(poisonPct, targeted),
+    [poisonPct, targeted],
+  );
 
   const clean = data.filter((d) => !d.poisoned);
-  const acc = clean.filter((d) => ((d.x * w[0] + d.y * w[1] + b >= 0 ? 1 : 0) as 0 | 1) === d.c).length / clean.length;
-  const backdoorHit = sigmoid((0.82 * w[0] + 0.8 * w[1] + b) * 4) < 0.5;
 
   const p = mkPlot(430, 320, [0, 1], [0, 1], { l: 40, r: 12, t: 12, b: 34 });
-  const boundary: [number, number][] = Math.abs(w[1]) > 1e-6
-    ? [0, 1].map((x) => [x, clamp(-(b + w[0] * x) / w[1], -0.1, 1.1)] as [number, number])
-    : [];
+
+  // Mạng có lớp ẩn không còn ranh giới thẳng để vẽ bằng một đoạn thẳng — và
+  // chính chỗ lồi lõm đó mới là thứ cần nhìn thấy. Tô lưới theo điểm dự đoán.
+  const N = 34;
+  const cw = (p.w - p.pad.l - p.pad.r) / N;
+  const grid = useMemo(() => {
+    const cells: [number, number, number][] = [];
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        const x = i / (N - 1);
+        const y = j / (N - 1);
+        cells.push([x, y, predict(x, y)]);
+      }
+    }
+    return cells;
+  }, [predict]);
 
   return (
     <LabShell
@@ -166,12 +250,23 @@ export function LabPoison() {
       title="Đầu độc dữ liệu: bẻ mô hình từ trước khi nó ra đời"
       takeaway={
         <>
-          Bật chế độ <b>có chủ đích</b> và tăng dần tỉ lệ đầu độc. Chú ý điều đáng sợ: độ chính xác tổng thể
-          gần như không giảm — mọi chỉ số trên bảng theo dõi vẫn xanh — nhưng một <b>vùng cửa hậu</b> đã mở
-          ra, và kẻ tấn công biết chính xác cách đi qua nó. Đây là lý do "mô hình vẫn đạt F1 0,94" không
-          chứng minh mô hình an toàn. Phòng thủ thực tế: kiểm soát nguồn dữ liệu huấn luyện, phát hiện điểm
-          bất thường trong tập huấn luyện, và <b>đặc biệt cảnh giác với vòng phản hồi tự động</b> từ cảnh báo
-          — nếu kẻ tấn công tác động được vào nhãn thì họ đầu độc được mô hình mà không cần chạm vào máy chủ.
+          Bật chế độ <b>có chủ đích</b> rồi kéo tỉ lệ đầu độc lên khoảng <b>5%</b>. Độ chính xác nhích từ
+          96,7% xuống 95,8% — chưa tới một điểm phần trăm, không đủ để bất kỳ bảng theo dõi nào đổi màu —
+          nhưng vùng khoanh nét đứt đã <b>lật hẳn sang xanh</b>: một cửa hậu vừa mở, và kẻ tấn công biết
+          chính xác toạ độ đi qua nó. Đây là lý do "mô hình vẫn đạt F1 0,94" không chứng minh được điều gì
+          về an toàn.
+          <br />
+          <br />
+          Chi tiết quyết định: cửa hậu chỉ giấu được vì mô hình này có <b>lớp ẩn</b>. Một mô hình tuyến tính
+          không làm nổi chuyện đó — ranh giới của nó là một nửa mặt phẳng, không khoét được một vùng cục bộ,
+          nên muốn lật vùng cửa hậu thì phải lật kèm cả mảng lớn dữ liệu thật và thiệt hại lộ ra ngay trên
+          chỉ số tổng thể. <b>Dung lượng mô hình càng lớn, cửa hậu càng dễ ẩn.</b> Đó là cái giá ít được nói
+          tới của việc đổi sang mô hình mạnh hơn.
+          <br />
+          <br />
+          Phòng thủ thực tế: kiểm soát nguồn dữ liệu huấn luyện, phát hiện điểm bất thường trong chính tập
+          huấn luyện, và <b>đặc biệt cảnh giác với vòng phản hồi tự động</b> từ cảnh báo — nếu kẻ tấn công
+          tác động được vào nhãn thì họ đầu độc được mô hình mà không cần chạm vào máy chủ.
         </>
       }
     >
@@ -182,8 +277,18 @@ export function LabPoison() {
 
       <div className="grid grid-2">
         <Chart p={p} label="Ranh giới quyết định sau khi bị đầu độc">
+          {grid.map(([x, y, v], i) => (
+            <rect
+              key={i}
+              x={px(p, x) - cw / 2}
+              y={py(p, y) - cw / 2}
+              width={cw + 0.8}
+              height={cw + 0.8}
+              fill={v > 0.5 ? COLORS.bad : COLORS.ok}
+              opacity={0.07 + Math.abs(v - 0.5) * 0.42}
+            />
+          ))}
           <Axes p={p} xLabel="Đặc trưng 1" yLabel="Đặc trưng 2" xTicks={4} yTicks={4} />
-          {boundary.length > 0 && <Line p={p} pts={boundary} color={COLORS.brand} width={2.6} />}
           <Dots p={p} pts={clean.filter((d) => d.c === 0).map((d) => [d.x, d.y] as [number, number])} color={COLORS.ok} r={3.5} />
           <Dots p={p} pts={clean.filter((d) => d.c === 1).map((d) => [d.x, d.y] as [number, number])} color={COLORS.bad} r={3.5} shape="cross" />
           {data.filter((d) => d.poisoned).map((d, i) => (
@@ -382,8 +487,18 @@ export function LabForgetting() {
     const marks: number[] = [];
     const curveSpaced: [number, number][] = [];
     for (let i = 0; i < reviews; i++) {
-      const iv = Math.min(intervalForRetention(s, target), days - t);
-      if (iv <= 0) break;
+      const iv = intervalForRetention(s, target);
+      /**
+       * KHÔNG kẹp lần ôn cuối vào đúng mốc 120 ngày.
+       *
+       * Bản trước dùng `Math.min(iv, days - t)`, nên với mục tiêu thấp lần ôn
+       * cuối luôn rơi chính xác vào ngày cuối cùng và chỉ số hiện 100% — khiến
+       * lab ngầm dạy "mục tiêu ghi nhớ càng thấp càng tốt", điều vừa sai vừa
+       * ngược với mặc định 0,90 của chính app. Lịch ôn thật không biết trước
+       * ngày bạn sẽ được kiểm tra; lần ôn nào không nằm gọn trong khung thời
+       * gian thì đơn giản là không xảy ra.
+       */
+      if (t + iv > days) break;
       for (let d = 0; d <= iv; d += 0.5) curveSpaced.push([t + d, retrievability(d, s)]);
       t += iv;
       marks.push(t);
@@ -411,9 +526,19 @@ export function LabForgetting() {
         <>
           Đường đỏ là điều xảy ra nếu bạn học xong rồi thôi: sau 4 tháng gần như không còn gì. Đường xanh là
           điều xảy ra với <b>4 lần ôn, tổng cộng chưa tới một phút</b>. Đó không phải là mẹo — đó là toán học
-          của trí nhớ. Kéo mục tiêu ghi nhớ lên 0,95 và để ý: khoảng cách giữa các lần ôn ngắn lại rất nhiều
-          (tốn thời gian hơn hẳn) trong khi lợi ích cuối cùng chỉ nhỉnh hơn chút. Đó là lý do 0,90 là điểm
-          cân bằng mặc định — và vì sao ứng dụng cho bạn tự chọn.
+          của trí nhớ.
+          <br />
+          <br />
+          Giờ giữ nguyên 4 lần ôn và kéo <b>mục tiêu ghi nhớ</b> qua từng nấc. Kết quả sau 120 ngày không hề
+          đơn điệu: 0,85 cho <b>97%</b>, 0,90 cho <b>98%</b>, nhưng 0,95 tụt còn <b>77%</b> và 0,97 chỉ còn{' '}
+          <b>59%</b>. Mục tiêu cao hơn lại nhớ ít hơn, nghe vô lý cho tới khi nhìn vào các mốc ôn: mục tiêu
+          càng cao thì khoảng cách càng ngắn, nên cả bốn lần ôn dồn hết vào <b>hai tuần đầu</b> rồi bạn quên
+          tự do suốt hơn ba tháng còn lại. Kéo xuống 0,75 cũng không tốt hơn — khoảng cách dài tới mức chỉ
+          kịp ôn 2 trong 4 lần.
+          <br />
+          <br />
+          Đây chính là hiệu ứng giãn cách, và đỉnh của đường cong rơi đúng vào <b>0,90</b> — lý do nó là mặc
+          định của ứng dụng, và cũng là lý do bạn nên rất thận trọng khi đổi nó.
         </>
       }
     >

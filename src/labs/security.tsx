@@ -13,10 +13,20 @@ import { Icon } from '../components/Icon';
 /*  lab-entropy — Entropy và phát hiện DGA                                     */
 /* ========================================================================== */
 
+/**
+ * Hai tên miền cuối là mẫu GIẢ MẠO THƯƠNG HIỆU, cố ý chọn để chúng LỌT QUA bộ
+ * dò — đó là bài học của lab, không phải lỗi.
+ *
+ * Bản trước dùng `micros0ft-secure-login.com` và `paypa1-verify.net` rồi khẳng
+ * định chúng "qua mặt cả ba đặc trưng". Chạy thật thì cả hai đều bị cảnh báo
+ * (0,584 và 0,529): dấu gạch ngang cùng chuỗi dài làm entropy ký tự TĂNG chứ
+ * không giảm, nên chính bộ dò lại bắt được chúng vì lý do sai. Hai tên dưới đây
+ * đọc trôi như tiếng Anh nên entropy thấp và bigram đẹp, và chúng lọt thật.
+ */
 const SAMPLE_DOMAINS = [
   'google.com', 'facebook.com', 'vietcombank.com.vn', 'shopee.vn',
   'kq3v9zx7wp1m.com', 'xkjfhwqoiuery.net', 'aaaaaaaa.com', 'zzzz1234.info',
-  'micros0ft-secure-login.com', 'paypa1-verify.net',
+  'paypal-login.com', 'vietcombank-online.com',
 ];
 
 const ENGLISH_BIGRAMS = new Set([
@@ -77,8 +87,12 @@ export function LabEntropy() {
           rác, còn <code>vietcombank</code> lại có entropy khá cao. Kết hợp với <b>xác suất bigram</b> (chuỗi
           ký tự có giống ngôn ngữ người không) và <b>tỉ lệ nguyên âm</b> thì mới ra một bộ dò dùng được. Đây
           là bài học tổng quát của cả kỹ thuật đặc trưng: nhiều tín hiệu yếu ghép lại mạnh hơn một tín hiệu
-          mạnh. Và chú ý <code>micros0ft-secure-login.com</code> — nó qua mặt cả ba đặc trưng, vì nó không
-          phải DGA mà là <b>tấn công giả mạo thương hiệu</b>, cần một bộ đặc trưng hoàn toàn khác.
+          mạnh. Và chú ý hai dòng cuối bảng: <code>paypal-login.com</code> và{' '}
+          <code>vietcombank-online.com</code> đều <b>lọt qua</b> với điểm 0,45–0,47. Chúng không phải DGA mà
+          là <b>giả mạo thương hiệu</b> — đọc trôi như tiếng Anh nên entropy thấp, bigram đẹp, nguyên âm đủ.
+          Cả ba đặc trưng ở đây đều mù trước loại tấn công đó, và không thanh trượt nào cứu được: cần một bộ
+          đặc trưng hoàn toàn khác (khoảng cách chỉnh sửa tới tên miền thương hiệu, tuổi tên miền, chứng chỉ,
+          nội dung trang). <b>Biết bộ dò của mình mù ở đâu quan trọng hơn biết nó bắt được gì.</b>
         </>
       }
     >

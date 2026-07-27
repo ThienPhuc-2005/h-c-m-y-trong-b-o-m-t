@@ -2122,7 +2122,7 @@ print(np.round(S, 2))
           t: 'callout',
           kind: 'math',
           title: 'Log loss — hàm mất mát của mọi bài toán phân loại nhị phân',
-          md: 'L = − [ y × log(p) + (1 − y) × log(1 − p) ]\n\n- **y** — nhãn thật, bằng 1 nếu độc hại, 0 nếu lành tính.\n- **p** — xác suất mô hình gán cho lớp độc hại.\n\nĐọc thành lời: nếu nhãn thật là 1, chỉ vế đầu tồn tại và L = −log(p). Mô hình nói p = 0,9 thì L = 0,105; nói p = 0,5 thì L = 0,693; nói p = 0,01 thì L = **4,6**.\n\nĐiểm quan trọng: hình phạt tăng **rất nhanh** khi mô hình vừa tự tin vừa sai. Đoán p = 0,001 cho một mẫu độc hại bị phạt 6,9 — gấp 66 lần so với đoán bừa 0,5. Đây chính là cơ chế buộc mô hình phải **hiệu chuẩn** xác suất của nó, chứ không chỉ xếp đúng thứ tự.',
+          md: 'L = − [ y × log(p) + (1 − y) × log(1 − p) ]\n\n- **y** — nhãn thật, bằng 1 nếu độc hại, 0 nếu lành tính.\n- **p** — xác suất mô hình gán cho lớp độc hại.\n\nĐọc thành lời: nếu nhãn thật là 1, chỉ vế đầu tồn tại và L = −log(p). Mô hình nói p = 0,9 thì L = 0,105; nói p = 0,5 thì L = 0,693; nói p = 0,01 thì L = **4,6**.\n\nĐiểm quan trọng: hình phạt tăng **rất nhanh** khi mô hình vừa tự tin vừa sai. Đoán p = 0,001 cho một mẫu độc hại bị phạt 6,9 — gấp **10 lần** so với đoán bừa 0,5 (0,693), và gấp **66 lần** so với một dự đoán tự tin mà ĐÚNG (p = 0,9, phạt 0,105). Đây chính là cơ chế buộc mô hình phải **hiệu chuẩn** xác suất của nó, chứ không chỉ xếp đúng thứ tự.',
         },
         {
           t: 'callout',

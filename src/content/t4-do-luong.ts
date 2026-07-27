@@ -2252,7 +2252,7 @@ export const track4: Track = {
           note: 'Nguồn được trích dẫn nhiều nhất về thời gian ẩn náu và tỉ lệ vụ việc do bên ngoài phát hiện. Đọc để có mốc so sánh cho MTTD của tổ chức bạn.',
         },
         {
-          title: 'Practical Threat Detection Engineering — Roberts, Wagner & Franklin',
+          title: 'Practical Threat Detection Engineering — Roddie, Deyalsingh & Katz',
           note: 'Chương về đo lường quy trình phát hiện: cách xây bộ chỉ số vận hành mà đội SOC dùng được hằng tuần, không phải chỉ số nghiên cứu.',
         },
         {

@@ -138,7 +138,7 @@ export function LabBaseRate() {
 /*  lab-confusion — Ma trận nhầm lẫn theo ngưỡng                               */
 /* ========================================================================== */
 
-function makeScores(seed: number, n = 400, sep = 1.6, posRate = 0.2) {
+export function makeScores(seed: number, n = 400, sep = 1.6, posRate = 0.2) {
   const rng = mulberry32(seed);
   const out: { score: number; y: 0 | 1 }[] = [];
   for (let i = 0; i < n; i++) {
@@ -152,7 +152,17 @@ function makeScores(seed: number, n = 400, sep = 1.6, posRate = 0.2) {
 export function LabConfusion() {
   const [threshold, setThreshold] = useState(0.5);
   const [sep, setSep] = useState(1.8);
-  const data = useMemo(() => makeScores(2024, 500, sep, 0.2), [sep]);
+  /**
+   * Tỉ lệ lớp dương phải KÉO ĐƯỢC, và mặc định phải hiếm.
+   *
+   * Trước đây nó bị chốt cứng ở 20% và lời kết luận vẫn hứa "accuracy gần như
+   * không nhúc nhích". Ở 20% dương thì accuracy là chỉ số biến động MẠNH NHẤT
+   * trên biểu đồ — nó chạy từ 0,21 tới 0,83 khi kéo ngưỡng. Nghịch lý accuracy
+   * chỉ xuất hiện khi lớp dương hiếm, đúng như thực tế bảo mật, nên 2% mới là
+   * điểm khởi đầu trung thực.
+   */
+  const [posRate, setPosRate] = useState(0.02);
+  const data = useMemo(() => makeScores(2024, 4000, sep, posRate), [sep, posRate]);
 
   const tp = data.filter((d) => d.y === 1 && d.score >= threshold).length;
   const fn = data.filter((d) => d.y === 1 && d.score < threshold).length;
@@ -181,12 +191,21 @@ export function LabConfusion() {
           Kéo ngưỡng và để ý: <b>không có vị trí nào tốt cho cả hai bên</b>. Mỗi báo động giả bạn cắt được đều
           đổi bằng một lần bỏ sót. Ngưỡng 0,5 chỉ là mặc định của thư viện, không phải một lựa chọn kỹ thuật —
           nó chỉ đúng khi hai loại sai có chi phí bằng nhau, điều gần như không bao giờ xảy ra trong bảo mật.
-          Cũng để ý <b>độ chính xác (accuracy)</b> gần như không nhúc nhích dù hệ thống trở nên vô dụng.
+          Bây giờ tới phần đáng sợ. Giữ tỉ lệ tấn công ở 2% mặc định rồi kéo ngưỡng lên <b>0,98</b>: recall
+          rơi xuống <b>0,02</b> — hệ thống bỏ lọt 98% số vụ tấn công — nhưng <b>accuracy lại TĂNG lên 97,9%</b>,
+          con số đẹp nhất trong cả buổi. Chỉ số đang thưởng cho bạn vì đã ngừng phát hiện. Một mô hình chỉ
+          biết trả lời "không có gì" cũng đạt đúng 98% như thế.
+          <br />
+          <br />
+          Kéo <b>tỉ lệ tấn công lên 20%</b> rồi lặp lại: accuracy giờ đạt đỉnh 0,85 ở giữa rồi tụt xuống 0,80,
+          tức là nó có phản ứng với thiệt hại. Cùng một công thức, hai hành vi trái ngược — <b>accuracy chỉ
+          nói dối khi lớp dương hiếm</b>, và trong bảo mật thì nó gần như luôn hiếm.
         </>
       }
     >
       <Slider label="Ngưỡng quyết định" value={threshold} min={0.02} max={0.98} step={0.01} onChange={setThreshold} format={(v) => v.toFixed(2)} />
       <Slider label="Mô hình phân tách tốt đến đâu" value={sep} min={0.3} max={4} step={0.1} onChange={setSep} format={(v) => v.toFixed(1)} hint="Mô hình càng tốt, hai phân phối càng tách xa nhau." />
+      <Slider label="Tỉ lệ tấn công thật trong dữ liệu" value={posRate} min={0.005} max={0.3} step={0.005} onChange={setPosRate} format={(v) => `${(v * 100).toFixed(1)}%`} hint="Trong SOC thật, con số này thường dưới 1%. Kéo lên cao và xem accuracy đổi vai." />
 
       <Chart p={p} label="Phân bố điểm số của hai lớp">
         <Axes p={p} xLabel="Điểm mô hình" yLabel="Số mẫu" yTicks={3} fmtY={(v) => String(Math.round(v))} />

@@ -556,7 +556,7 @@ export function LabOverfit() {
       title="Quá khớp hiện ra trước mắt bạn"
       takeaway={
         <>
-          Tăng bậc đa thức: lỗi trên tập <b>huấn luyện</b> giảm mãi (đường xanh), nhưng lỗi trên dữ liệu{' '}
+          Tăng bậc đa thức: lỗi trên tập <b>huấn luyện</b> giảm đều (đường xanh), nhưng lỗi trên dữ liệu{' '}
           <b>mới</b> chạm đáy rồi bật lên (đường đỏ). Mô hình bắt đầu học thuộc nhiễu. Trong bảo mật, "nhiễu"
           chính là những đặc thù riêng của tập mẫu bạn thu thập — packer, nguồn tải, khoảng thời gian. Đây là
           lý do <b>một mô hình đạt 100% trên tập huấn luyện là tin xấu, không phải tin tốt</b>. Thử giảm số
@@ -565,7 +565,13 @@ export function LabOverfit() {
       }
     >
       <div className="grid grid-2">
-        <Slider label="Độ phức tạp (bậc đa thức)" value={degree} min={1} max={14} step={1} onChange={setDegree} />
+        {/* Trần bậc 9, không phải 14. Lời giải dùng phương trình chuẩn trên cơ
+            sở đơn thức, tạo ma trận kiểu Hilbert: từ bậc 12 trở lên số điều
+            kiện vượt xa độ chính xác của số thực dấu phẩy động, và lỗi HUẤN
+            LUYỆN bắt đầu TĂNG trở lại. Đó là nhiễu số học chứ không phải hiện
+            tượng thống kê — mà lời kết luận thì lại đang dạy về thống kê. Hình
+            chữ U vẫn hiện đủ rõ trong khoảng 1–9. */}
+        <Slider label="Độ phức tạp (bậc đa thức)" value={degree} min={1} max={9} step={1} onChange={setDegree} />
         <Slider label="Số điểm dữ liệu huấn luyện" value={nPoints} min={6} max={40} step={1} onChange={setNPoints} />
       </div>
       <Reseed onClick={reseed} />
