@@ -1514,6 +1514,1389 @@ export const track6: Track = {
       ],
     },
 
+    /* ====================================================================== */
+    {
+      id: 't6-l5',
+      trackId: 'ung-dung',
+      title: 'Phát hiện xâm nhập mạng (NIDS)',
+      subtitle: 'Zeek và Suricata làm phần nặng, ML làm phần còn lại — và phần còn lại nhỏ hơn bạn tưởng',
+      minutes: 21,
+      level: 'nang-cao',
+      prereqs: ['t6-l4'],
+      why: {
+        short:
+          'Mạng là nơi duy nhất bạn thấy được toàn bộ máy trong tổ chức, kể cả những máy không cài được tác tử — nhưng cũng là nơi phát hiện bất thường thất bại nhiều nhất, và bạn cần biết vì sao trước khi đầu tư.',
+        scenario:
+          'Một máy trạm kế toán mở kết nối HTTPS ra một địa chỉ trên đám mây, cứ 60 giây một lần, mỗi lần gửi khoảng 1,2 KB và nhận về 800 byte, suốt 11 ngày. Không cảnh báo nào nổ. Bạn phải giải thích vì sao chữ ký không bắt được, xây đặc trưng gì để bắt, và ước tính bao nhiêu báo động giả nó sẽ tạo ra trên 12.000 máy.',
+        roles: ['Threat Hunter', 'Detection Engineer', 'SOC Analyst', 'Security Architect'],
+        costOfNotKnowing:
+          'Bạn mua một hộp "AI phát hiện bất thường mạng", bật lên, nhận 4.000 cảnh báo trong tuần đầu, tắt đi sau ba tuần — và kênh C2 vẫn nằm nguyên ở đó vì nó chưa bao giờ bất thường theo nghĩa thống kê.',
+      },
+      objectives: [
+        'Trích được đặc trưng beaconing từ log kết nối và giải thích ý nghĩa của hệ số biến thiên',
+        'Thiết kế bộ đặc trưng phát hiện đường hầm DNS ở cấp tên miền cha',
+        'Nêu bốn lý do cấu trúc khiến phát hiện bất thường trên mạng thất bại nhiều hơn các lĩnh vực khác',
+        'Chọn đúng vai trò cho chữ ký, cho phân cụm và cho mô hình có giám sát trong một kiến trúc NIDS',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Hai luồng HTTPS đi ra Internet. Luồng A: một người đang duyệt web, khoảng cách giữa các kết nối là 3 giây, 47 giây, 1 giây, 210 giây, 8 giây… Luồng B: đúng 60 giây một lần, liên tục 11 ngày. Cả hai đều mã hoá nên bạn không đọc được nội dung. Đặc trưng nào phân biệt được, và nó có cần biết nội dung không?',
+          reveal:
+            'Bạn không cần biết nội dung. Chỉ cần một con số: **hệ số biến thiên** của khoảng cách giữa các kết nối, tức độ lệch chuẩn chia cho trung bình.\n\nLuồng A là hành vi người: khoảng cách trải từ 1 giây tới vài phút, hệ số biến thiên thường lớn hơn 1.\nLuồng B là máy nói chuyện với máy theo lịch: hệ số biến thiên gần 0.\n\nĐây chính là **beaconing** — nhịp tim của kênh điều khiển. Cobalt Strike, một trong những khung công cụ hậu khai thác được dùng rộng rãi nhất bởi cả đội đỏ lẫn nhóm tội phạm, có tham số `sleep` mặc định 60 giây và `jitter` mặc định 0. Với cấu hình đó, hệ số biến thiên gần như bằng 0 và bạn bắt được ngay.\n\nKẻ tấn công có kinh nghiệm đặt jitter 50%: thời gian ngủ rơi ngẫu nhiên trong khoảng 30–60 giây, hệ số biến thiên lên khoảng 0,19. Vẫn thấp hơn nhiều so với hành vi người. Muốn thoát hẳn thì phải đặt sleep hàng giờ với jitter lớn — và khi đó kẻ tấn công mất khả năng điều khiển tương tác. **Đây là một đánh đổi họ không thoát được, nên đây là chỗ đáng đầu tư.**',
+        },
+        { t: 'h', text: 'Bước 1 — Dữ liệu: Zeek trước, mô hình sau', level: 2 },
+        {
+          t: 'p',
+          md: 'Sai lầm phổ biến nhất trong NIDS dùng ML là bắt đầu từ gói tin thô. Đừng. **Zeek** đã biến hàng terabyte gói tin thành log có cấu trúc, có ngữ nghĩa, sẵn sàng cho phân tích — và nó làm việc đó tốt hơn bất cứ thứ gì bạn tự viết trong sáu tháng.',
+        },
+        {
+          t: 'table',
+          head: ['Log của Zeek', 'Trường đáng giá nhất', 'Bài toán nó phục vụ'],
+          rows: [
+            ['conn.log', 'ts, id.orig_h, id.resp_h, duration, orig_bytes, resp_bytes, conn_state, history', 'Beaconing, quét cổng, truyền dữ liệu ra ngoài, di chuyển ngang'],
+            ['dns.log', 'query, qtype, rcode, answers, TTL', 'DGA, đường hầm DNS, tên miền mới đăng ký'],
+            ['ssl.log', 'server_name (SNI), ja3, ja3s, validation_status, version', 'Nhận dạng máy khách TLS, chứng chỉ tự ký, thư viện TLS bất thường'],
+            ['http.log', 'host, uri, user_agent, method, status_code, request_body_len', 'Tải payload, webshell, User-Agent của công cụ'],
+            ['files.log', 'mime_type, md5, sha1, total_bytes, source', 'Tệp đi qua mạng, ghép với mô hình phân loại mã độc'],
+            ['x509.log', 'certificate.subject, issuer, not_valid_before', 'Chứng chỉ tự ký, chứng chỉ vừa cấp, chuỗi trường giống nhau giữa các chiến dịch'],
+          ],
+        },
+        {
+          t: 'compare',
+          title: 'Ba lớp, ba vai trò — đừng để lớp sau làm việc của lớp trước',
+          left: {
+            title: '📜 Suricata: chữ ký',
+            items: [
+              'Bắt cái ĐÃ BIẾT: khai thác CVE cụ thể, chuỗi byte của công cụ, địa chỉ C2 đã công bố',
+              'Chi phí gần bằng 0 cho mỗi luật, giải thích được tuyệt đối',
+              'Bộ luật cộng đồng ET Open cập nhật hằng ngày',
+              'Vô dụng trước lưu lượng mã hoá và trước công cụ tuỳ biến',
+            ],
+          },
+          right: {
+            title: '📊 Zeek + ML: hành vi và metadata',
+            items: [
+              'Bắt cái CHƯA BIẾT nhưng có hình dạng quen: nhịp đều, khối lượng lệch, quan hệ mới',
+              'Chi phí cao hơn: cần dữ liệu lịch sử, cần chỉnh ngưỡng, cần giải thích cho analyst',
+              'Hoạt động được cả trên lưu lượng mã hoá vì chỉ dùng metadata',
+              'Không thay thế chữ ký; nó phủ phần chữ ký không với tới',
+            ],
+          },
+        },
+        { t: 'h', text: 'Bước 2 — Beaconing: bài toán mẫu mực của NIDS dùng ML', level: 2 },
+        {
+          t: 'steps',
+          title: 'Từ conn.log tới điểm beaconing',
+          steps: [
+            {
+              title: 'Gom theo cặp (máy nguồn, đích) trong cửa sổ 24 giờ',
+              md: 'Đơn vị phân tích không phải một kết nối mà là **một mối quan hệ**. Với mỗi cặp, lấy dãy các mốc thời gian bắt đầu kết nối. Bỏ các cặp có dưới 20 kết nối — không đủ dữ liệu để nói gì về nhịp.',
+            },
+            {
+              title: 'Tính đặc trưng về nhịp',
+              md: 'Từ dãy khoảng cách thời gian giữa các kết nối liên tiếp, tính: trung bình, độ lệch chuẩn, **hệ số biến thiên** (độ lệch chuẩn chia trung bình), độ lệch tuyệt đối trung vị (MAD), và tỉ lệ khoảng cách rơi vào khoảng phổ biến nhất. Bổ sung một phép biến đổi Fourier để bắt chu kỳ ẩn khi có nhiều luồng trộn lẫn.',
+            },
+            {
+              title: 'Tính đặc trưng về khối lượng',
+              md: 'Beacon thường gửi và nhận lượng dữ liệu rất giống nhau mỗi lần. Tính hệ số biến thiên của `orig_bytes` và `resp_bytes`, tỉ lệ giữa hai chiều, và số giá trị kích thước duy nhất. Một kênh C2 đang chờ lệnh có tỉ lệ gửi/nhận rất đặc trưng và ổn định.',
+            },
+            {
+              title: 'Tính đặc trưng về độ bền và độ hiếm',
+              md: 'Mối quan hệ này kéo dài bao nhiêu giờ, có vượt qua ranh giới ngày làm việc không (máy kế toán nói chuyện đều đặn lúc 3 giờ sáng là bất thường theo nghĩa có ý nghĩa), và **bao nhiêu máy khác trong tổ chức cũng nói chuyện với đích này**. Đặc trưng cuối là bộ lọc báo động giả mạnh nhất trong cả nhóm.',
+            },
+            {
+              title: 'Chấm điểm và xếp hạng, không chặn',
+              md: 'Kết quả nên là một bảng xếp hạng 20 mối quan hệ đáng ngờ nhất mỗi ngày để hunter xem, không phải một cảnh báo tự động chặn. Lý do nằm ở bước tiếp theo.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Thứ gì cũng beacon',
+          md: 'Trước khi mừng vì bắt được C2, hãy nhìn danh sách những thứ beacon hoàn hảo trong mọi mạng doanh nghiệp: tác tử quản lý máy trạm gọi về máy chủ mỗi 5 phút, phần mềm chống virus kiểm tra cập nhật, hệ thống giám sát gửi nhịp tim, ứng dụng chat giữ kết nối, máy in kiểm tra hàng đợi, camera IP gửi trạng thái, đồng hồ NTP, và mọi thứ dùng cơ chế hỏi vòng.\n\nTrong một mạng 12.000 máy, một bộ phát hiện beaconing thô sẽ sinh ra **hàng nghìn** cặp mỗi ngày. Thứ cứu bạn không phải thuật toán mà là **danh sách cho phép theo đích đến đã được kiểm chứng** cộng với đặc trưng độ hiếm: nếu 11.400 máy cùng nói chuyện với đích đó theo cùng nhịp thì đó là phần mềm doanh nghiệp, không phải C2.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't6l5-cp1',
+              kind: 'mcq',
+              tags: ['nids', 'beaconing'],
+              q: 'Kẻ tấn công đặt jitter 50% cho kênh C2. Hệ số biến thiên của khoảng cách thời gian tăng lên khoảng 0,19, trong khi duyệt web của người thường trên 1. Kết luận đúng?',
+              options: [
+                'Beaconing không còn phát hiện được nữa',
+                'Vẫn phát hiện được, vì hành vi máy theo lịch có độ biến thiên thấp hơn hành vi người rất nhiều dù có jitter',
+                'Phải chuyển sang phân tích nội dung gói tin',
+                'Jitter làm hệ số biến thiên vượt 1 nên không phân biệt được',
+              ],
+              answer: 1,
+              why: 'Jitter làm giảm sức phân biệt chứ không xoá bỏ nó. Với jitter 50%, thời gian ngủ vẫn nằm trong một khoảng hẹp và có cận trên rõ ràng, nên hệ số biến thiên vẫn thấp hơn hành vi người khoảng năm lần. Muốn thực sự trông giống người, kẻ tấn công phải dùng phân phối đuôi dài với khoảng nghỉ hàng giờ — và khi đó họ mất khả năng điều khiển tương tác, phải chờ rất lâu giữa hai lệnh. Nguyên tắc bạn nên mang theo: **đặc trưng tốt không phải đặc trưng không thể né, mà là đặc trưng mà việc né nó lấy đi năng lực của kẻ tấn công.**',
+              distractorWhy: [
+                'Sức phân biệt giảm nhưng vẫn còn rất lớn: 0,19 so với trên 1 là khoảng cách dễ tách.',
+                '',
+                'Nội dung đã mã hoá nên không đọc được, và cũng không cần — metadata nhịp là đủ.',
+                'Ngược lại: jitter 50% cho hệ số biến thiên khoảng 0,19, thấp hơn nhiều so với 1.',
+              ],
+            },
+            {
+              id: 't6l5-cp2',
+              kind: 'truefalse',
+              tags: ['nids', 'bao-dong-gia'],
+              q: 'Trong mạng doanh nghiệp, phần lớn các mối quan hệ có nhịp đều đặn là hoạt động độc hại.',
+              answer: false,
+              why: 'Hoàn toàn ngược lại. Nhịp đều là chân dung của **phần mềm**, và mạng doanh nghiệp đầy phần mềm hỏi vòng: tác tử quản lý, chống virus, giám sát, đồng bộ thời gian, camera, máy in. Tỉ lệ nền của C2 trong tập các mối quan hệ đều nhịp là cực kỳ thấp. Đây chính là nghịch lý tỉ lệ nền áp vào NIDS: đặc trưng có sức phân biệt thật, nhưng nếu bạn không thêm lớp lọc theo độ hiếm và danh sách đích đã kiểm chứng, precision vẫn ở mức không dùng được.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Bước 3 — Đường hầm DNS', level: 2 },
+        {
+          t: 'p',
+          md: 'DNS gần như luôn được cho phép đi ra, kể cả trong mạng bị hạn chế nghiêm ngặt. Các công cụ như **iodine** và **dnscat2** khai thác điều đó: mã hoá dữ liệu vào phần nhãn của tên miền truy vấn, và nhận dữ liệu về trong bản ghi TXT hoặc NULL. Thông lượng thấp — thường vài chục kilobit mỗi giây — nhưng đủ để điều khiển và đủ để rút dần một cơ sở dữ liệu qua nhiều ngày.',
+        },
+        {
+          t: 'table',
+          head: ['Đặc trưng (gom theo tên miền cha, cửa sổ 1 giờ)', 'Ngưỡng chỉ báo', 'Vì sao khó né'],
+          rows: [
+            ['Số nhãn con duy nhất', 'Hàng nghìn với một tên miền cha là bất thường mạnh', 'Mỗi gói dữ liệu cần một nhãn mới — đây là cơ chế cốt lõi'],
+            ['Độ dài trung bình của nhãn con', 'Trên 50 ký tự đáng ngờ; giới hạn kỹ thuật là 63', 'Nhãn ngắn hơn thì thông lượng giảm tuyến tính'],
+            ['Entropy của nhãn con', 'Cao vì dữ liệu đã mã hoá base32 hoặc base64', 'Có thể mã hoá thành từ tiếng Anh nhưng giảm thông lượng nhiều lần'],
+            ['Tỉ lệ bản ghi TXT, NULL, CNAME trên tổng truy vấn', 'Cao bất thường so với nền A và AAAA', 'Cần loại bản ghi mang được nhiều dữ liệu'],
+            ['Tỉ lệ dữ liệu đi lên so với đi xuống', 'Đảo ngược so với DNS bình thường', 'Hệ quả trực tiếp của việc dùng DNS làm kênh truyền'],
+            ['Số máy trong tổ chức truy vấn tên miền cha đó', 'Thường là một', 'Muốn giả cần lây nhiễm thêm máy — chi phí cao'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Gom ở đúng cấp là nửa lời giải',
+          md: 'Một truy vấn DNS đơn lẻ tới `a7f3k9x2.tunnel.example.com` không nói lên điều gì đặc biệt. Nhưng khi bạn gom theo **tên miền cha** trong một cửa sổ một giờ và thấy 4.200 nhãn con duy nhất, độ dài trung bình 58 ký tự, 96% là bản ghi TXT, tất cả từ đúng một máy — thì bức tranh rõ như ban ngày.\n\nĐây là lần thứ ba trong chặng này bạn gặp cùng một mẹo: **đơn vị phân tích đúng gần như không bao giờ là sự kiện đơn lẻ.** Nếu một bài toán phát hiện đang cho precision thấp thảm hại, câu hỏi đầu tiên nên là "tôi có đang gom ở sai cấp không", trước cả câu hỏi về thuật toán.',
+        },
+        { t: 'h', text: 'Bước 4 — Lưu lượng mã hoá: chỉ còn metadata', level: 2 },
+        {
+          t: 'p',
+          md: 'Với TLS 1.3 và các cơ chế che tên miền trong bắt tay, phần nội dung bạn đọc được ngày càng ít. Thứ còn lại vẫn dùng được: **dấu vân tay máy khách TLS**. JA3 (Salesforce, 2017) băm các trường trong bản tin ClientHello — phiên bản, danh sách bộ mã, phần mở rộng — thành một chuỗi định danh. JA4+ (FoxIO, 2023) là thế hệ sau, bền hơn trước việc xáo trộn thứ tự phần mở rộng và tách thành nhiều thành phần cho từng giao thức.',
+        },
+        {
+          t: 'list',
+          items: [
+            '**Điểm mạnh:** một công cụ viết bằng Go dùng thư viện TLS của Go sẽ có vân tay khác hẳn Chrome. Nếu một máy trạm văn phòng đột nhiên tạo kết nối TLS với vân tay của thư viện Python `requests`, đó là tín hiệu đáng xem.',
+            '**Điểm yếu 1:** vân tay xác định **thư viện**, không xác định ý định. Rất nhiều phần mềm hợp pháp cũng dùng Go và Python.',
+            '**Điểm yếu 2:** kẻ tấn công có thể giả mạo vân tay để trông giống Chrome. Các thư viện làm việc này đã tồn tại và dễ dùng.',
+            '**Dùng đúng cách:** coi vân tay TLS là một đặc trưng **độ hiếm** trong tổ chức của bạn, không phải danh sách chặn toàn cầu. Vân tay xuất hiện trên đúng một máy trong 12.000 máy là thông tin; vân tay nằm trong danh sách xấu công khai thì thường đã lỗi thời.',
+            '**Bổ sung:** trường SNI, trạng thái xác thực chứng chỉ, tuổi chứng chỉ, và sự bất khớp giữa SNI với tên trong chứng chỉ.',
+          ],
+        },
+        { t: 'figure', id: 'fig-data-sources', caption: 'Bản đồ nguồn dữ liệu mạng và bài toán mà mỗi nguồn phục vụ. Chú ý phần chồng lấn: cùng một cuộc tấn công thường để lại dấu ở ba nguồn khác nhau.' },
+        { t: 'h', text: 'Bước 5 — Phân cụm để hiểu lưu lượng, không phải để phát hiện', level: 2 },
+        {
+          t: 'lab',
+          id: 'lab-kmeans',
+          intro: 'Phân cụm luồng mạng theo thời lượng, khối lượng và số gói. Chú ý điều xảy ra khi bạn không lấy log của các đặc trưng lệch — và điều xảy ra khi bạn đổi k.',
+        },
+        {
+          t: 'p',
+          md: 'Phân cụm hữu ích trong NIDS, nhưng không phải theo cách người ta hay quảng cáo. Nó **không** phát hiện tấn công. Nó làm ba việc khác, và cả ba đều có giá trị thật:',
+        },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Hiểu lưu lượng của chính bạn.** Phân cụm vài triệu luồng cho ra 20–40 nhóm hành vi. Bạn nhìn vào và nhận ra: đây là sao lưu ban đêm, đây là đồng bộ thư mục, đây là luồng camera. Sau một buổi chiều bạn có bản đồ mạng của mình — thứ mà bốn năm làm việc không cho bạn.',
+            '**Giảm khối lượng cho analyst.** Thay vì 30.000 cảnh báo, gom thành 60 cụm và cho analyst xem đại diện của mỗi cụm. Đây là ứng dụng có tỉ lệ lợi ích trên công sức cao nhất của phân cụm trong SOC.',
+            '**Tạo đặc trưng cho mô hình khác.** Khoảng cách tới tâm cụm gần nhất, và mã cụm, đều là đặc trưng tốt để đưa vào một mô hình có giám sát ở tầng trên.',
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'warn',
+          title: 'Ba lỗi kỹ thuật giết chết phân cụm luồng mạng',
+          md: '**1. Không lấy log của đặc trưng lệch.** Số byte của một luồng trải từ 40 tới 4 tỉ. Không có `log1p` thì k-means chỉ nhìn thấy một chiều duy nhất là "luồng lớn hay nhỏ".\n\n**2. Không chuẩn hoá.** k-means dùng khoảng cách Euclid; nếu một đặc trưng tính bằng byte còn một đặc trưng tính bằng giây thì đặc trưng byte quyết định toàn bộ.\n\n**3. Cho rằng cụm nhỏ là cụm độc hại.** Cụm nhỏ nhất trong mạng của bạn nhiều khả năng là một máy chủ in cũ chạy giao thức lạ. Cụm nhỏ nghĩa là **hiếm**, và hiếm không đồng nghĩa với xấu — đây đúng là chủ đề của bài tiếp theo.',
+        },
+        { t: 'h', text: 'Bước 6 — Vì sao phát hiện bất thường trên mạng thất bại nhiều đến vậy', level: 2 },
+        {
+          t: 'p',
+          md: 'Sommer và Paxson (2010) đã trả lời câu hỏi này rõ tới mức mười lăm năm sau vẫn chưa ai bác bỏ được. Bốn lý do, và cả bốn đều mang tính cấu trúc chứ không phải vấn đề kỹ thuật chờ được giải:',
+        },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Không có "bình thường" ổn định.** Lưu lượng mạng biến động theo giờ, theo ngày, theo đợt triển khai phần mềm, theo một dự án mới của phòng marketing. Trong nhận diện chữ viết tay, chữ số 7 hôm nay giống chữ số 7 năm ngoái. Trong mạng, không có bất biến nào tương tự.',
+            '**Khoảng cách ngữ nghĩa.** Mô hình nói "cái này lạ". Analyst cần biết "cái này nguy hiểm và tôi phải làm gì". Chuyển từ vế đầu sang vế sau đòi hỏi ngữ cảnh mà mô hình không có, và đó là công việc thủ công tốn 20–40 phút mỗi cảnh báo.',
+            '**Chi phí sai cực kỳ bất đối xứng.** Với hàng chục triệu luồng mỗi ngày, tỉ lệ báo động giả 0,01% vẫn là hàng nghìn cảnh báo. Nghịch lý tỉ lệ nền không tha cho ai.',
+            '**Khó đánh giá.** Bạn không có nhãn. Các bộ dữ liệu công khai thì mang vấn đề riêng: NSL-KDD đã quá cũ so với giao thức hiện đại, còn CIC-IDS2017 được Engelen và cộng sự (2021) chỉ ra hàng loạt lỗi trong quá trình sinh dữ liệu và gán nhãn. Huấn luyện trên dữ liệu sai rồi báo cáo 99,9% là chuyện xảy ra thường xuyên trong các bài báo.',
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Kết luận thực dụng, không bi quan',
+          md: 'Bốn lý do trên không nói "đừng dùng ML trong NIDS". Chúng nói **hãy dùng nó cho bài toán hẹp và có cấu trúc**, không cho bài toán "tìm mọi thứ bất thường".\n\nCác bài toán hẹp hoạt động tốt trong thực tế: phát hiện beaconing, phát hiện đường hầm DNS, phát hiện quét cổng nội bộ, phát hiện truyền dữ liệu ra ngoài với khối lượng lệch, xếp hạng cảnh báo Suricata theo khả năng là thật. Mỗi bài trong số đó có định nghĩa rõ về cái cần tìm, có đặc trưng gắn với cơ chế bắt buộc của kẻ tấn công, và có đơn vị phân tích đúng.\n\nBài toán rộng "học thế nào là bình thường rồi báo cái khác thường" là bài toán đã thất bại nhiều lần nhất trong lịch sử ngành này.',
+        },
+        { t: 'h', text: 'Bước 7 — Kẻ tấn công né thế nào', level: 2 },
+        {
+          t: 'table',
+          head: ['Kỹ thuật né', 'Chống lại đặc trưng nào', 'Đối sách còn lại'],
+          rows: [
+            ['Tăng sleep lên nhiều giờ, jitter lớn', 'Đặc trưng nhịp', 'Mở rộng cửa sổ phân tích lên nhiều ngày; kẻ tấn công mất khả năng điều khiển tương tác'],
+            ['Đi qua CDN lớn hoặc dịch vụ đám mây phổ biến (domain fronting và biến thể)', 'Danh tiếng đích đến', 'Độ hiếm của cặp máy-đích trong tổ chức; vân tay TLS; kích thước và nhịp vẫn còn'],
+            ['Giả mạo vân tay TLS cho giống trình duyệt', 'JA3 và JA4', 'Sự bất khớp giữa vân tay trình duyệt và tiến trình thật (cần dữ liệu từ máy trạm)'],
+            ['Chèn dữ liệu vào lưu lượng hợp pháp, thay đổi kích thước gói ngẫu nhiên', 'Đặc trưng khối lượng', 'Đặc trưng độ bền và quan hệ; tương quan với sự kiện trên máy trạm'],
+            ['Dùng DoH tới máy phân giải công cộng, hoặc kênh trên dịch vụ hợp pháp', 'Toàn bộ tầm nhìn DNS', 'Vấn đề kiến trúc: chính sách mạng chặn DoH, ép dùng máy phân giải nội bộ'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Điều mà mọi đội NIDS trưởng thành đều làm',
+          md: 'Không ai chỉ nhìn mạng. Tín hiệu mạnh nhất luôn đến từ việc **ghép lưu lượng mạng với sự kiện trên máy trạm**: kết nối ra ngoài này do tiến trình nào tạo ra? Tiến trình đó có tiến trình cha là gì? Nó vừa được ghi ra đĩa cách đây 4 phút phải không?\n\nMột kết nối HTTPS đều nhịp tới một địa chỉ đám mây là tín hiệu yếu. Cũng kết nối đó, nhưng do `rundll32.exe` khởi tạo, với tiến trình cha là `winword.exe`, thì gần như không cần mô hình nào nữa. Đây là lý do EDR và NIDS được ghép lại trong các nền tảng XDR — và là lý do bạn nên đầu tư vào việc nối dữ liệu trước khi đầu tư vào mô hình phức tạp hơn.',
+        },
+        { t: 'terms', ids: ['zeek', 'beaconing', 'c2', 'bat-thuong', 'siem'] },
+      ],
+      keyTakeaways: [
+        'Bắt đầu từ log Zeek, không từ gói tin thô; Zeek đã làm phần khó nhất và làm tốt hơn thứ bạn tự viết.',
+        'Hệ số biến thiên của khoảng cách thời gian là đặc trưng cốt lõi của beaconing — nó hoạt động trên lưu lượng mã hoá vì chỉ dùng metadata.',
+        'Jitter làm giảm sức phân biệt nhưng không xoá nó; đặc trưng tốt là đặc trưng mà việc né nó lấy đi năng lực của kẻ tấn công.',
+        'Trong mạng doanh nghiệp, tuyệt đại đa số quan hệ đều nhịp là phần mềm hợp pháp — phải kết hợp độ hiếm và danh sách đích đã kiểm chứng.',
+        'Đường hầm DNS phải phát hiện ở cấp tên miền cha trong cửa sổ thời gian, không ở cấp từng truy vấn.',
+        'Phân cụm không phát hiện tấn công; nó dùng để hiểu lưu lượng, gom cảnh báo và sinh đặc trưng cho mô hình khác.',
+        'Bốn lý do cấu trúc khiến anomaly detection trên mạng thất bại: không có bình thường ổn định, khoảng cách ngữ nghĩa, chi phí sai bất đối xứng, và khó đánh giá.',
+        'Tín hiệu mạnh nhất đến từ việc ghép luồng mạng với tiến trình trên máy trạm — hãy đầu tư vào nối dữ liệu trước khi đầu tư vào mô hình.',
+      ],
+      cards: [
+        {
+          id: 't6l5-c1',
+          front: 'Hệ số biến thiên của khoảng cách thời gian phát hiện được gì, và vì sao nó hoạt động trên lưu lượng mã hoá?',
+          back: 'Phát hiện beaconing của kênh C2. Nó chỉ dùng mốc thời gian kết nối — metadata — nên mã hoá nội dung không ảnh hưởng. Máy nói chuyện theo lịch có hệ số gần 0, hành vi người thường trên 1.',
+          tags: ['nids', 'beaconing'],
+        },
+        {
+          id: 't6l5-c2',
+          front: 'Vì sao bộ phát hiện beaconing thô tạo ra hàng nghìn báo động giả mỗi ngày?',
+          back: 'Vì mạng doanh nghiệp đầy phần mềm hỏi vòng đều nhịp: tác tử quản lý, chống virus, giám sát, NTP, camera, máy in. Cần thêm đặc trưng độ hiếm và danh sách đích đã kiểm chứng.',
+          tags: ['nids', 'bao-dong-gia'],
+        },
+        {
+          id: 't6l5-c3',
+          front: 'Đơn vị phân tích đúng để phát hiện đường hầm DNS là gì?',
+          back: 'Tên miền cha (eTLD+1) gom trong một cửa sổ thời gian, không phải từng truy vấn. Khi đó số nhãn con duy nhất, độ dài trung bình và tỉ lệ bản ghi TXT mới lộ ra.',
+          tags: ['nids', 'dns-tunneling'],
+        },
+        {
+          id: 't6l5-c4',
+          front: 'Nêu ba việc phân cụm luồng mạng làm tốt — và một việc nó KHÔNG làm được.',
+          back: 'Làm tốt: hiểu bản đồ lưu lượng của tổ chức, gom cảnh báo để giảm khối lượng cho analyst, sinh đặc trưng cho mô hình có giám sát. Không làm được: phát hiện tấn công, vì cụm nhỏ nghĩa là hiếm chứ không phải xấu.',
+          tags: ['nids', 'phan-cum'],
+        },
+        {
+          id: 't6l5-c5',
+          front: 'Bốn lý do cấu trúc khiến phát hiện bất thường trên mạng thất bại (Sommer & Paxson)?',
+          back: '1) Không có bình thường ổn định. 2) Khoảng cách ngữ nghĩa giữa "lạ" và "nguy hiểm". 3) Chi phí sai cực kỳ bất đối xứng ở lưu lượng lớn. 4) Không có nhãn nên rất khó đánh giá.',
+          tags: ['nids', 'bat-thuong'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't6l5-q1',
+          kind: 'mcq',
+          tags: ['nids', 'beaconing'],
+          q: 'Bạn tìm ra 2.100 cặp máy-đích có nhịp rất đều trong ngày. Bước tiếp theo hiệu quả nhất để đưa con số đó về mức xem được?',
+          options: [
+            'Tăng ngưỡng hệ số biến thiên lên cho chặt hơn',
+            'Xếp hạng theo độ hiếm: ưu tiên đích chỉ được rất ít máy trong tổ chức liên hệ',
+            'Chuyển sang mô hình deep learning trên chuỗi thời gian',
+            'Chỉ xét các kết nối ngoài giờ hành chính',
+          ],
+          answer: 1,
+          why: 'Siết ngưỡng sẽ loại bỏ chính các beacon có jitter — tức là loại đúng những kẻ tấn công có kỹ năng, giữ lại phần mềm doanh nghiệp có nhịp hoàn hảo. Đó là siết nhầm chiều. Đặc trưng độ hiếm thì cắt theo đúng trục phân biệt: tác tử quản lý nói chuyện với máy chủ của nó từ 11.400 máy, còn C2 thì thường chỉ có một hoặc vài máy. Lọc theo ngoài giờ cũng có ích nhưng yếu hơn nhiều và bỏ sót tấn công diễn ra ban ngày. Mô hình phức tạp hơn không giải quyết được vấn đề vì vấn đề nằm ở tỉ lệ nền, không ở sức mạnh mô hình.',
+          distractorWhy: [
+            'Siết ngưỡng loại bỏ beacon có jitter trước, tức là loại đúng kẻ tấn công có kỹ năng.',
+            '',
+            'Vấn đề là tỉ lệ nền và thiếu ngữ cảnh, không phải năng lực mô hình.',
+            'Có ích nhưng yếu, và bỏ sót hoàn toàn hoạt động ban ngày.',
+          ],
+        },
+        {
+          id: 't6l5-q2',
+          kind: 'multi',
+          tags: ['nids', 'dns-tunneling'],
+          q: 'Đặc trưng nào chỉ ra khả năng có đường hầm DNS? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Hơn 4.000 nhãn con duy nhất dưới cùng một tên miền cha trong một giờ',
+            'Độ dài trung bình của nhãn con vượt 50 ký tự',
+            'Tỉ lệ bản ghi TXT chiếm phần lớn truy vấn tới tên miền đó',
+            'Tên miền cha nằm trong danh sách 1.000 tên miền phổ biến nhất',
+          ],
+          answers: [0, 1, 2],
+          why: 'Ba đặc trưng đầu đều là hệ quả trực tiếp của cơ chế: dữ liệu phải được mã hoá vào nhãn con nên cần rất nhiều nhãn duy nhất và nhãn phải dài, còn dữ liệu trả về cần loại bản ghi mang được nhiều byte như TXT hoặc NULL. Nằm trong danh sách phổ biến thì ngược lại — đó là bằng chứng làm giảm nghi ngờ. Điểm đáng nhớ: khi các đặc trưng của bạn là **hệ quả bắt buộc của cơ chế tấn công**, kẻ tấn công chỉ né được bằng cách hy sinh năng lực, ở đây là thông lượng của kênh.',
+        },
+        {
+          id: 't6l5-q3',
+          kind: 'order',
+          tags: ['nids', 'quy-trinh'],
+          q: 'Sắp xếp các bước xây bộ phát hiện beaconing từ log Zeek.',
+          items: [
+            'Gom conn.log theo cặp máy nguồn và đích trong cửa sổ 24 giờ',
+            'Loại các cặp có dưới 20 kết nối vì không đủ dữ liệu để nói về nhịp',
+            'Tính hệ số biến thiên của khoảng cách thời gian và của kích thước dữ liệu',
+            'Thêm đặc trưng độ hiếm: bao nhiêu máy khác cũng liên hệ đích này',
+            'Xếp hạng 20 cặp đáng ngờ nhất mỗi ngày cho hunter xem',
+            'Ghép với dữ liệu tiến trình trên máy trạm để có kết luận',
+          ],
+          why: 'Thứ tự này phản ánh nguyên tắc chung của kỹ thuật phát hiện: chọn đúng đơn vị phân tích trước, lọc nhiễu thống kê, rồi mới tính đặc trưng, rồi mới thêm ngữ cảnh tổ chức, rồi mới xếp hạng, và cuối cùng ghép nguồn dữ liệu khác để chuyển từ tín hiệu sang kết luận. Đảo thứ tự hai bước đầu là lỗi hay gặp: tính hệ số biến thiên trên một cặp chỉ có 3 kết nối cho ra con số vô nghĩa nhưng trông rất thuyết phục.',
+        },
+        {
+          id: 't6l5-q4',
+          kind: 'truefalse',
+          tags: ['nids', 'phan-cum'],
+          q: 'Trong phân cụm luồng mạng, cụm nhỏ nhất là nơi đáng nghi nhất nên cần điều tra trước.',
+          answer: false,
+          why: 'Cụm nhỏ chỉ có nghĩa là **hiếm**. Trong một mạng thật, các cụm nhỏ nhất thường là: một máy chủ in cũ chạy giao thức lạ, một thiết bị công nghiệp, một máy chủ thử nghiệm của phòng phát triển, một hệ thống của nhà thầu. Đi theo thứ tự kích thước cụm là cách chắc chắn để tiêu hết thời gian của analyst vào các thiết bị vô hại và tạo ra sự chán nản với công cụ. Cách dùng đúng: dùng cụm để **mô tả** mạng và để gom cảnh báo, còn việc quyết định cái gì đáng điều tra thì dựa trên tín hiệu gắn với cơ chế tấn công.',
+        },
+        {
+          id: 't6l5-q5',
+          kind: 'mcq',
+          tags: ['nids', 'kien-truc'],
+          q: 'Vai trò đúng của Suricata và của mô hình ML trong cùng một kiến trúc NIDS là gì?',
+          options: [
+            'Mô hình ML thay thế dần các luật Suricata để giảm chi phí bảo trì',
+            'Suricata bắt cái đã biết với chi phí gần bằng 0; ML phủ phần hành vi mà chữ ký không với tới, đặc biệt trên lưu lượng mã hoá',
+            'Suricata dùng cho lưu lượng nội bộ còn ML dùng cho lưu lượng ra Internet',
+            'Cả hai làm cùng một việc nên chỉ cần chọn một để đơn giản hệ thống',
+          ],
+          answer: 1,
+          why: 'Đây là nguyên tắc xếp tầng đã gặp từ chặng 0, giờ có bối cảnh cụ thể. Một luật Suricata cho một CVE đã công bố là chính xác, giải thích được, và tốn gần như không gì để chạy — không mô hình nào cạnh tranh được ở đó. Nhưng chữ ký mù trước lưu lượng mã hoá, trước công cụ tuỳ biến, và trước hành vi trải dài theo thời gian như beaconing. Đó chính là khoảng trống mà đặc trưng metadata và mô hình lấp vào. Việc chia theo hướng lưu lượng thì không liên quan tới điểm mạnh của từng công nghệ.',
+          distractorWhy: [
+            'Chữ ký vẫn là cách rẻ nhất và chắc chắn nhất cho phần đã biết; thay thế chúng là tự làm khó mình.',
+            '',
+            'Hướng lưu lượng không phải tiêu chí phân vai; cả hai công nghệ đều dùng được ở mọi hướng.',
+            'Chúng phủ hai tập mối đe doạ khác nhau, không thay thế nhau.',
+          ],
+        },
+      ],
+      terms: ['zeek', 'beaconing', 'c2', 'bat-thuong', 'siem'],
+      further: [
+        {
+          title: 'Outside the Closed World — Sommer & Paxson (2010)',
+          note: 'Đã nhắc ở chặng 0; giờ đọc lại với đủ nền tảng, bạn sẽ thấy từng lập luận ứng với một quyết định thiết kế cụ thể trong bài này.',
+        },
+        {
+          title: 'Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study — Engelen và cộng sự (2021)',
+          note: 'Mổ xẻ các lỗi sinh dữ liệu và gán nhãn trong một bộ dữ liệu được trích dẫn hàng nghìn lần. Đọc để hết tin vào con số 99,9% trong các bài báo NIDS.',
+        },
+        {
+          title: 'Zeek — tài liệu về các log mặc định',
+          note: 'Đọc mô tả trường của conn.log, dns.log, ssl.log một lượt. Phần lớn ý tưởng đặc trưng trong NIDS đến từ việc biết rõ mình đang có sẵn những trường nào.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't6-l6',
+      trackId: 'ung-dung',
+      title: 'Phát hiện bất thường: Isolation Forest, LOF, autoencoder',
+      subtitle: 'Ba thuật toán, ba giả định khác nhau — và một sự thật khó chịu: bất thường không phải độc hại',
+      minutes: 21,
+      level: 'nang-cao',
+      prereqs: ['t6-l5'],
+      why: {
+        short:
+          'Phần lớn dữ liệu bảo mật không có nhãn, nên phát hiện bất thường là công cụ duy nhất khả dụng — nhưng nó cũng là công cụ bị dùng sai nhiều nhất, và biết khi nào KHÔNG dùng nó quan trọng ngang biết cách dùng.',
+        scenario:
+          'Bạn có 18 tháng log đăng nhập của 12.000 tài khoản và đúng 0 nhãn. Ban lãnh đạo muốn "phát hiện hành vi bất thường". Bạn phải chọn thuật toán, chọn ngân sách cảnh báo, và quan trọng nhất là đặt kỳ vọng đúng trước khi ai đó tưởng rằng mọi cảnh báo đều là kẻ tấn công.',
+        roles: ['Security Data Scientist', 'Detection Engineer', 'Threat Hunter', 'ML Engineer'],
+        costOfNotKnowing:
+          'Bạn bật Isolation Forest với contamination mặc định 0,1 trên 4 triệu bản ghi, tạo 4.000 cảnh báo mỗi ngày, đội SOC tắt nó sau hai tuần, và sáu tháng sau không ai trong công ty còn tin vào từ "bất thường" nữa.',
+      },
+      objectives: [
+        'Giải thích được cơ chế của Isolation Forest, LOF và autoencoder bằng ngôn ngữ hình học, không bằng công thức',
+        'Chọn được thuật toán phù hợp theo số chiều, kích thước dữ liệu và loại bất thường cần tìm',
+        'Đánh giá được một mô hình bất thường khi hoàn toàn không có nhãn',
+        'Nêu được năm nguyên nhân lành tính phổ biến của bất thường trong dữ liệu bảo mật',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Lúc 2 giờ 14 phút sáng thứ Bảy, một máy chủ trong mạng của bạn truyền 43 GB ra một địa chỉ bên ngoài. Đây là bất thường rõ ràng theo mọi thước đo thống kê. Theo bạn, xác suất nó là một cuộc tấn công là bao nhiêu, và bạn kiểm tra bằng gì trước tiên?',
+          reveal:
+            'Thấp. Thấp hơn nhiều so với cảm giác của bạn khi nhìn con số 43 GB lúc 2 giờ sáng.\n\nDanh sách những thứ tạo ra đúng chân dung đó trong một tổ chức bình thường: sao lưu ra kho lưu trữ đám mây, đồng bộ dữ liệu giữa hai trung tâm dữ liệu, tải bản cập nhật lớn, đồng bộ kho chứa ảnh container, một kỹ sư dữ liệu đẩy tập dữ liệu lên nền tảng phân tích, một công việc nhập liệu chạy hằng tuần vào đúng đêm thứ Bảy vì đó là lúc rảnh tài nguyên.\n\nKiểm tra đầu tiên không phải là chạy mô hình phức tạp hơn. Nó là hai câu hỏi: **chuyện này có xảy ra vào cùng giờ đó tuần trước không?** và **đích đến là ai?** Nếu câu trả lời là "có, mọi thứ Bảy suốt hai năm" và "kho lưu trữ của chính chúng ta", bạn vừa phát hiện ra công việc sao lưu.\n\nĐây là câu quan trọng nhất của cả bài, và nó đáng được viết ra rõ ràng: **bất thường không phải độc hại.** Phát hiện bất thường trả lời câu hỏi "cái này có hiếm không", không trả lời câu hỏi "cái này có nguy hiểm không". Khoảng cách giữa hai câu hỏi đó chính là công việc của analyst, và mọi thiết kế hệ thống phải tính tới nó.',
+        },
+        { t: 'h', text: 'Ba thuật toán, ba định nghĩa khác nhau về "bất thường"', level: 2 },
+        {
+          t: 'steps',
+          title: 'Hiểu bằng hình học trước, công thức sau',
+          steps: [
+            {
+              title: 'Isolation Forest — cái gì dễ tách ra thì bất thường',
+              md: 'Chọn ngẫu nhiên một đặc trưng, chọn ngẫu nhiên một điểm cắt, chia dữ liệu làm đôi. Lặp lại cho tới khi mỗi điểm bị cô lập một mình. Điểm nằm ở rìa bị cô lập sau rất ít lần cắt; điểm nằm giữa đám đông cần rất nhiều lần cắt.\n\nĐiểm số chính là **độ sâu trung bình** để cô lập một điểm, qua nhiều cây ngẫu nhiên. Cực nhanh — độ phức tạp gần tuyến tính — không cần tính khoảng cách, và **không cần chuẩn hoá đặc trưng** vì mỗi lần cắt chỉ nhìn một đặc trưng.\n\n**Yếu ở:** bất thường cục bộ. Một điểm nằm trong vùng dày đặc chung nhưng lệch khỏi cụm nhỏ của riêng nó thì Isolation Forest không thấy.',
+            },
+            {
+              title: 'Local Outlier Factor — cái gì thưa hơn hàng xóm thì bất thường',
+              md: 'Với mỗi điểm, so mật độ cục bộ của nó với mật độ cục bộ của k láng giềng gần nhất. Tỉ số lớn hơn 1 nhiều nghĩa là điểm này sống ở vùng thưa hơn hẳn so với những kẻ xung quanh.\n\n**Mạnh ở:** phát hiện bất thường **cục bộ**. Ví dụ bảo mật rất rõ: một quản trị viên đăng nhập lúc 2 giờ sáng thì bình thường trong cụm quản trị viên; một nhân viên kế toán đăng nhập lúc 2 giờ sáng thì bất thường ngay trong cụm kế toán — dù xét toàn cục thì cả hai giống nhau.\n\n**Yếu ở:** chi phí tính toán tăng theo bình phương số mẫu, phải chuẩn hoá đặc trưng vì nó dựa trên khoảng cách, và bản gốc không chấm điểm được cho dữ liệu mới (trong scikit-learn phải đặt `novelty=True` mới có `predict`).',
+            },
+            {
+              title: 'Autoencoder — cái gì tôi không tái tạo được thì bất thường',
+              md: 'Một mạng nơ-ron học nén dữ liệu xuống một biểu diễn nhỏ rồi bung ra lại. Vì lớp giữa hẹp, nó buộc phải học các quy luật phổ biến nhất của dữ liệu. Khi gặp một mẫu không tuân theo quy luật đó, nó tái tạo sai — và **sai số tái tạo** chính là điểm bất thường.\n\n**Mạnh ở:** dữ liệu nhiều chiều có cấu trúc phi tuyến, và cho bạn thêm một món quà: nhìn vào **đặc trưng nào bị tái tạo sai nhiều nhất** để biết cái gì lạ, tức là có một dạng giải thích thô sơ.\n\n**Yếu ở:** cần lượng dữ liệu lớn, cần dữ liệu huấn luyện tương đối sạch, cần chuẩn hoá, và có một cái bẫy chết người ở phần dưới.',
+            },
+          ],
+        },
+        { t: 'figure', id: 'fig-autoencoder', caption: 'Autoencoder ép dữ liệu qua một nút thắt cổ chai. Mẫu bình thường đi qua và trở lại gần như nguyên vẹn; mẫu lạ bị méo — độ méo đó là điểm bất thường.' },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Hai cái bẫy của autoencoder mà ai cũng mắc một lần',
+          md: '**Bẫy 1 — nút thắt quá rộng.** Nếu lớp giữa đủ lớn, mạng học được hàm đồng nhất: nó chỉ sao chép đầu vào sang đầu ra, tái tạo mọi thứ hoàn hảo, kể cả mẫu tấn công. Sai số tái tạo của mọi mẫu đều gần 0 và mô hình vô dụng. Kiểm tra: nếu sai số của mẫu bất thường bạn cố tình chèn vào cũng thấp như mẫu bình thường, nút thắt của bạn quá rộng.\n\n**Bẫy 2 — dữ liệu huấn luyện đã chứa tấn công.** Autoencoder giả định bạn huấn luyện trên dữ liệu bình thường. Nhưng trong bảo mật, log "bình thường" của năm ngoái hoàn toàn có thể chứa một cuộc xâm nhập chưa bị phát hiện — thời gian phát hiện trung bình được tính bằng tuần tới tháng. Khi đó autoencoder học tái tạo tốt luôn hành vi của kẻ tấn công và mù vĩnh viễn với đúng thứ bạn cần tìm. Đây là lý do sạch sẽ nhất để hiểu vì sao **chất lượng dữ liệu quyết định nhiều hơn lựa chọn kiến trúc.**',
+        },
+        {
+          t: 'table',
+          head: ['Tiêu chí', 'Isolation Forest', 'LOF', 'Autoencoder'],
+          rows: [
+            ['Định nghĩa bất thường', 'Dễ cô lập bằng các nhát cắt ngẫu nhiên', 'Mật độ thấp hơn láng giềng', 'Khó tái tạo qua nút thắt'],
+            ['Cần chuẩn hoá đặc trưng', 'Không', 'Có, bắt buộc', 'Có, bắt buộc'],
+            ['Chi phí trên 1 triệu mẫu', 'Vài giây', 'Rất cao, thường không khả thi', 'Vài phút trên GPU'],
+            ['Chấm điểm mẫu mới', 'Có, tức thì', 'Chỉ khi đặt novelty=True', 'Có, tức thì'],
+            ['Bắt bất thường cục bộ', 'Kém', 'Tốt nhất', 'Trung bình'],
+            ['Chịu được nhiều chiều', 'Khá', 'Kém — khoảng cách mất ý nghĩa', 'Tốt nếu có đủ dữ liệu'],
+            ['Đặc trưng phân loại (categorical)', 'Chấp nhận được sau mã hoá', 'Kém', 'Kém với one-hot thưa'],
+            ['Giải thích cho analyst', 'Trung bình (qua độ sâu và SHAP)', 'Kém', 'Khá — xem đặc trưng nào sai nhiều nhất'],
+            ['Lựa chọn mặc định nên thử trước', 'Có', 'Chỉ khi cần bất thường cục bộ', 'Chỉ khi nhiều chiều và nhiều dữ liệu'],
+          ],
+        },
+        {
+          t: 'lab',
+          id: 'lab-anomaly',
+          intro: 'Chạy cả ba thuật toán trên cùng một tập log đăng nhập. Đổi contamination và xem số cảnh báo thay đổi ra sao; thử tắt chuẩn hoá và xem LOF sụp thế nào.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't6l6-cp1',
+              kind: 'mcq',
+              tags: ['bat-thuong', 'isolation-forest'],
+              q: 'Tham số `contamination` của Isolation Forest thực sự là gì?',
+              options: [
+                'Tỉ lệ tấn công thật trong dữ liệu, ước lượng từ lịch sử',
+                'Tỉ lệ mẫu mà bạn quyết định sẽ gắn nhãn bất thường — tức là ngân sách cảnh báo của bạn',
+                'Mức nhiễu trong dữ liệu huấn luyện',
+                'Ngưỡng độ sâu tối đa của cây',
+              ],
+              answer: 1,
+              why: 'Đây là hiểu nhầm phổ biến nhất về phát hiện bất thường. `contamination` không phải một sự thật về dữ liệu; nó chỉ đơn giản là chỗ bạn cắt trên phân phối điểm số. Đặt 0,1 nghĩa là "hãy gắn nhãn bất thường cho 10% mẫu có điểm cao nhất" — với 4 triệu bản ghi thì đó là 400.000 cảnh báo. Cách dùng đúng: tính ngược từ **năng lực xử lý của đội** (ví dụ 40 cảnh báo/ngày), quy ra tỉ lệ, rồi đặt contamination bằng con số đó. Ngân sách quyết định ngưỡng, không phải mô hình quyết định ngân sách.',
+              distractorWhy: [
+                'Bạn hầu như không bao giờ biết tỉ lệ tấn công thật; nếu biết thì đã có nhãn và không cần học không giám sát.',
+                '',
+                'Nó không mô hình hoá nhiễu, nó chỉ là điểm cắt trên phân phối điểm số đầu ra.',
+                'Độ sâu cây do max_samples và cấu trúc dữ liệu quyết định, không phải tham số này.',
+              ],
+            },
+            {
+              id: 't6l6-cp2',
+              kind: 'truefalse',
+              tags: ['bat-thuong', 'autoencoder'],
+              q: 'Autoencoder có sai số tái tạo rất thấp trên toàn bộ dữ liệu, kể cả mẫu tấn công chèn thử, là dấu hiệu mô hình đã học tốt.',
+              answer: false,
+              why: 'Đó là dấu hiệu mô hình đã học **hàm đồng nhất**: nút thắt quá rộng nên nó chỉ sao chép đầu vào sang đầu ra thay vì học cấu trúc. Một autoencoder hữu ích phải tái tạo tốt cái phổ biến và **tệ rõ rệt** với cái hiếm — chính khoảng cách đó tạo ra sức phân biệt. Cách chữa: thu hẹp lớp giữa, thêm ràng buộc thưa, thêm nhiễu vào đầu vào (denoising autoencoder), hoặc giảm số tham số. Cách kiểm tra nhanh: luôn giữ một tập nhỏ mẫu bất thường đã biết để đo, dù chỉ là mẫu bạn tự tạo.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Đánh giá khi không có một nhãn nào', level: 2 },
+        {
+          t: 'p',
+          md: 'Đây là phần khó nhất và cũng là phần bị bỏ qua nhiều nhất. Không có nhãn thì không có precision, không có recall, không có PR-AUC. Bốn cách dưới đây là những gì thực sự dùng được trong tổ chức thật.',
+        },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Precision ở top-k do người xác nhận.** Lấy 50 mẫu điểm cao nhất, cho analyst xem và phân loại thành ba nhóm: đáng điều tra, giải thích được nhưng vô hại, rác. Con số bạn báo cáo là tỉ lệ nhóm một. Đây là chỉ số duy nhất mà người ra quyết định thực sự quan tâm, và nó cũng sinh ra nhãn cho tương lai.',
+            '**Chèn tấn công có kiểm soát.** Phối hợp với đội đỏ hoặc tự mô phỏng: thực hiện 20 hành vi tấn công đã biết trong môi trường thật, đánh dấu thời điểm, rồi kiểm tra bao nhiêu cái lọt vào top-k. Đây là cách gần nhất với đo recall mà bạn có được.',
+            '**Độ ổn định theo thời gian.** Chạy mô hình trên tuần này và tuần trước. Nếu tập cảnh báo thay đổi gần như hoàn toàn mỗi tuần, mô hình đang bám vào nhiễu chứ không bám vào cấu trúc. Đây là kiểm tra rẻ nhất và phát hiện được rất nhiều mô hình vô dụng.',
+            '**So với đường cơ sở ngu ngốc.** Ba đường cơ sở bắt buộc phải vượt qua: xếp hạng theo một đặc trưng duy nhất mạnh nhất (ví dụ tổng byte), xếp hạng theo độ hiếm đơn giản (giá trị này xuất hiện bao nhiêu lần trong 30 ngày), và chọn ngẫu nhiên. Nếu Isolation Forest không thắng nổi "xếp theo độ hiếm", hãy dùng độ hiếm — nó rẻ hơn, giải thích được, và không ai phải bảo trì một mô hình.',
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Đường cơ sở đếm tần suất mạnh đến mức đáng ngạc nhiên',
+          md: 'Trong rất nhiều bài toán bảo mật, một bảng đếm đơn giản đánh bại thuật toán bất thường phức tạp: **cặp tiến trình cha-con này xuất hiện trên bao nhiêu máy trong 30 ngày qua?** Kết quả là 1 trên 12.000 máy thì đáng xem; kết quả 11.400 thì bỏ qua.\n\nKỹ thuật này được các đội threat hunting gọi là **stack counting** hay phân tích đuôi dài, và nó có ba lợi thế mà không mô hình nào có: analyst hiểu ngay tại sao một mục xuất hiện, bạn giải thích được cho quản lý trong một câu, và nó không bao giờ cần huấn luyện lại.\n\nHãy luôn xây nó trước. Nếu mô hình của bạn không vượt được nó, bạn vừa tiết kiệm được sáu tháng.',
+        },
+        { t: 'figure', id: 'fig-dimensionality', caption: 'Càng nhiều chiều, khoảng cách giữa mọi cặp điểm càng trở nên giống nhau — đó là lý do LOF và k-NN xuống cấp nhanh còn Isolation Forest chịu được lâu hơn.' },
+        { t: 'h', text: 'Bất thường không phải độc hại: năm nguyên nhân lành tính', level: 2 },
+        {
+          t: 'table',
+          head: ['Nguyên nhân lành tính', 'Trông giống tấn công gì', 'Cách phân biệt'],
+          rows: [
+            ['Nhân viên mới hoặc đổi vị trí', 'Truy cập hàng loạt tài nguyên chưa từng chạm', 'Đối chiếu với dữ liệu nhân sự: ngày vào làm, ngày đổi phòng ban'],
+            ['Triển khai hoặc nâng cấp phần mềm', 'Tiến trình mới, kết nối mới, template log mới hàng loạt', 'Đối chiếu với lịch thay đổi và bản ghi CI/CD'],
+            ['Công việc theo lịch hiếm gặp', 'Truyền khối lượng lớn lúc 2 giờ sáng', 'Kiểm tra tính lặp lại theo chu kỳ tuần hoặc tháng'],
+            ['Chính công cụ bảo mật của bạn', 'Quét toàn mạng, đọc tệp hàng loạt, đăng nhập nhiều máy', 'Danh sách tài khoản dịch vụ và máy quét, luôn duy trì cập nhật'],
+            ['Sự kiện tổ chức', 'Đăng nhập ồ ạt từ vị trí lạ, giờ lạ', 'Lịch công tác, sự kiện, kỳ nghỉ, đợt làm việc từ xa'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Khi nào KHÔNG nên dùng phát hiện bất thường',
+          md: 'Ba trường hợp rõ ràng:\n\n**1. Khi bạn có nhãn.** Dù chỉ 500 nhãn dương, một mô hình có giám sát gần như luôn thắng một mô hình bất thường, vì nó học được cái bạn thực sự quan tâm chứ không phải cái hiếm.\n\n**2. Khi cái bạn tìm không hiếm.** Credential stuffing tạo ra hàng chục nghìn lần thử; nó là số đông trong lưu lượng đăng nhập chứ không phải ngoại lệ. Phát hiện bất thường sẽ coi nó là bình thường.\n\n**3. Khi hậu quả của cảnh báo là hành động tự động.** Bất thường không đủ cơ sở để khoá tài khoản hay chặn máy. Đầu ra của nó nên là một hàng đợi điều tra được xếp hạng, chứ không phải một cái công tắc.\n\nChỗ nó thực sự toả sáng: **giai đoạn đầu khi chưa có nhãn nào**, dùng để sinh ra nhãn đầu tiên, để rồi được thay thế dần bằng mô hình có giám sát. Hãy coi nó là giàn giáo, không phải toà nhà.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Ba thuật toán trên cùng dữ liệu, kèm đường cơ sở đếm tần suất',
+          code:
+            "import numpy as np, pandas as pd\n" +
+            "from sklearn.ensemble import IsolationForest\n" +
+            "from sklearn.neighbors import LocalOutlierFactor\n" +
+            "from sklearn.preprocessing import StandardScaler\n" +
+            "\n" +
+            "# Ngan sach: 40 canh bao/ngay tren 200.000 ban ghi -> ti le 0,0002\n" +
+            "NGAN_SACH = 40 / 200_000\n" +
+            "\n" +
+            "# Isolation Forest: khong can chuan hoa, chay tren toan bo du lieu\n" +
+            "iso = IsolationForest(n_estimators=200, max_samples=256,\n" +
+            "                      contamination=NGAN_SACH, random_state=42)\n" +
+            "diem_iso = -iso.fit(X).score_samples(X)   # cang cao cang bat thuong\n" +
+            "\n" +
+            "# LOF: BAT BUOC chuan hoa vi no dua tren khoang cach\n" +
+            "Xs = StandardScaler().fit_transform(X)\n" +
+            "lof = LocalOutlierFactor(n_neighbors=35, contamination=NGAN_SACH)\n" +
+            "lof.fit_predict(Xs)\n" +
+            "diem_lof = -lof.negative_outlier_factor_\n" +
+            "\n" +
+            "# DUONG CO SO PHAI VUOT QUA: do hiem theo dem tan suat 30 ngay\n" +
+            "tan_suat = df.groupby(['tien_trinh_cha', 'tien_trinh_con'])['may'].nunique()\n" +
+            "diem_hiem = 1.0 / df.set_index(['tien_trinh_cha', 'tien_trinh_con']).index.map(tan_suat)\n" +
+            "\n" +
+            "# So sanh top-50 cua ba cach; neu duong co so thang, hay dung duong co so.\n" +
+            "for ten, diem in [('IForest', diem_iso), ('LOF', diem_lof), ('Do hiem', diem_hiem)]:\n" +
+            "    top = np.argsort(-np.asarray(diem))[:50]\n" +
+            "    print(ten, 'top-50 dau tien de analyst xem:', top[:5])\n",
+        },
+        { t: 'terms', ids: ['bat-thuong', 'isolation-forest', 'autoencoder', 'khong-giam-sat', 'nguong'] },
+      ],
+      keyTakeaways: [
+        'Bất thường trả lời câu hỏi "cái này có hiếm không", không trả lời "cái này có nguy hiểm không" — khoảng cách giữa hai câu hỏi đó là công việc của analyst.',
+        'Isolation Forest: nhanh, không cần chuẩn hoá, nên là lựa chọn thử đầu tiên; LOF bắt bất thường cục bộ nhưng tốn kém và bắt buộc chuẩn hoá.',
+        'Autoencoder hỏng theo hai cách kinh điển: nút thắt quá rộng khiến nó học hàm đồng nhất, và dữ liệu huấn luyện đã chứa tấn công chưa bị phát hiện.',
+        'contamination không phải sự thật về dữ liệu mà là ngân sách cảnh báo của bạn — tính ngược từ năng lực xử lý của đội.',
+        'Không có nhãn thì đánh giá bằng: precision ở top-k do người xác nhận, chèn tấn công có kiểm soát, độ ổn định theo thời gian, và so với đường cơ sở.',
+        'Đường cơ sở đếm tần suất (stack counting) thắng mô hình phức tạp trong rất nhiều bài toán bảo mật — luôn xây nó trước.',
+        'Không dùng phát hiện bất thường khi đã có nhãn, khi cái cần tìm không hiếm, hoặc khi đầu ra sẽ kích hoạt hành động tự động.',
+      ],
+      cards: [
+        {
+          id: 't6l6-c1',
+          front: 'Isolation Forest chấm điểm bất thường bằng cách nào?',
+          back: 'Cắt ngẫu nhiên theo từng đặc trưng cho tới khi mỗi điểm bị cô lập. Điểm cần ít nhát cắt để cô lập thì bất thường. Điểm số là độ sâu trung bình qua nhiều cây ngẫu nhiên.',
+          tags: ['bat-thuong', 'isolation-forest'],
+        },
+        {
+          id: 't6l6-c2',
+          front: 'LOF bắt được loại bất thường nào mà Isolation Forest bỏ sót? Cho ví dụ bảo mật.',
+          back: 'Bất thường cục bộ. Ví dụ: đăng nhập lúc 2 giờ sáng là bình thường trong cụm quản trị viên nhưng bất thường trong cụm kế toán — xét toàn cục thì hai trường hợp giống nhau.',
+          tags: ['bat-thuong', 'lof'],
+        },
+        {
+          id: 't6l6-c3',
+          front: 'Vì sao autoencoder có sai số tái tạo thấp trên MỌI mẫu là dấu hiệu xấu?',
+          back: 'Vì nút thắt quá rộng nên mạng học hàm đồng nhất, chỉ sao chép đầu vào sang đầu ra. Nó cần tái tạo tốt cái phổ biến và tệ rõ rệt với cái hiếm thì mới có sức phân biệt.',
+          tags: ['bat-thuong', 'autoencoder'],
+        },
+        {
+          id: 't6l6-c4',
+          front: 'Tham số contamination thực chất là gì và nên đặt thế nào?',
+          back: 'Là điểm cắt trên phân phối điểm số, tức ngân sách cảnh báo của bạn — không phải tỉ lệ tấn công thật. Tính ngược từ năng lực xử lý: 40 cảnh báo/ngày trên 200.000 bản ghi thì đặt 0,0002.',
+          tags: ['bat-thuong', 'nguong'],
+        },
+        {
+          id: 't6l6-c5',
+          front: 'Kể ba trường hợp KHÔNG nên dùng phát hiện bất thường.',
+          back: '1) Khi đã có nhãn, dù ít — mô hình có giám sát gần như luôn thắng. 2) Khi cái cần tìm không hiếm, ví dụ credential stuffing. 3) Khi đầu ra sẽ kích hoạt hành động tự động như khoá tài khoản.',
+          tags: ['bat-thuong', 'thuc-chien'],
+        },
+        {
+          id: 't6l6-c6',
+          front: 'Đường cơ sở nào mà mọi mô hình bất thường trong bảo mật phải vượt qua?',
+          back: 'Đếm tần suất (stack counting): giá trị hoặc cặp giá trị này xuất hiện trên bao nhiêu máy trong 30 ngày. Rẻ, giải thích được ngay, không cần huấn luyện lại.',
+          tags: ['bat-thuong', 'thuc-chien'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't6l6-q1',
+          kind: 'mcq',
+          tags: ['bat-thuong', 'thuc-chien'],
+          q: 'Bạn có 500 nhãn dương đã xác nhận trong 4 triệu bản ghi. Chọn hướng nào?',
+          options: [
+            'Isolation Forest vì tỉ lệ dương quá thấp để học có giám sát',
+            'Mô hình có giám sát (ví dụ LightGBM với class_weight) vì 500 nhãn dương đã đủ để học cái bạn thực sự quan tâm',
+            'Autoencoder vì dữ liệu gần như toàn mẫu bình thường',
+            'Không làm gì cho tới khi có ít nhất 10.000 nhãn dương',
+          ],
+          answer: 1,
+          why: '500 nhãn dương là ít so với tiêu chuẩn ML phổ thông, nhưng chúng mang một thứ mà không thuật toán bất thường nào có: **thông tin về cái bạn quan tâm**. Mô hình bất thường tối ưu cho "hiếm", còn bạn cần "nguy hiểm" — hai mục tiêu này chỉ trùng nhau một phần nhỏ. Với dữ liệu bảng và mất cân bằng, LightGBM cộng chọn ngưỡng theo ngân sách thường vượt xa Isolation Forest. Cách làm tốt nhất trong thực tế là ghép cả hai: mô hình có giám sát làm chủ lực, mô hình bất thường chạy song song để bắt loại tấn công chưa từng có nhãn — và mỗi lần nó đúng thì bạn có thêm nhãn mới.',
+          distractorWhy: [
+            'Tỉ lệ thấp không cản trở học có giám sát; nó chỉ đòi hỏi chọn chỉ số và ngưỡng cho đúng.',
+            '',
+            'Autoencoder bỏ phí hoàn toàn 500 nhãn dương mà bạn đã tốn công thu thập.',
+            'Chờ đủ nhãn là cách chắc chắn để không bao giờ bắt đầu; 500 nhãn đã đủ để có mô hình hữu ích.',
+          ],
+        },
+        {
+          id: 't6l6-q2',
+          kind: 'match',
+          tags: ['bat-thuong'],
+          q: 'Nối thuật toán với đặc điểm quan trọng nhất của nó.',
+          pairs: [
+            ['Isolation Forest', 'Không cần chuẩn hoá đặc trưng và chạy gần tuyến tính'],
+            ['Local Outlier Factor', 'Bắt được bất thường cục bộ nhưng tốn kém trên dữ liệu lớn'],
+            ['Autoencoder', 'Dùng sai số tái tạo và cần dữ liệu huấn luyện tương đối sạch'],
+            ['Đếm tần suất', 'Giải thích được ngay và không bao giờ cần huấn luyện lại'],
+          ],
+          why: 'Bốn cặp này là bảng quyết định thu gọn cho phần lớn tình huống thực tế. Quy trình chọn: bắt đầu bằng đếm tần suất vì nó gần như miễn phí; nếu chưa đủ thì Isolation Forest vì nó chạy được ngay trên dữ liệu chưa chuẩn hoá; chỉ dùng LOF khi bạn biết chắc bất thường của mình mang tính cục bộ và dữ liệu đủ nhỏ; chỉ dùng autoencoder khi dữ liệu nhiều chiều, nhiều mẫu, và bạn có cách đảm bảo tập huấn luyện tương đối sạch.',
+        },
+        {
+          id: 't6l6-q3',
+          kind: 'multi',
+          tags: ['bat-thuong', 'do-luong'],
+          q: 'Không có nhãn nào. Cách đánh giá nào dùng được? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Cho analyst xác nhận 50 mẫu điểm cao nhất và tính tỉ lệ đáng điều tra',
+            'Phối hợp đội đỏ thực hiện 20 hành vi đã biết rồi kiểm tra bao nhiêu lọt vào top-k',
+            'Kiểm tra độ ổn định của tập cảnh báo giữa tuần này và tuần trước',
+            'Tính ROC-AUC trên nhãn do chính mô hình sinh ra',
+          ],
+          answers: [0, 1, 2],
+          why: 'Ba cách đầu đều đưa vào một nguồn sự thật từ bên ngoài mô hình: phán đoán của con người, hành vi tấn công có kiểm soát, hoặc tính nhất quán theo thời gian. Ý cuối là một dạng lập luận vòng tròn — dùng đầu ra của mô hình làm nhãn để chấm chính mô hình đó thì kết quả luôn hoàn hảo và luôn vô nghĩa. Bạn sẽ gặp lỗi này trong các báo cáo thật nhiều hơn bạn tưởng, thường được nguỵ trang dưới dạng "chúng tôi gắn nhãn tập kiểm tra dựa trên cảnh báo của hệ thống hiện tại".',
+        },
+        {
+          id: 't6l6-q4',
+          kind: 'truefalse',
+          tags: ['bat-thuong', 'lof'],
+          q: 'Có thể bỏ qua bước chuẩn hoá đặc trưng khi dùng Isolation Forest, nhưng không thể bỏ qua khi dùng LOF.',
+          answer: true,
+          why: 'Isolation Forest chỉ so sánh giá trị trong phạm vi **một đặc trưng tại mỗi nhát cắt**, nên thang đo của các đặc trưng khác không ảnh hưởng. LOF thì tính khoảng cách trong không gian nhiều chiều: nếu một đặc trưng tính bằng byte (giá trị tới hàng tỉ) còn một đặc trưng tính bằng giờ (0 tới 23), thì khoảng cách gần như hoàn toàn do đặc trưng byte quyết định và đặc trưng giờ biến mất. Quy tắc chung: **mọi thuật toán dựa trên khoảng cách đều cần chuẩn hoá** — LOF, k-NN, k-means, SVM với nhân RBF, autoencoder. Các thuật toán dựa trên cây thì không.',
+        },
+        {
+          id: 't6l6-q5',
+          kind: 'input',
+          tags: ['bat-thuong', 'autoencoder'],
+          q: 'Autoencoder dùng đại lượng nào làm điểm bất thường?',
+          accept: ['sai so tai tao', 'reconstruction error', 'loi tai tao', 'sai số tái tạo', 'lỗi tái tạo'],
+          placeholder: 'Tên đại lượng…',
+          hint: 'Ba từ, nói về khoảng cách giữa đầu vào và đầu ra của mạng.',
+          why: 'Sai số tái tạo (reconstruction error) — thường là bình phương sai khác trung bình giữa đầu vào và đầu ra. Logic: mạng bị ép qua một nút thắt hẹp nên chỉ học được các quy luật phổ biến nhất; mẫu tuân theo quy luật thì đi qua và trở lại gần như nguyên vẹn, còn mẫu lạ thì bị méo. Một lợi ích ít người tận dụng: sai số tính được **cho từng đặc trưng**, nên bạn biết đặc trưng nào bị tái tạo tệ nhất và đưa thông tin đó vào cảnh báo. Với analyst, "bất thường ở trường số byte tải lên và giờ đăng nhập" hữu ích hơn nhiều so với "điểm bất thường 0,87".',
+        },
+      ],
+      terms: ['bat-thuong', 'isolation-forest', 'autoencoder', 'khong-giam-sat', 'nguong'],
+      further: [
+        {
+          title: 'Isolation Forest — Liu, Ting & Zhou (2008)',
+          note: 'Bài gốc, ngắn và dễ đọc. Ý tưởng cô lập bằng nhát cắt ngẫu nhiên đơn giản tới mức bạn có thể tự cài đặt lại trong một buổi tối.',
+        },
+        {
+          title: 'LOF: Identifying Density-Based Local Outliers — Breunig và cộng sự (2000)',
+          note: 'Nguồn của khái niệm bất thường cục bộ. Phần ví dụ trong bài giải thích rất rõ vì sao ngưỡng toàn cục luôn thiếu.',
+        },
+        {
+          title: 'scikit-learn User Guide — Novelty and Outlier Detection',
+          note: 'Phần so sánh trực quan các thuật toán trên nhiều dạng dữ liệu. Xem hình để thấy ngay mỗi thuật toán giả định hình dạng dữ liệu nào.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't6-l7',
+      trackId: 'ung-dung',
+      title: 'UEBA và mối đe doạ nội bộ',
+      subtitle: 'Đường cơ sở cá nhân, nhóm đồng cấp, và câu hỏi bạn phải trả lời trước khi bật hệ thống',
+      minutes: 20,
+      level: 'nang-cao',
+      prereqs: ['t6-l6'],
+      why: {
+        short:
+          'Mối đe doạ nội bộ là loại tấn công mà mọi biện pháp kỹ thuật ở biên đều vô dụng, nhưng cũng là loại có tỉ lệ nền thấp nhất và rủi ro đạo đức cao nhất — nên đây là nơi thiết kế sai gây hại nhiều nhất.',
+        scenario:
+          'Ban lãnh đạo yêu cầu triển khai UEBA cho 12.000 nhân viên sau khi một kỹ sư nghỉ việc mang theo mã nguồn. Bạn có 90 ngày. Bạn phải đưa ra kiến trúc, ngân sách cảnh báo, quy trình xử lý — và một tài liệu trả lời phòng nhân sự cùng bộ phận pháp chế về việc dữ liệu nào được thu và ai được xem.',
+        roles: ['Security Data Scientist', 'Detection Engineer', 'Security Architect', 'GRC / Compliance'],
+        costOfNotKnowing:
+          'Bạn xây một hệ thống chấm điểm rủi ro cho từng nhân viên, nó tạo 300 cảnh báo mỗi ngày với precision gần bằng không, quản lý bắt đầu dùng điểm số đó để đánh giá nhân sự, và tổ chức của bạn vừa tạo ra một rủi ro pháp lý lớn hơn chính mối đe doạ ban đầu.',
+      },
+      objectives: [
+        'Tính được tỉ lệ nền của mối đe doạ nội bộ và suy ra giới hạn precision khả thi',
+        'Phân biệt và kết hợp được ba loại đường cơ sở: cá nhân, nhóm đồng cấp, toàn tổ chức',
+        'Thiết kế được đặc trưng chuỗi hành vi thay vì chấm điểm từng sự kiện rời rạc',
+        'Nêu được sáu nguyên tắc đạo đức và pháp lý bắt buộc trước khi triển khai giám sát nhân viên',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Tổ chức 12.000 nhân viên. Theo các khảo sát ngành, số vụ nội bộ thật sự gây thiệt hại được xác nhận trong một tổ chức cỡ này thường chỉ vài vụ mỗi năm — hãy lấy con số lạc quan là 3. Hệ thống UEBA của bạn tạo 20 cảnh báo mỗi ngày. Trong một năm, precision tối đa có thể đạt là bao nhiêu?',
+          reveal:
+            '20 cảnh báo × 250 ngày làm việc = **5.000 cảnh báo mỗi năm**. Nếu hệ thống bắt được **toàn bộ** 3 vụ (recall 100%, điều gần như không xảy ra), precision là 3 / 5.000 = **0,06%**.\n\nNghĩa là cứ khoảng 1.667 cảnh báo mới có một cái thật. Một analyst tốn 20 phút mỗi cảnh báo sẽ dành khoảng 1.667 giờ để tìm ra một vụ.\n\nCon số này không phải lý do để bỏ UEBA. Nó là lý do để **định nghĩa lại mục tiêu của hệ thống**. UEBA không phải bộ phát hiện; nó là bộ **ưu tiên điều tra** và bộ **cung cấp ngữ cảnh**. Khi bạn đã có nghi ngờ về một tài khoản từ nguồn khác — báo cáo của quản lý, cảnh báo DLP, một lần đăng nhập bất thường — thì hồ sơ hành vi 90 ngày của tài khoản đó là thứ giúp bạn kết luận trong 20 phút thay vì hai ngày.\n\nMọi thứ trong phần còn lại của bài đều xuất phát từ việc chấp nhận con số 0,06% này thay vì giả vờ nó không tồn tại.',
+        },
+        { t: 'figure', id: 'fig-base-rate', caption: 'Tỉ lệ nền của mối đe doạ nội bộ thấp hơn hầu hết mọi bài toán bảo mật khác. Đây là ràng buộc toán học, không phải vấn đề kỹ thuật có thể vượt qua bằng mô hình tốt hơn.' },
+        { t: 'h', text: 'Bước 1 — Ba đường cơ sở, và vì sao cần cả ba', level: 2 },
+        {
+          t: 'table',
+          head: ['Loại đường cơ sở', 'So sánh với ai', 'Bắt được gì', 'Điểm mù'],
+          rows: [
+            [
+              'Cá nhân (self baseline)',
+              'Chính người đó trong 30–90 ngày qua',
+              'Thay đổi hành vi đột ngột: người chưa bao giờ truy cập kho mã nguồn bỗng tải 40 kho',
+              'Người mới vào không có lịch sử; kẻ tấn công kiên nhẫn nâng dần đường cơ sở của chính mình',
+            ],
+            [
+              'Nhóm đồng cấp (peer group)',
+              'Người cùng phòng ban, cùng chức danh, cùng cấp quyền',
+              'Người làm việc đúng như mình vẫn làm nhưng khác hẳn đồng nghiệp — bắt được cả người mới',
+              'Nhóm định nghĩa sai thì kết quả vô nghĩa; nếu cả nhóm cùng làm sai thì không ai bất thường',
+            ],
+            [
+              'Toàn tổ chức',
+              'Toàn bộ nhân viên',
+              'Hành vi hiếm tuyệt đối: dùng công cụ chưa ai dùng, truy cập hệ thống chưa ai chạm',
+              'Quá thô; lãnh đạo và quản trị viên luôn nằm ở đuôi phân phối một cách hợp pháp',
+            ],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Định nghĩa nhóm đồng cấp là công việc kỹ thuật, không phải công việc hành chính',
+          md: 'Lấy nhóm từ sơ đồ tổ chức là cách dễ nhất và cũng là cách kém nhất. "Phòng Công nghệ" có thể gồm cả kỹ sư hạ tầng, lập trình viên giao diện và nhân viên hỗ trợ — ba hồ sơ hành vi hoàn toàn khác nhau.\n\nCách tốt hơn: **suy ra nhóm từ chính hành vi**. Phân cụm nhân viên theo vector các hệ thống họ truy cập trong 90 ngày, rồi dùng cụm đó làm nhóm đồng cấp. Kết quả thường khớp một phần với sơ đồ tổ chức và lệch ở những chỗ đáng quan tâm — chính những chỗ lệch đó là thông tin.\n\nRàng buộc thực tế: nhóm phải có ít nhất khoảng 15–20 người thì thống kê mới ổn định. Nhóm 3 người thì một người nghỉ phép cũng đủ làm hai người còn lại thành bất thường.',
+        },
+        { t: 'h', text: 'Bước 2 — Đặc trưng: từ sự kiện rời rạc tới chuỗi hành vi', level: 2 },
+        {
+          t: 'p',
+          md: 'Đây là điểm khác biệt lớn nhất giữa UEBA làm tốt và UEBA làm dở. Chấm điểm từng sự kiện rời rạc — "đăng nhập lúc 23 giờ", "tải 200 MB" — cho ra hàng nghìn cảnh báo vô nghĩa. Thứ mang thông tin là **chuỗi**.',
+        },
+        {
+          t: 'compare',
+          title: 'Hai cách nhìn cùng một dữ liệu',
+          left: {
+            title: '📌 Chấm điểm sự kiện rời rạc',
+            items: [
+              'Đăng nhập 23:40 → hơi lạ, hàng trăm người làm mỗi ngày',
+              'Truy cập thư mục nhân sự → hơi lạ, có thể do dự án',
+              'Nén 1,2 GB tệp → hơi lạ, có thể do sao lưu',
+              'Cắm USB → hơi lạ, vẫn phổ biến',
+              'Kết quả: bốn cảnh báo yếu, không cảnh báo nào đáng điều tra',
+            ],
+          },
+          right: {
+            title: '🔗 Chấm điểm chuỗi hành vi',
+            items: [
+              'Cùng một tài khoản, trong 40 phút, theo đúng thứ tự trên',
+              'Chuỗi này xuất hiện 0 lần trong 90 ngày qua của người đó',
+              'Chuỗi này xuất hiện 0 lần trong nhóm đồng cấp',
+              'Xảy ra 6 ngày sau khi nộp đơn xin nghỉ (nếu được phép ghép dữ liệu nhân sự)',
+              'Kết quả: một cảnh báo mạnh, có đầy đủ ngữ cảnh để hành động',
+            ],
+          },
+        },
+        {
+          t: 'list',
+          items: [
+            '**Đặc trưng khối lượng theo cửa sổ:** số tệp đọc trong 1 giờ / 24 giờ / 7 ngày, so với phân vị của chính người đó và của nhóm.',
+            '**Đặc trưng độ mới:** số hệ thống truy cập lần đầu trong 7 ngày, số thư mục chưa từng chạm, số máy chưa từng đăng nhập.',
+            '**Đặc trưng thời gian:** tỉ lệ hoạt động ngoài khung giờ thường lệ **của chính người đó** — không phải khung giờ hành chính chung, vì nhiều người vốn làm đêm.',
+            '**Đặc trưng kênh ra:** dung lượng gửi qua email ra ngoài, tải lên dịch vụ lưu trữ cá nhân, ghi ra USB, in ấn.',
+            '**Đặc trưng quyền:** quyền vừa được cấp thêm, tài khoản đặc quyền vừa được dùng lần đầu sau nhiều tháng.',
+            '**Đặc trưng chuỗi:** n-gram trên chuỗi loại sự kiện, độ hiếm của chuỗi so với lịch sử cá nhân và nhóm.',
+            '**Đặc trưng ngữ cảnh nhân sự (nhạy cảm, cần cân nhắc kỹ):** sắp kết thúc hợp đồng, vừa bị đánh giá kém, vừa nộp đơn nghỉ. Xem phần đạo đức phía dưới trước khi dùng.',
+          ],
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't6l7-cp1',
+              kind: 'mcq',
+              tags: ['ueba', 'dac-trung'],
+              q: 'Một nhân viên mới vào làm được 3 tuần bị hệ thống chấm điểm rủi ro rất cao. Nguyên nhân nhiều khả năng nhất?',
+              options: [
+                'Người này thực sự có hành vi độc hại',
+                'Đường cơ sở cá nhân chưa đủ dữ liệu nên mọi hành vi đều trông mới lạ',
+                'Mô hình bị quá khớp',
+                'Dữ liệu log bị lỗi',
+              ],
+              answer: 1,
+              why: 'Đây là bài toán **khởi động lạnh** (cold start) và nó là nguồn báo động giả lớn nhất của mọi hệ thống UEBA dựa trên đường cơ sở cá nhân. Người mới truy cập mọi thứ lần đầu, nên mọi đặc trưng độ mới đều đạt cực đại. Cách chữa có ba tầng: (1) trong 30–60 ngày đầu, dùng đường cơ sở **nhóm đồng cấp** thay cho đường cơ sở cá nhân; (2) chuyển dần trọng số sang đường cơ sở cá nhân khi đã đủ dữ liệu; (3) đưa số ngày làm việc vào làm đặc trưng để mô hình tự học rằng người mới thì hành vi mới là bình thường. Nguyên tắc chung: **mọi đặc trưng dựa trên lịch sử đều cần một chính sách xử lý cho trường hợp không có lịch sử.**',
+              distractorWhy: [
+                'Có thể nhưng xác suất rất thấp; tỉ lệ nền của mối đe doạ nội bộ cực nhỏ so với tỉ lệ nhân viên mới.',
+                '',
+                'Quá khớp là khái niệm của học có giám sát; ở đây vấn đề là thiếu dữ liệu lịch sử cho một cá nhân.',
+                'Log lỗi sẽ ảnh hưởng nhiều người, không riêng nhóm nhân viên mới.',
+              ],
+            },
+            {
+              id: 't6l7-cp2',
+              kind: 'truefalse',
+              tags: ['ueba', 'ne-tranh'],
+              q: 'Một người bên trong có ý đồ xấu và kiên nhẫn có thể làm cho hành vi bất thường của mình trở thành bình thường theo đúng nghĩa thống kê.',
+              answer: true,
+              why: 'Đây gọi là **đầu độc đường cơ sở** (baseline poisoning) và nó là điểm yếu cấu trúc của mọi hệ thống học từ hành vi quá khứ. Cơ chế: người đó bắt đầu truy cập kho tài liệu nhạy cảm mỗi ngày một chút, hoàn toàn hợp lệ về mặt quyền, trong sáu tháng. Đường cơ sở cá nhân tự điều chỉnh theo. Tới lúc lấy dữ liệu thật, hành vi nằm gọn trong vùng bình thường của chính họ. Ba đối sách: dùng đường cơ sở nhóm đồng cấp làm đối chứng (nhóm không trôi cùng chiều với một cá nhân), giới hạn tốc độ trôi của đường cơ sở, và giữ thêm một mô hình theo **ngưỡng tuyệt đối** cho các hành động có hậu quả lớn — bất kể lịch sử, sao chép toàn bộ kho mã nguồn vẫn phải sinh cảnh báo.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Bước 3 — Điểm rủi ro tích luỹ và cách nó hỏng', level: 2 },
+        {
+          t: 'p',
+          md: 'Hầu hết sản phẩm UEBA cộng dồn điểm rủi ro theo tài khoản, có suy giảm theo thời gian: mỗi cảnh báo nhỏ cộng vài điểm, điểm giảm dần nếu không có gì mới, và vượt ngưỡng thì sinh cảnh báo lớn. Cơ chế này hợp lý về trực giác nhưng có ba cách hỏng cụ thể:',
+        },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Cộng dồn nhiễu.** Một người có 40 tín hiệu yếu vô hại mỗi tuần sẽ tích đủ điểm để vượt ngưỡng mà không hề làm gì sai. Đối sách: chuẩn hoá điểm theo mức nền của chính người đó, hoặc đặt trần cho mỗi loại tín hiệu.',
+            '**Trọng số do người đặt tuỳ hứng.** "Cắm USB = 15 điểm, đăng nhập đêm = 8 điểm" — những con số này thường không dựa trên gì. Đối sách: khi đã tích luỹ được vài chục vụ đã xác nhận, hãy học trọng số bằng hồi quy logistic thay vì đoán.',
+            '**Không có cơ chế đóng.** Điểm rủi ro chỉ tăng, và không ai định nghĩa khi nào thì một tài khoản được coi là đã điều tra xong và đặt lại. Kết quả sau sáu tháng: một danh sách vĩnh viễn những người "rủi ro cao" mà không ai còn nhớ vì sao. Đối sách: mỗi lần điều tra kết thúc phải ghi kết luận và đặt lại điểm — đây vừa là yêu cầu vận hành vừa là yêu cầu đạo đức.',
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'ethics',
+          title: 'Trước khi bật hệ thống: sáu nguyên tắc không được bỏ qua',
+          md: 'Giám sát hành vi nhân viên là công cụ mạnh và nó tác động lên những người không phải kẻ tấn công — tức là gần như tất cả mọi người trong danh sách của bạn. Sáu nguyên tắc dưới đây không phải lời khuyên mềm, chúng là điều kiện để hệ thống tồn tại được lâu dài:\n\n**1. Tối thiểu hoá dữ liệu.** Thu đúng những gì phục vụ mục đích đã nêu. Đọc nội dung email cá nhân, chụp màn hình liên tục, ghi phím — hãy hỏi thật kỹ liệu chúng có thực sự cần cho bài toán này không, và trong đa số trường hợp câu trả lời là không.\n\n**2. Minh bạch.** Nhân viên phải được thông báo trước bằng văn bản: thu gì, vì sao, ai xem được, giữ bao lâu. Giám sát bí mật vừa tạo rủi ro pháp lý vừa phá huỷ lòng tin nhiều hơn giá trị nó mang lại.\n\n**3. Tương xứng.** Mức độ giám sát phải tương xứng với rủi ro thật. Áp mức giám sát của quản trị viên hệ thống lên toàn bộ 12.000 nhân viên là không tương xứng.\n\n**4. Giới hạn mục đích.** Dữ liệu thu để phát hiện rủi ro an ninh **không được** dùng để đánh giá năng suất, xét thăng tiến, hay kỷ luật lao động. Ranh giới này phải được viết thành chính sách và cưỡng chế bằng kiểm soát truy cập, không chỉ bằng lời hứa.\n\n**5. Con người ra quyết định.** Không có hành động tự động nào đối với con người. Điểm số mở ra một cuộc điều tra, không kết luận về một người.\n\n**6. Giám sát chính hệ thống giám sát.** Ai truy cập hồ sơ hành vi của ai, lúc nào, vì lý do gì — phải được ghi log và kiểm toán định kỳ. Hệ thống UEBA là một trong những kho dữ liệu nhạy cảm nhất trong tổ chức và nó chính là mục tiêu hấp dẫn cho một người bên trong.',
+        },
+        {
+          t: 'callout',
+          kind: 'warn',
+          title: 'Khung pháp lý bạn cần đối chiếu',
+          md: '**Việt Nam:** Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân đặt yêu cầu về căn cứ xử lý, thông báo và quyền của chủ thể dữ liệu; Luật Bảo vệ dữ liệu cá nhân có hiệu lực từ đầu năm 2026 siết chặt thêm. Hành vi làm việc của nhân viên là dữ liệu cá nhân.\n\n**Liên minh châu Âu:** GDPR yêu cầu có căn cứ pháp lý và đánh giá tác động (DPIA) cho giám sát có hệ thống; Điều 88 dành riêng cho bối cảnh lao động và cho phép các nước thành viên đặt quy định chặt hơn. **EU AI Act** cấm hệ thống AI suy luận cảm xúc tại nơi làm việc, và xếp AI dùng trong quản lý lao động vào nhóm **rủi ro cao** với nghĩa vụ về tài liệu, giám sát của con người và minh bạch.\n\nThực tế vận hành: nếu tổ chức bạn có nhân viên ở EU, hoặc có kế hoạch mở rộng, hãy thiết kế theo mức chặt nhất ngay từ đầu. Gỡ bỏ một tính năng giám sát sau khi đã triển khai khó hơn nhiều so với không xây nó.',
+        },
+        { t: 'h', text: 'Bước 4 — Dữ liệu để học nghề', level: 2 },
+        {
+          t: 'table',
+          head: ['Bộ dữ liệu', 'Nội dung', 'Dùng được cho gì', 'Cảnh báo'],
+          rows: [
+            [
+              'CERT Insider Threat (CMU, r4.2 và r6.2)',
+              'Log tổng hợp của một tổ chức ảo: đăng nhập, email, USB, HTTP, tệp, dữ liệu nhân sự',
+              'Học cách ghép nhiều nguồn và xây đặc trưng chuỗi; có kịch bản nội bộ được gắn nhãn rõ',
+              'Là dữ liệu **sinh tổng hợp**; các kịch bản độc hại thường quá rõ so với đời thật, dễ tạo ảo tưởng dễ dàng',
+            ],
+            [
+              'LANL Comprehensive Multi-Source Cyber-Security Events (2015)',
+              '58 ngày log xác thực, tiến trình, luồng mạng và DNS thật của một mạng lớn, kèm nhãn đội đỏ',
+              'Học phát hiện di chuyển ngang và bất thường xác thực trên dữ liệu THẬT ở quy mô lớn',
+              'Đã ẩn danh nên mất nhiều ngữ cảnh; nhãn chỉ phủ hoạt động đội đỏ, không phủ nội bộ',
+            ],
+            [
+              'Log của chính tổ chức bạn',
+              'Thực tế đúng với môi trường của bạn',
+              'Mọi thứ nghiêm túc',
+              'Yêu cầu phê duyệt, kiểm soát truy cập và giới hạn mục đích trước khi lấy một dòng nào',
+            ],
+          ],
+        },
+        { t: 'h', text: 'Bước 5 — Triển khai đúng vai trò', level: 2 },
+        {
+          t: 'checklist',
+          title: 'Kiến trúc UEBA sống được quá năm đầu tiên',
+          items: [
+            'Đầu ra chính không phải cảnh báo mà là hồ sơ hành vi tra cứu được, phục vụ điều tra đã có nghi ngờ từ nguồn khác.',
+            'Chỉ một số ít loại hành vi có hậu quả rất lớn mới sinh cảnh báo trực tiếp — sao chép hàng loạt kho mã nguồn, truy cập ồ ạt dữ liệu khách hàng, tài khoản đặc quyền dùng lần đầu sau nhiều tháng.',
+            'Ngân sách cảnh báo cứng, đặt theo năng lực điều tra thật: 5–20 mỗi ngày, không phải 300.',
+            'Mọi cảnh báo phải kèm ba con số: giá trị hiện tại, phân vị so với chính người đó, phân vị so với nhóm đồng cấp. Thiếu ba con số này thì analyst không kết luận được gì.',
+            'Quy trình phối hợp với nhân sự và pháp chế được viết trước khi có sự cố đầu tiên, không phải trong lúc đang có sự cố.',
+            'Cơ chế đóng hồ sơ và đặt lại điểm rủi ro sau mỗi cuộc điều tra, có ghi kết luận.',
+          ],
+        },
+        { t: 'terms', ids: ['ueba', 'base-rate', 'bat-thuong', 'eu-ai-act', 'alert-fatigue'] },
+      ],
+      keyTakeaways: [
+        'Tỉ lệ nền của mối đe doạ nội bộ khiến precision khả thi ở mức phần nghìn — hãy thiết kế UEBA như bộ ưu tiên điều tra, không phải bộ phát hiện.',
+        'Cần cả ba đường cơ sở: cá nhân bắt thay đổi đột ngột, nhóm đồng cấp bắt người mới và người khác biệt, toàn tổ chức bắt hành vi hiếm tuyệt đối.',
+        'Nhóm đồng cấp nên suy ra từ hành vi bằng phân cụm, không lấy nguyên từ sơ đồ tổ chức, và cần ít nhất 15–20 người.',
+        'Chuỗi hành vi mang thông tin, sự kiện rời rạc thì không — bốn tín hiệu yếu liên tiếp trong 40 phút mạnh hơn hẳn bốn cảnh báo riêng lẻ.',
+        'Khởi động lạnh với nhân viên mới là nguồn báo động giả lớn nhất; xử lý bằng cách dựa vào nhóm đồng cấp trong 30–60 ngày đầu.',
+        'Đầu độc đường cơ sở là điểm yếu cấu trúc; đối sách là đường cơ sở nhóm, giới hạn tốc độ trôi, và ngưỡng tuyệt đối cho hành động hậu quả lớn.',
+        'Sáu nguyên tắc bắt buộc: tối thiểu hoá dữ liệu, minh bạch, tương xứng, giới hạn mục đích, con người ra quyết định, và kiểm toán chính hệ thống giám sát.',
+      ],
+      cards: [
+        {
+          id: 't6l7-c1',
+          front: '12.000 nhân viên, 3 vụ nội bộ mỗi năm, 20 cảnh báo mỗi ngày. Precision tối đa là bao nhiêu?',
+          back: 'Khoảng 0,06% (3 trên 5.000 cảnh báo/năm), kể cả khi recall đạt 100%. Đây là ràng buộc toán học, và nó buộc UEBA phải là bộ ưu tiên điều tra chứ không phải bộ phát hiện.',
+          tags: ['ueba', 'base-rate'],
+        },
+        {
+          id: 't6l7-c2',
+          front: 'Vì sao cần đường cơ sở nhóm đồng cấp bên cạnh đường cơ sở cá nhân?',
+          back: 'Vì đường cơ sở cá nhân mù với nhân viên mới (không có lịch sử) và bị đầu độc bởi người kiên nhẫn nâng dần hành vi của chính mình. Nhóm đồng cấp không trôi theo một cá nhân.',
+          tags: ['ueba', 'dac-trung'],
+        },
+        {
+          id: 't6l7-c3',
+          front: 'Đầu độc đường cơ sở (baseline poisoning) là gì và chống bằng cách nào?',
+          back: 'Người bên trong tăng dần hành vi nhạy cảm trong nhiều tháng để nó thành bình thường theo thống kê. Chống bằng: đối chứng với nhóm đồng cấp, giới hạn tốc độ trôi của đường cơ sở, và giữ ngưỡng tuyệt đối cho hành động hậu quả lớn.',
+          tags: ['ueba', 'ne-tranh'],
+        },
+        {
+          id: 't6l7-c4',
+          front: 'Vì sao chấm điểm chuỗi hành vi mạnh hơn chấm điểm sự kiện rời rạc?',
+          back: 'Vì mỗi sự kiện đơn lẻ (đăng nhập muộn, nén tệp, cắm USB) đều phổ biến và vô hại, nhưng chuỗi bốn sự kiện đó trong 40 phút có thể chưa từng xuất hiện trong 90 ngày của người đó lẫn của nhóm.',
+          tags: ['ueba', 'dac-trung'],
+        },
+        {
+          id: 't6l7-c5',
+          front: 'Nêu ba trong sáu nguyên tắc đạo đức bắt buộc khi triển khai giám sát nhân viên.',
+          back: 'Tối thiểu hoá dữ liệu; minh bạch thông báo trước bằng văn bản; giới hạn mục đích — dữ liệu an ninh không được dùng để đánh giá năng suất hay kỷ luật lao động.',
+          tags: ['ueba', 'dao-duc'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't6l7-q1',
+          kind: 'mcq',
+          tags: ['ueba', 'thuc-chien'],
+          q: 'Cách định vị hệ thống UEBA hợp lý nhất trong một tổ chức 12.000 người là gì?',
+          options: [
+            'Bộ phát hiện chính, tự động khoá tài khoản khi điểm rủi ro vượt ngưỡng',
+            'Bộ ưu tiên điều tra và cung cấp ngữ cảnh, với ngân sách cảnh báo trực tiếp rất nhỏ',
+            'Công cụ đánh giá mức độ tuân thủ của nhân viên cho phòng nhân sự',
+            'Thay thế cho hệ thống DLP hiện có',
+          ],
+          answer: 1,
+          why: 'Tỉ lệ nền quyết định vai trò. Với precision cỡ phần nghìn, dùng UEBA làm bộ phát hiện chính đồng nghĩa với việc chôn đội SOC dưới cảnh báo vô nghĩa; dùng nó để tự động khoá tài khoản thì thảm hoạ về cả vận hành lẫn pháp lý. Giá trị thật nằm ở hai chỗ: một danh sách rất ngắn các hành vi có hậu quả lớn được cảnh báo trực tiếp, và một kho hồ sơ hành vi giúp rút ngắn điều tra khi nghi ngờ đã đến từ nguồn khác. Dùng nó để đánh giá nhân viên thì vi phạm nguyên tắc giới hạn mục đích và tạo rủi ro pháp lý lớn hơn chính mối đe doạ ban đầu.',
+          distractorWhy: [
+            'Hành động tự động lên con người dựa trên điểm số có precision phần nghìn là sai cả về vận hành lẫn đạo đức.',
+            '',
+            'Vi phạm nguyên tắc giới hạn mục đích; đây là con đường ngắn nhất tới rắc rối pháp lý và mất lòng tin.',
+            'DLP và UEBA giải hai bài toán khác nhau và bổ trợ cho nhau, không thay thế nhau.',
+          ],
+        },
+        {
+          id: 't6l7-q2',
+          kind: 'multi',
+          tags: ['ueba', 'dao-duc'],
+          q: 'Nguyên tắc nào bắt buộc phải có trước khi bật hệ thống giám sát hành vi nhân viên? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Thông báo trước bằng văn bản cho nhân viên về dữ liệu được thu và thời gian lưu trữ',
+            'Chính sách cấm dùng dữ liệu này để đánh giá năng suất hay xét kỷ luật lao động',
+            'Ghi log và kiểm toán việc ai truy cập hồ sơ hành vi của ai',
+            'Thu càng nhiều dữ liệu càng tốt để mô hình có nhiều tín hiệu',
+          ],
+          answers: [0, 1, 2],
+          why: 'Ba nguyên tắc đầu — minh bạch, giới hạn mục đích, và kiểm toán chính hệ thống giám sát — là điều kiện tối thiểu để hệ thống hợp pháp và tồn tại được lâu dài. Ý cuối đi ngược nguyên tắc tối thiểu hoá dữ liệu, và nó cũng sai về mặt kỹ thuật: thêm dữ liệu nhạy cảm hiếm khi cải thiện precision trong bài toán có tỉ lệ nền cỡ phần nghìn, trong khi nó làm tăng rõ rệt rủi ro pháp lý, rủi ro rò rỉ, và mức độ phản đối trong nội bộ. Kho hồ sơ hành vi của bạn cũng chính là một mục tiêu hấp dẫn cho người bên trong.',
+        },
+        {
+          id: 't6l7-q3',
+          kind: 'order',
+          tags: ['ueba', 'quy-trinh'],
+          q: 'Sắp xếp các bước triển khai UEBA theo thứ tự đúng.',
+          items: [
+            'Thống nhất với pháp chế và nhân sự về dữ liệu được thu, mục đích và quyền truy cập',
+            'Thông báo cho nhân viên và công bố chính sách',
+            'Thu thập và chuẩn hoá log, xây hồ sơ hành vi cá nhân và nhóm đồng cấp',
+            'Chạy chế độ bóng để đo phân phối điểm số và ước lượng khối lượng cảnh báo',
+            'Bật cảnh báo trực tiếp cho một danh sách rất ngắn hành vi hậu quả lớn',
+            'Thiết lập quy trình điều tra, kết luận và đặt lại điểm rủi ro',
+          ],
+          why: 'Hai bước đầu đứng trước mọi thứ kỹ thuật, và đây là điểm khác biệt lớn nhất giữa UEBA và các bài toán khác trong chặng này. Lý do rất thực dụng chứ không chỉ là đạo đức: nếu bạn xây xong rồi mới hỏi pháp chế, khả năng cao bạn phải gỡ bỏ những đặc trưng mà toàn bộ mô hình đang dựa vào, và ba tháng công sức đổ sông. Chế độ bóng đứng trước khi bật cảnh báo vì bạn cần biết khối lượng thật trước khi hứa với đội SOC bất cứ điều gì.',
+        },
+        {
+          id: 't6l7-q4',
+          kind: 'truefalse',
+          tags: ['ueba', 'dac-trung'],
+          q: 'Nên định nghĩa nhóm đồng cấp trực tiếp từ sơ đồ tổ chức vì đó là nguồn dữ liệu chính xác nhất.',
+          answer: false,
+          why: 'Sơ đồ tổ chức chính xác về mặt hành chính nhưng không phản ánh hành vi. Một phòng công nghệ có thể gồm kỹ sư hạ tầng, lập trình viên giao diện và nhân viên hỗ trợ — ba hồ sơ truy cập hoàn toàn khác nhau, và gộp chung khiến cả ba đều trông bất thường so với "trung bình phòng". Cách tốt hơn là phân cụm nhân viên theo vector hệ thống họ truy cập trong 90 ngày. Thú vị hơn nữa: những chỗ mà cụm hành vi **lệch** khỏi sơ đồ tổ chức thường tự nó đã là thông tin đáng xem — ví dụ một người trong phòng kinh doanh có hồ sơ truy cập giống hệt quản trị viên hệ thống.',
+        },
+        {
+          id: 't6l7-q5',
+          kind: 'input',
+          tags: ['ueba', 'bao-dong-gia'],
+          q: 'Hiện tượng nhân viên mới bị chấm điểm rủi ro cao chỉ vì chưa có lịch sử hành vi được gọi là vấn đề gì?',
+          accept: ['cold start', 'khoi dong lanh', 'khởi động lạnh', 'coldstart', 'van de khoi dong lanh'],
+          placeholder: 'Tên vấn đề…',
+          hint: 'Thuật ngữ mượn từ hệ khuyến nghị, nói về việc chưa có dữ liệu lịch sử cho một đối tượng mới.',
+          why: 'Khởi động lạnh (cold start). Nó là nguồn báo động giả lớn nhất của UEBA dựa trên đường cơ sở cá nhân, vì mọi đặc trưng độ mới đều đạt cực đại với người mới. Ba cách xử lý theo thứ tự nên làm: dùng đường cơ sở nhóm đồng cấp trong 30–60 ngày đầu, chuyển dần trọng số sang đường cơ sở cá nhân khi đủ dữ liệu, và đưa chính "số ngày làm việc" vào làm đặc trưng để mô hình học được rằng người mới thì hành vi mới là chuyện bình thường. Nguyên tắc rộng hơn đáng mang theo: **mọi đặc trưng dựa trên lịch sử đều cần một chính sách rõ ràng cho trường hợp không có lịch sử.**',
+        },
+      ],
+      terms: ['ueba', 'base-rate', 'bat-thuong', 'eu-ai-act', 'alert-fatigue'],
+      further: [
+        {
+          title: 'CERT Common Sense Guide to Mitigating Insider Threats — CMU SEI',
+          note: 'Tổng hợp từ hàng nghìn vụ thật, thiên về quy trình và tổ chức hơn là kỹ thuật. Đọc để biết đặc trưng nào đáng xây trước.',
+        },
+        {
+          title: 'LANL Comprehensive Multi-Source Cyber-Security Events (Kent, 2015)',
+          note: 'Dữ liệu xác thực thật ở quy mô lớn kèm nhãn hoạt động đội đỏ. Bộ tốt nhất hiện có để thực hành phát hiện bất thường xác thực và di chuyển ngang.',
+        },
+        {
+          title: 'EU AI Act — Điều 5 và Phụ lục III',
+          note: 'Danh mục thực hành bị cấm và danh mục hệ thống rủi ro cao, trong đó có quản lý lao động. Đọc trực tiếp văn bản, đừng đọc bản tóm tắt của nhà cung cấp.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't6-l8',
+      trackId: 'ung-dung',
+      title: 'Phát hiện bất thường trong log và chuỗi sự kiện',
+      subtitle: 'Từ dòng log tự do tới template, rồi tới chuỗi — và vì sao đếm tần suất vẫn thắng',
+      minutes: 20,
+      level: 'nang-cao',
+      prereqs: ['t6-l6'],
+      why: {
+        short:
+          'Log là nguồn dữ liệu lớn nhất và ít được khai thác nhất trong mọi tổ chức; biết cách biến nó thành cấu trúc mở ra cả một họ bài toán mà không nguồn dữ liệu nào khác giải được.',
+        scenario:
+          'Hệ thống của bạn sinh 400 triệu dòng log mỗi ngày từ 3.000 máy chủ, ứng dụng và thiết bị. Có người vừa hỏi bạn: "Chuyện gì bất thường đã xảy ra trong ba ngày qua?" Bạn không thể đọc 1,2 tỉ dòng, và grep thì chỉ tìm được thứ bạn đã biết tên.',
+        roles: ['Detection Engineer', 'SOC Analyst', 'Security Data Scientist', 'Threat Hunter'],
+        costOfNotKnowing:
+          'Bạn hoặc là bỏ tiền lưu 400 triệu dòng mỗi ngày mà không bao giờ đọc, hoặc là dựng một bộ phát hiện bất thường log rồi nhận 8.000 cảnh báo vào đúng buổi sáng sau khi đội hạ tầng nâng cấp phiên bản ứng dụng.',
+      },
+      objectives: [
+        'Giải thích được cơ chế phân tách log thành template và tham số bằng thuật toán Drain',
+        'Thiết kế được ba lớp đặc trưng trên log: tần suất template, chuỗi sự kiện, và độ hiếm của quan hệ tiến trình',
+        'Nêu được vì sao template mới sau khi nâng cấp phần mềm là nguồn báo động giả lớn nhất và cách xử lý',
+        'So sánh được mô hình chuỗi kiểu DeepLog với đường cơ sở đếm tần suất trên tiêu chí thực dụng',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Bốn dòng log:\n`Failed password for invalid user admin from 10.1.2.3 port 4455 ssh2`\n`Failed password for invalid user root from 10.1.2.7 port 51022 ssh2`\n`Accepted publickey for deploy from 10.2.0.9 port 33110 ssh2`\n`Failed password for invalid user test from 10.1.2.3 port 4471 ssh2`\n\nTheo bạn, một hệ thống phân tích log nên coi đây là bốn sự kiện khác nhau, hay là bao nhiêu?',
+          reveal:
+            '**Hai** loại sự kiện, với các tham số khác nhau:\n\nTemplate A: `Failed password for invalid user <*> from <*> port <*> ssh2` — xuất hiện 3 lần.\nTemplate B: `Accepted publickey for <*> from <*> port <*> ssh2` — xuất hiện 1 lần.\n\nĐây là toàn bộ ý tưởng của **phân tách log** (log parsing): tách phần **cố định do lập trình viên viết** khỏi phần **biến thiên do dữ liệu**. Sau bước này, 400 triệu dòng log biến thành một chuỗi vài trăm mã sự kiện kèm bảng tham số — và mọi kỹ thuật bạn học ở chặng trước bỗng dùng được.\n\nVì sao không dùng regex? Vì bạn có hàng nghìn định dạng log từ hàng trăm phần mềm khác nhau, chúng thay đổi sau mỗi lần nâng cấp, và không ai có thời gian viết hay bảo trì hàng nghìn biểu thức chính quy. Phân tách log tự động giải đúng bài toán đó.',
+        },
+        { t: 'h', text: 'Bước 1 — Phân tách log: thuật toán Drain', level: 2 },
+        {
+          t: 'p',
+          md: '**Drain** (He và cộng sự, 2017) là thuật toán phân tách log được dùng rộng rãi nhất, một phần vì nó chạy **trực tuyến** — xử lý từng dòng khi nó đến, không cần nhìn toàn bộ tập trước. Ý tưởng dựa trên một quan sát rất thực dụng: các dòng log cùng loại thường có **cùng số token** và **giống nhau ở vài token đầu**.',
+        },
+        {
+          t: 'steps',
+          title: 'Drain hoạt động thế nào',
+          steps: [
+            {
+              title: 'Tiền xử lý bằng vài luật đơn giản',
+              md: 'Thay các mẫu rõ ràng bằng ký tự đại diện trước khi phân tích: địa chỉ IP, số nguyên dài, mã định danh dạng UUID, đường dẫn tệp. Chỉ vài biểu thức chính quy chung cho mọi loại log, không phải một bộ cho từng loại.',
+            },
+            {
+              title: 'Đi xuống cây theo độ dài',
+              md: 'Nút gốc phân nhánh theo **số lượng token** của dòng log. Một dòng 9 token và một dòng 12 token không bao giờ cùng template, nên bước này loại bỏ ngay phần lớn khả năng so sánh.',
+            },
+            {
+              title: 'Đi tiếp theo các token đầu tiên',
+              md: 'Ở các tầng tiếp theo, cây phân nhánh theo token thứ nhất, thứ hai… tới độ sâu cố định (thường 4). Lý do: lập trình viên hầu như luôn đặt phần chữ cố định ở đầu chuỗi định dạng, còn phần biến thiên nằm sau.',
+            },
+            {
+              title: 'So khớp trong nhóm lá bằng độ tương đồng token',
+              md: 'Ở lá, so dòng mới với các template đã có bằng tỉ lệ token trùng nhau. Vượt ngưỡng thì gộp vào template đó và biến các token khác biệt thành `<*>`; không vượt thì tạo template mới.',
+            },
+            {
+              title: 'Kết quả',
+              md: 'Mỗi dòng log trở thành một cặp: **mã template** và **danh sách tham số**. Từ đây, chuỗi log của một máy trở thành một chuỗi số nguyên — đúng dạng mà mọi mô hình chuỗi cần.',
+            },
+          ],
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Phân tách log trực tuyến bằng thư viện Drain3',
+          code:
+            "from drain3 import TemplateMiner\n" +
+            "from drain3.template_miner_config import TemplateMinerConfig\n" +
+            "\n" +
+            "cau_hinh = TemplateMinerConfig()\n" +
+            "cau_hinh.load('drain3.ini')   # nguong tuong dong, do sau cay, luat che mask\n" +
+            "tm = TemplateMiner(config=cau_hinh)\n" +
+            "\n" +
+            "chuoi_su_kien = {}   # theo tung may: danh sach ma template theo thu tu\n" +
+            "for dong in nguon_log:\n" +
+            "    kq = tm.add_log_message(dong.noi_dung)\n" +
+            "    # kq['change_type'] la 'cluster_created' khi gap template MOI\n" +
+            "    # -> dung chinh tin hieu nay de theo doi bung no template sau nang cap\n" +
+            "    chuoi_su_kien.setdefault(dong.may, []).append(kq['cluster_id'])\n" +
+            "\n" +
+            "print('So template hoc duoc:', len(tm.drain.clusters))\n" +
+            "for c in sorted(tm.drain.clusters, key=lambda x: -x.size)[:5]:\n" +
+            "    print(c.size, c.get_template())\n",
+        },
+        {
+          t: 'table',
+          head: ['Thuật toán', 'Kiểu', 'Điểm mạnh', 'Điểm yếu'],
+          rows: [
+            ['Drain', 'Trực tuyến, cây độ sâu cố định', 'Nhanh, ổn định, có thư viện bảo trì tốt (Drain3)', 'Nhạy với ngưỡng tương đồng; log có số token biến thiên thì tách nhầm'],
+            ['Spell', 'Trực tuyến, chuỗi con chung dài nhất', 'Không giả định độ dài cố định', 'Chậm hơn trên tập lớn'],
+            ['IPLoM', 'Theo lô, chia theo phân vùng', 'Chất lượng tốt trên nhiều tập chuẩn', 'Cần toàn bộ dữ liệu trước, không phù hợp luồng trực tiếp'],
+            ['Regex thủ công', 'Do người viết', 'Chính xác tuyệt đối cho định dạng đã biết', 'Không mở rộng được; hỏng sau mỗi lần nâng cấp phần mềm'],
+          ],
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't6l8-cp1',
+              kind: 'mcq',
+              tags: ['log', 'drain'],
+              q: 'Vì sao Drain phân nhánh tầng đầu tiên theo SỐ LƯỢNG TOKEN của dòng log?',
+              options: [
+                'Để cân bằng cây cho tìm kiếm nhanh hơn',
+                'Vì hai dòng log khác số token gần như chắc chắn sinh ra từ hai câu lệnh ghi log khác nhau',
+                'Vì số token tương quan với mức độ nghiêm trọng của sự kiện',
+                'Để giới hạn bộ nhớ sử dụng',
+              ],
+              answer: 1,
+              why: 'Đây là một giả định về **cách lập trình viên viết mã**, không phải về dữ liệu. Một câu lệnh ghi log với chuỗi định dạng cố định sinh ra các dòng có cùng số token, trừ khi một tham số chứa khoảng trắng. Nhờ giả định đó, Drain loại bỏ được phần lớn khả năng so sánh chỉ bằng một phép tra bảng, và đó là lý do nó chạy được trực tuyến trên hàng trăm triệu dòng. Đây cũng chính là điểm yếu của nó: các thông báo lỗi có phần văn bản tự do độ dài thay đổi sẽ bị tách thành nhiều template khác nhau.',
+              distractorWhy: [
+                'Cân bằng cây là hệ quả phụ, không phải lý do thiết kế.',
+                '',
+                'Không có mối liên hệ nào giữa số token và mức nghiêm trọng.',
+                'Bộ nhớ không phải ràng buộc chính; ràng buộc chính là tốc độ và chất lượng gộp nhóm.',
+              ],
+            },
+            {
+              id: 't6l8-cp2',
+              kind: 'truefalse',
+              tags: ['log', 'troi-khai-niem'],
+              q: 'Sau khi đội hạ tầng nâng cấp phiên bản ứng dụng, việc bùng nổ hàng loạt template mới là dấu hiệu của tấn công.',
+              answer: false,
+              why: 'Đó là dấu hiệu của **thay đổi phần mềm**, và nó là nguồn báo động giả lớn nhất của mọi hệ thống phát hiện bất thường trên log. Phiên bản mới đổi chuỗi định dạng, thêm trường, đổi mức nghiêm trọng — mọi dòng log của thành phần đó trở thành template chưa từng thấy. Cách xử lý gồm ba phần: (1) ghép luồng cảnh báo với **lịch thay đổi và bản ghi CI/CD** để tự động dập cảnh báo trong cửa sổ triển khai; (2) giám sát riêng chỉ số "tỉ lệ template mới trên mỗi thành phần" như một chỉ số sức khoẻ dữ liệu chứ không phải cảnh báo bảo mật; (3) ấn định thời gian ủ cho template mới trước khi nó được dùng trong mô hình. Bỏ qua ba việc này là lý do phổ biến nhất khiến hệ thống bị tắt trong tháng đầu.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Bước 2 — Ba lớp đặc trưng trên log đã phân tách', level: 2 },
+        {
+          t: 'steps',
+          title: 'Xếp theo độ phức tạp tăng dần',
+          steps: [
+            {
+              title: 'Lớp 1 — Vector đếm template theo cửa sổ',
+              md: 'Với mỗi máy hoặc mỗi phiên, đếm số lần xuất hiện của từng template trong cửa sổ 5 phút. Bạn được một vector vài trăm chiều. Đưa vào Isolation Forest hoặc autoencoder là có ngay một bộ phát hiện bất thường.\n\nBắt được: bùng nổ lỗi, biến mất của một sự kiện thường lệ (rất hay bị bỏ qua — **thiếu** một template cũng là bất thường), thay đổi tỉ lệ giữa các loại sự kiện.',
+            },
+            {
+              title: 'Lớp 2 — Chuỗi thứ tự template',
+              md: 'Giữ nguyên thứ tự: `[12, 12, 45, 7, 45, 91]`. Bây giờ bạn phát hiện được thứ mà vector đếm không thấy: **thứ tự sai**. Một tiến trình bình thường luôn đi mở → xác thực → đọc → đóng; nếu xuất hiện đọc trước xác thực thì đó là tín hiệu, dù tần suất từng loại không đổi.\n\nĐây chính là ý tưởng của DeepLog: huấn luyện một LSTM dự đoán mã template tiếp theo từ n mã trước đó. Nếu mã thực tế không nằm trong **g dự đoán khả dĩ nhất** (thường g khoảng 9), đánh dấu bất thường.',
+            },
+            {
+              title: 'Lớp 3 — Giá trị tham số',
+              md: 'Template giống nhau nhưng tham số bất thường: thời gian phản hồi 40 giây thay vì 40 mili-giây, kích thước tệp 4 GB thay vì 4 MB, mã lỗi chưa từng thấy. DeepLog gọi đây là mô hình vector giá trị tham số và huấn luyện riêng cho từng template.\n\nTrong bảo mật, lớp này thường mang thông tin **giá trị nhất**: cùng một template `Accepted publickey for <*> from <*>` nhưng tham số là một tài khoản dịch vụ đăng nhập từ một dải địa chỉ chưa từng xuất hiện.',
+            },
+          ],
+        },
+        { t: 'figure', id: 'fig-soc-pipeline', caption: 'Log đi từ nguồn thô qua phân tách, trích đặc trưng, chấm điểm, tới hàng đợi của analyst. Mỗi mũi tên là một chỗ khối lượng phải giảm đi một bậc.' },
+        {
+          t: 'callout',
+          kind: 'warn',
+          title: 'Sự thật khó chịu về các benchmark log anomaly',
+          md: 'Các bộ dữ liệu chuẩn — HDFS, BGL, Thunderbird trong bộ sưu tập LogHub — được dùng trong hàng trăm bài báo báo cáo F1 trên 0,95. Có ba điều bạn cần biết trước khi tin vào những con số đó:\n\n**1.** Nhãn của HDFS ở mức **khối** (block), không phải mức dòng, và phần lớn bất thường là lỗi vận hành hệ thống chứ không phải tấn công. Mô hình học được ở đó không chuyển sang bài toán bảo mật một cách hiển nhiên.\n\n**2.** Nhiều nghiên cứu đánh giá lại cho thấy **các đường cơ sở rất đơn giản** — đếm template, hồi quy logistic trên vector đếm — đạt kết quả ngang ngửa các kiến trúc sâu trên chính những bộ này. Khi một bài toán chuẩn dễ tới mức đó, nó không còn phân biệt được phương pháp nữa.\n\n**3.** Chia dữ liệu ngẫu nhiên theo khối làm rò rỉ thông tin thời gian, đúng như mọi bài trong chặng này đã cảnh báo.\n\nKết luận thực dụng: hãy dùng các bộ này để **học kỹ thuật**, đừng dùng chúng để chọn kiến trúc cho hệ thống của bạn. Bộ dữ liệu thật của bạn mới quyết định.',
+        },
+        { t: 'h', text: 'Bước 3 — Chuỗi lệnh và quan hệ tiến trình: nơi giá trị bảo mật nằm', level: 2 },
+        {
+          t: 'p',
+          md: 'Với người làm bảo mật, loại log giá trị nhất không phải log ứng dụng mà là **log tạo tiến trình** — Sysmon Event ID 1 trên Windows, hoặc auditd/eBPF trên Linux. Mỗi bản ghi cho bạn: tiến trình, dòng lệnh đầy đủ, tiến trình cha, người dùng, hash của tệp thực thi.',
+        },
+        {
+          t: 'table',
+          head: ['Đặc trưng', 'Ví dụ cụ thể', 'Vì sao mạnh'],
+          rows: [
+            [
+              'Độ hiếm của cặp cha-con',
+              '`winword.exe` sinh `powershell.exe`: xuất hiện trên 1 trong 12.000 máy',
+              'Quan hệ tiến trình phản ánh kiến trúc phần mềm; quan hệ lạ là dấu hiệu mã bị chèn vào luồng bình thường',
+            ],
+            [
+              'Entropy và độ dài dòng lệnh',
+              'Chuỗi base64 dài 4.000 ký tự sau `-enc`',
+              'Mã hoá dòng lệnh là cách né phổ biến nhất, và nó tự để lại dấu vết đặc trưng',
+            ],
+            [
+              'Cờ đáng ngờ của trình thông dịch',
+              '`-nop -w hidden -ep bypass`, `/c`, `-decode`',
+              'Đây là các cờ mà quản trị viên hiếm khi dùng nhưng bộ công cụ tấn công dùng theo mặc định',
+            ],
+            [
+              'LOLBins ở vị trí bất thường',
+              '`certutil -urlcache -f http://…`, `mshta`, `regsvr32 /i:http…`, `bitsadmin /transfer`',
+              'Công cụ có sẵn của hệ điều hành nên không có tệp lạ để mô hình tĩnh bắt',
+            ],
+            [
+              'Chuỗi n-gram trên cây tiến trình',
+              '`explorer → cmd → certutil → rundll32` trong 90 giây',
+              'Bắt được kỹ thuật ngay cả khi từng bước riêng lẻ đều hợp lệ',
+            ],
+            [
+              'Độ mới trong tổ chức',
+              'Hash tệp thực thi này chưa từng chạy trên máy nào trong 90 ngày',
+              'Rẻ, cực mạnh, và là đường cơ sở mà mọi mô hình phức tạp phải vượt qua',
+            ],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Đếm tần suất trên quan hệ tiến trình: kỹ thuật có tỉ lệ lợi ích cao nhất trong bài này',
+          md: 'Xây một bảng duy nhất: `(tiến_trình_cha, tiến_trình_con) → số máy khác nhau đã thấy trong 30 ngày`. Cập nhật hằng ngày. Sắp xếp tăng dần.\n\nĐầu bảng là danh sách săn lùng của bạn. Không có mô hình nào, không có huấn luyện, không có siêu tham số. Analyst hiểu ngay tại sao một dòng nằm ở đó, và bạn giải thích cho quản lý trong một câu.\n\nBạn có thể mở rộng bằng cách thêm cột thứ ba là dòng lệnh đã chuẩn hoá (bỏ đường dẫn, bỏ mã định danh, bỏ chuỗi ngẫu nhiên). Ở dạng đó, kỹ thuật này bắt được phần lớn hoạt động hậu khai thác trong thực tế — và nó là thứ bạn nên xây trong tuần đầu tiên, trước khi nghĩ tới bất kỳ mạng nơ-ron nào.',
+        },
+        { t: 'h', text: 'Bước 4 — Bốn cái bẫy kỹ thuật của dữ liệu log', level: 2 },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Chuỗi bị trộn lẫn.** Nhiều luồng ghi vào cùng một tệp log, nên chuỗi bạn đọc được là hợp của nhiều chuỗi độc lập. Mô hình chuỗi học trên đó sẽ học nhiễu. Bắt buộc phải tách theo mã phiên, mã yêu cầu, mã tiến trình, hoặc mã theo dõi phân tán trước khi mô hình hoá.',
+            '**Log mất và log đến trễ.** Bộ đệm đầy, mạng nghẽn, tác tử chết. Một chuỗi thiếu vài sự kiện trông giống hệt một chuỗi bất thường. Đối sách: theo dõi tỉ lệ mất log như một chỉ số vận hành riêng, và không cảnh báo trong cửa sổ có tỉ lệ mất cao.',
+            '**Thời gian không đồng bộ.** Máy chủ lệch giờ vài phút làm hỏng mọi phân tích thứ tự. Kiểm tra đồng bộ NTP trước khi kiểm tra mô hình.',
+            '**Kẻ tấn công xoá log.** Sự kiện Windows 1102 (nhật ký bảo mật bị xoá), `wevtutil cl`, `journalctl --vacuum`, xoá `.bash_history`. Điểm quan trọng: **chính việc log biến mất là một trong những tín hiệu mạnh nhất bạn có** — hãy giám sát khoảng trống trong dòng log của mỗi máy, không chỉ giám sát nội dung của nó.',
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Kẻ tấn công né bằng cách hoà vào chỗ đông người',
+          md: 'Khi biết bạn chấm điểm theo độ hiếm, cách né hiệu quả nhất không phải làm gì đó tinh vi hơn — mà là làm đúng những gì phổ biến nhất. Đặt tên tiến trình trùng tên tiến trình hệ thống, chạy dưới tiến trình cha hợp pháp, dùng công cụ quản trị mà đội vận hành vẫn dùng hằng ngày, thực hiện hành động vào giờ cao điểm khi khối lượng log lớn nhất.\n\nĐối sách không nằm ở mô hình mà ở **đặc trưng bổ sung**: đường dẫn đầy đủ của tệp thực thi (một `svchost.exe` trong `C:\\Users\\...\\AppData` không phải `svchost.exe` thật), hash của tệp, chữ ký số, và tổ hợp cha-con-dòng lệnh chứ không chỉ tên tiến trình. Đây là lý do log tạo tiến trình phải thu **đầy đủ trường**, không phải chỉ tên.',
+        },
+        { t: 'terms', ids: ['log-parsing', 'bat-thuong', 'siem', 'attck', 'troi-du-lieu'] },
+      ],
+      keyTakeaways: [
+        'Phân tách log tách phần cố định do lập trình viên viết khỏi phần biến thiên, biến hàng trăm triệu dòng thành chuỗi vài trăm mã template.',
+        'Drain chạy trực tuyến nhờ giả định rằng dòng log cùng loại có cùng số token và giống nhau ở vài token đầu.',
+        'Ba lớp đặc trưng: vector đếm template theo cửa sổ, thứ tự chuỗi template (kiểu DeepLog), và giá trị tham số bên trong template.',
+        'Thiếu một template thường lệ cũng là bất thường, không chỉ có thêm template mới.',
+        'Bùng nổ template mới sau nâng cấp phần mềm là nguồn báo động giả lớn nhất — phải ghép với lịch thay đổi và CI/CD.',
+        'Trên các benchmark log chuẩn, đường cơ sở đơn giản thường ngang ngửa kiến trúc sâu; dùng chúng để học kỹ thuật, không để chọn kiến trúc.',
+        'Với bảo mật, bảng đếm độ hiếm của cặp tiến trình cha-con theo số máy trong 30 ngày là kỹ thuật có tỉ lệ lợi ích trên công sức cao nhất.',
+        'Chính khoảng trống trong dòng log là tín hiệu mạnh: hãy giám sát việc log biến mất, không chỉ nội dung log.',
+      ],
+      cards: [
+        {
+          id: 't6l8-c1',
+          front: 'Phân tách log (log parsing) làm gì với một dòng log?',
+          back: 'Tách nó thành template (phần chuỗi cố định do lập trình viên viết) và danh sách tham số (phần biến thiên). Nhờ đó chuỗi log trở thành chuỗi mã sự kiện dùng được cho mô hình chuỗi.',
+          tags: ['log', 'log-parsing'],
+        },
+        {
+          id: 't6l8-c2',
+          front: 'Vì sao Drain phân nhánh tầng đầu theo số lượng token?',
+          back: 'Vì một câu lệnh ghi log với chuỗi định dạng cố định sinh ra các dòng cùng số token. Giả định về cách lập trình viên viết mã này cho phép loại bỏ phần lớn khả năng so sánh bằng một phép tra bảng.',
+          tags: ['log', 'drain'],
+        },
+        {
+          id: 't6l8-c3',
+          front: 'DeepLog phát hiện bất thường bằng cơ chế nào?',
+          back: 'Huấn luyện LSTM dự đoán mã template tiếp theo từ n mã trước. Nếu mã thực tế không nằm trong g dự đoán khả dĩ nhất thì đánh dấu bất thường — tức là phát hiện thứ tự sai, không chỉ tần suất lạ.',
+          tags: ['log', 'deeplog'],
+        },
+        {
+          id: 't6l8-c4',
+          front: 'Nguồn báo động giả lớn nhất của phát hiện bất thường trên log là gì?',
+          back: 'Bùng nổ template mới sau khi nâng cấp phần mềm. Xử lý bằng cách ghép với lịch thay đổi và bản ghi CI/CD, và đặt thời gian ủ cho template mới trước khi đưa vào mô hình.',
+          tags: ['log', 'bao-dong-gia'],
+        },
+        {
+          id: 't6l8-c5',
+          front: 'Bảng đếm nào là đường cơ sở mạnh nhất cho phát hiện hoạt động hậu khai thác?',
+          back: 'Cặp (tiến trình cha, tiến trình con) → số máy khác nhau đã thấy trong 30 ngày, sắp xếp tăng dần. Không cần mô hình, analyst hiểu ngay, và không bao giờ cần huấn luyện lại.',
+          tags: ['log', 'thuc-chien'],
+        },
+        {
+          id: 't6l8-c6',
+          front: 'Vì sao chuỗi log bị trộn lẫn làm hỏng mô hình chuỗi, và chữa thế nào?',
+          back: 'Vì nhiều luồng cùng ghi vào một tệp nên chuỗi đọc được là hợp của nhiều chuỗi độc lập, và mô hình học nhiễu. Chữa bằng cách tách theo mã phiên, mã yêu cầu, mã tiến trình hoặc mã theo dõi trước khi mô hình hoá.',
+          tags: ['log', 'ro-ri-du-lieu'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't6l8-q1',
+          kind: 'mcq',
+          tags: ['log', 'dac-trung'],
+          q: 'Trong một cửa sổ 5 phút, một máy chủ vẫn sinh log bình thường nhưng template "Sao lưu hoàn tất" thường xuất hiện mỗi giờ lại biến mất suốt 6 giờ. Hệ thống của bạn nên phản ứng thế nào?',
+          options: [
+            'Bỏ qua, vì không có sự kiện lạ nào xuất hiện',
+            'Coi đây là bất thường: thiếu một template thường lệ cũng mang thông tin như có thêm template mới',
+            'Giảm ngưỡng để bắt được nhiều template mới hơn',
+            'Chỉ cảnh báo nếu có thêm template lỗi xuất hiện',
+          ],
+          answer: 1,
+          why: 'Rất nhiều hệ thống chỉ tìm cái **xuất hiện thêm** và hoàn toàn mù với cái **biến mất**. Nhưng sự vắng mặt là tín hiệu mạnh trong cả vận hành lẫn bảo mật: dịch vụ sao lưu bị tắt, tác tử ghi log bị dừng, một tiến trình bị kẻ tấn công vô hiệu hoá để giấu dấu vết. Cách hiện thực: xây một hồ sơ nhịp cho từng template thường lệ theo từng máy (khoảng cách trung bình giữa hai lần xuất hiện), và cảnh báo khi khoảng lặng vượt vài lần độ lệch chuẩn. Đây cũng là cách phát hiện tác tử EDR bị tắt — một trong những cảnh báo có precision cao nhất mà bạn có thể xây.',
+          distractorWhy: [
+            'Sự vắng mặt là một trong những tín hiệu có giá trị nhất và cũng bị bỏ qua nhiều nhất.',
+            '',
+            'Hạ ngưỡng chỉ làm tăng cảnh báo về template mới, không giải quyết vấn đề vắng mặt.',
+            'Chờ có thêm lỗi nghĩa là chờ tới khi hậu quả đã xảy ra.',
+          ],
+        },
+        {
+          id: 't6l8-q2',
+          kind: 'order',
+          tags: ['log', 'quy-trinh'],
+          q: 'Sắp xếp đường ống xử lý log cho phát hiện bất thường.',
+          items: [
+            'Chuẩn hoá thời gian và kiểm tra đồng bộ NTP giữa các nguồn',
+            'Phân tách log thành template và tham số',
+            'Tách chuỗi theo mã phiên hoặc mã tiến trình để không trộn nhiều luồng',
+            'Trích đặc trưng: vector đếm template, thứ tự chuỗi, giá trị tham số',
+            'Chấm điểm bất thường và đối chiếu với lịch thay đổi để dập cảnh báo do triển khai',
+            'Xếp hạng theo độ hiếm trong tổ chức rồi đưa vào hàng đợi analyst',
+          ],
+          why: 'Ba bước đầu đều là công việc dữ liệu, và chúng quyết định chất lượng nhiều hơn bước chọn mô hình. Lệch giờ giữa các máy làm hỏng mọi phân tích thứ tự, nên nó phải được xử lý trước cả phân tách. Tách chuỗi phải đứng sau phân tách nhưng trước trích đặc trưng, vì đặc trưng chuỗi chỉ có nghĩa trên một luồng đơn. Đối chiếu lịch thay đổi đứng ngay sau chấm điểm chứ không phải cuối cùng, vì nó loại bỏ nguồn báo động giả lớn nhất trước khi tiêu tốn thời gian xếp hạng.',
+        },
+        {
+          id: 't6l8-q3',
+          kind: 'multi',
+          tags: ['log', 'attck'],
+          q: 'Dấu hiệu nào trong log tạo tiến trình đáng đưa vào bộ phát hiện? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Cặp cha-con chỉ xuất hiện trên 1 trong 12.000 máy',
+            'Dòng lệnh chứa chuỗi base64 dài sau tham số -enc',
+            'Tệp thực thi tên `svchost.exe` nhưng nằm trong thư mục AppData của người dùng',
+            'Tiến trình `chrome.exe` sinh ra tiến trình con `chrome.exe`',
+          ],
+          answers: [0, 1, 2],
+          why: 'Ba dấu hiệu đầu đều gắn với kỹ thuật tấn công thật: quan hệ tiến trình lạ chỉ ra mã bị chèn vào luồng bình thường, dòng lệnh mã hoá base64 là cách né phổ biến nhất của PowerShell, và tên tiến trình hệ thống ở sai đường dẫn là kỹ thuật nguỵ trang kinh điển. Trình duyệt sinh ra tiến trình con cùng tên thì hoàn toàn bình thường — đó là kiến trúc đa tiến trình của Chrome, xuất hiện hàng triệu lần mỗi ngày. Chi tiết đáng chú ý ở phương án ba: **tên tiến trình một mình không đủ**, phải có đường dẫn đầy đủ và tốt nhất là cả hash. Đó là lý do cấu hình thu thập log tạo tiến trình phải lấy đủ trường ngay từ đầu.',
+        },
+        {
+          id: 't6l8-q4',
+          kind: 'truefalse',
+          tags: ['log', 'do-luong'],
+          q: 'Một mô hình đạt F1 = 0,96 trên bộ HDFS là bằng chứng tốt cho thấy nó sẽ hoạt động trên log bảo mật của bạn.',
+          answer: false,
+          why: 'Ba lý do độc lập khiến kết luận đó không đứng vững. Thứ nhất, nhãn của HDFS ở mức khối và phần lớn bất thường là lỗi vận hành hệ thống phân tán, không phải hành vi tấn công — hai phân phối khác nhau về bản chất. Thứ hai, nhiều đánh giá lại cho thấy các đường cơ sở rất đơn giản đạt kết quả tương đương trên chính bộ này, nghĩa là nó không còn phân biệt được phương pháp. Thứ ba, cách chia dữ liệu phổ biến trên bộ này làm rò rỉ thông tin thời gian. Kết luận thực dụng: dùng các benchmark để học kỹ thuật và gỡ lỗi cài đặt, còn quyết định kiến trúc thì phải dựa trên dữ liệu của chính bạn với cách chia theo thời gian.',
+        },
+        {
+          id: 't6l8-q5',
+          kind: 'input',
+          tags: ['log', 'log-parsing'],
+          q: 'Thuật toán phân tách log trực tuyến dùng cây độ sâu cố định, phân nhánh đầu tiên theo số lượng token, có thư viện Python phổ biến mang cùng tên kèm số 3 — tên nó là gì?',
+          accept: ['drain', 'Drain', 'drain3', 'Drain3'],
+          placeholder: 'Tên thuật toán…',
+          hint: 'Năm chữ cái, nghĩa tiếng Anh là thoát nước.',
+          why: 'Drain (He và cộng sự, 2017), với thư viện Drain3 được duy trì tích cực. Điểm thiết kế đáng học không phải cấu trúc cây mà là **giả định miền** mà nó dựa vào: lập trình viên viết chuỗi định dạng với phần chữ cố định ở đầu và tham số ở sau, nên các dòng cùng loại có cùng số token và giống nhau ở vài token đầu. Nhờ giả định đó, thuật toán chạy trực tuyến với chi phí gần như không đổi cho mỗi dòng. Đây là ví dụ đẹp cho một mẫu tư duy lặp đi lặp lại trong kỹ thuật: **một giả định miền đúng thường đáng giá hơn một mô hình mạnh hơn.**',
+        },
+      ],
+      terms: ['log-parsing', 'bat-thuong', 'siem', 'attck', 'troi-du-lieu'],
+      further: [
+        {
+          title: 'Drain: An Online Log Parsing Approach with Fixed Depth Tree — He và cộng sự (2017)',
+          note: 'Ngắn, rõ, và ý tưởng đơn giản tới mức bạn cài đặt lại được trong một buổi. Đọc phần giả định thiết kế kỹ hơn phần thực nghiệm.',
+        },
+        {
+          title: 'DeepLog: Anomaly Detection and Diagnosis from System Logs through Deep Learning — Du và cộng sự (CCS 2017)',
+          note: 'Nguồn của ba lớp mô hình: chuỗi sự kiện, giá trị tham số, và mô hình luồng công việc. Kể cả khi bạn không dùng LSTM, cách phân rã bài toán ở đây vẫn đáng mượn.',
+        },
+        {
+          title: 'LogHub — bộ sưu tập dữ liệu log',
+          note: 'HDFS, BGL, Thunderbird, Hadoop và nhiều nguồn khác. Dùng để thực hành phân tách log; đọc kèm các bài đánh giá lại trước khi so sánh kết quả với bài báo.',
+        },
+      ],
+    },
+
     /* __CHEN_BAI_TIEP__ */
   ],
 };
