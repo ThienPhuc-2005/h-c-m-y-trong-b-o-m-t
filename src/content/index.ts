@@ -10,6 +10,7 @@ import { track1 } from './t1-nen-mong';
 import { track2 } from './t2-du-lieu';
 import { track3 } from './t3-ml-cot-loi';
 import { track4 } from './t4-do-luong';
+import { track8 } from './t8-adversarial';
 
 export const TRACKS: Track[] = [
   track0,
@@ -17,6 +18,7 @@ export const TRACKS: Track[] = [
   track2,
   track3,
   track4,
+  track8,
 ].sort((a, b) => a.order - b.order);
 
 /* -------------------------------------------------------------------------- */
