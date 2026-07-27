@@ -12,8 +12,10 @@ import { track3 } from './t3-ml-cot-loi';
 import { track4 } from './t4-do-luong';
 import { track5 } from './t5-dac-trung';
 import { track6 } from './t6-ung-dung';
+import { track7 } from './t7-deep-learning';
 import { track8 } from './t8-adversarial';
 import { track9 } from './t9-llm';
+import { track10 } from './t10-van-hanh';
 
 export const TRACKS: Track[] = [
   track0,
@@ -23,8 +25,10 @@ export const TRACKS: Track[] = [
   track4,
   track5,
   track6,
+  track7,
   track8,
   track9,
+  track10,
 ].sort((a, b) => a.order - b.order);
 
 /* -------------------------------------------------------------------------- */

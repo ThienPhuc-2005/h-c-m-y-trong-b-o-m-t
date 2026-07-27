@@ -233,7 +233,7 @@ export function SearchPalette() {
           <kbd>Esc</kbd>
         </div>
 
-        <div className="modal-body" style={{ padding: 'var(--s-2)', maxHeight: '58vh', overflowY: 'auto' }} ref={listRef} id="search-results" role="listbox">
+        <div className="modal-body" style={{ padding: 'var(--s-2)', maxHeight: '58vh', overflowY: 'auto' }} ref={listRef} id="search-results" role="listbox" aria-label="Kết quả tìm kiếm">
           {results.length === 0 ? (
             <div className="empty" style={{ padding: 'var(--s-8) var(--s-4)' }}>
               <div className="empty-ico" aria-hidden>🤷</div>
