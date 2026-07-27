@@ -1,0 +1,75 @@
+Bản quyền (c) 2026 Thiên Phúc
+
+Kho mã này có HAI giấy phép, vì mã nguồn và nội dung giảng dạy là hai loại tài
+sản khác nhau và nên được đối xử khác nhau.
+
+================================================================================
+1. MÃ NGUỒN — Giấy phép MIT
+================================================================================
+
+Áp dụng cho toàn bộ kho, TRỪ thư mục `src/content/`.
+
+Bản quyền (c) 2026 Thiên Phúc
+
+Bất kỳ ai có được một bản sao của phần mềm này và các tệp tài liệu đi kèm
+("Phần mềm") đều được cấp phép miễn phí, không hạn chế, để sử dụng Phần mềm,
+bao gồm quyền dùng, sao chép, sửa đổi, hợp nhất, xuất bản, phân phối, cấp phép
+lại và/hoặc bán các bản sao của Phần mềm, và cho phép người nhận Phần mềm làm
+như vậy, với các điều kiện sau:
+
+Thông báo bản quyền trên và thông báo cấp phép này phải được kèm theo trong mọi
+bản sao hoặc phần đáng kể của Phần mềm.
+
+PHẦN MỀM ĐƯỢC CUNG CẤP "NGUYÊN TRẠNG", KHÔNG KÈM BẢO ĐẢM DƯỚI BẤT KỲ HÌNH THỨC
+NÀO, DÙ RÕ RÀNG HAY NGỤ Ý, BAO GỒM NHƯNG KHÔNG GIỚI HẠN Ở CÁC BẢO ĐẢM VỀ KHẢ
+NĂNG THƯƠNG MẠI, SỰ PHÙ HỢP CHO MỘT MỤC ĐÍCH CỤ THỂ VÀ KHÔNG VI PHẠM QUYỀN. TRONG
+MỌI TRƯỜNG HỢP, TÁC GIẢ HOẶC NGƯỜI GIỮ BẢN QUYỀN ĐỀU KHÔNG CHỊU TRÁCH NHIỆM VỀ
+BẤT KỲ KHIẾU NẠI, THIỆT HẠI HAY TRÁCH NHIỆM NÀO, DÙ TRONG MỘT VỤ KIỆN HỢP ĐỒNG,
+VI PHẠM NGOÀI HỢP ĐỒNG HAY CÁCH KHÁC, PHÁT SINH TỪ, DO HOẶC LIÊN QUAN TỚI PHẦN
+MỀM HOẶC VIỆC SỬ DỤNG PHẦN MỀM.
+
+--------------------------------------------------------------------------------
+
+English summary: all files in this repository EXCEPT `src/content/` are released
+under the MIT License, whose full text in Vietnamese appears above and is
+equivalent to the standard English wording.
+
+================================================================================
+2. NỘI DUNG GIẢNG DẠY — CC BY-NC-SA 4.0
+================================================================================
+
+Áp dụng cho thư mục `src/content/`: toàn bộ bài học, thẻ ghi nhớ, câu hỏi và
+từ điển thuật ngữ.
+
+Cấp phép theo Creative Commons Ghi công – Phi thương mại – Chia sẻ tương tự 4.0
+Quốc tế (CC BY-NC-SA 4.0). Bạn được tự do sao chép, phân phối và chuyển thể nội
+dung này, với ba điều kiện:
+
+  - Ghi công: nêu tên tác giả gốc và dẫn nguồn.
+  - Phi thương mại: không dùng cho mục đích thương mại.
+  - Chia sẻ tương tự: nếu bạn chuyển thể, bản chuyển thể phải cùng giấy phép.
+
+Toàn văn: https://creativecommons.org/licenses/by-nc-sa/4.0/deed.vi
+
+================================================================================
+3. THÀNH PHẦN CỦA BÊN THỨ BA
+================================================================================
+
+  - Hình học biểu tượng trong `src/components/Icon.tsx` lấy từ Lucide
+    (https://lucide.dev), giấy phép ISC.
+  - Logo mạng xã hội trong cùng tệp lấy từ Simple Icons
+    (https://simpleicons.org), phát hành theo CC0 1.0. Nhãn hiệu và logo vẫn
+    thuộc về chủ sở hữu tương ứng.
+
+================================================================================
+4. PHẠM VI SỬ DỤNG
+================================================================================
+
+Nội dung về kỹ thuật tấn công (chặng 8 — Học máy đối kháng, và chặng 9 — An ninh
+LLM và GenAI) mang tính PHÒNG THỦ VÀ NGHIÊN CỨU: nó giải thích cơ chế ở mức khái
+niệm để người học biết cách bảo vệ hệ thống, và mọi mô phỏng đều chạy trên mô
+hình đồ chơi bên trong trình duyệt.
+
+Áp dụng các kỹ thuật này lên hệ thống bạn không sở hữu hoặc không được uỷ quyền
+bằng văn bản là hành vi trái pháp luật ở hầu hết các quốc gia. Tác giả không
+chịu trách nhiệm cho việc sử dụng sai mục đích.

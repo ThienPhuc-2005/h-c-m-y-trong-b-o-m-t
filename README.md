@@ -2,7 +2,7 @@
 
 Ứng dụng học tập tiếng Việt đưa người học **từ số 0 tới trình độ làm việc được** trong lĩnh vực học máy ứng dụng cho an ninh mạng.
 
-Chạy hoàn toàn trong trình duyệt. Không tài khoản, không máy chủ, không theo dõi, dùng được ngoại tuyến thật (có service worker — xem phần *Hiệu năng và ngoại tuyến* để biết số đo).
+Chạy hoàn toàn trong trình duyệt. Không tài khoản, không máy chủ, không theo dõi, dùng được ngoại tuyến thật (có service worker — xem phần *Hiệu năng và ngoại tuyến* để biết số đo) và cài được như một ứng dụng trên điện thoại lẫn máy tính.
 
 **11 chặng · 73 bài · 364 thẻ ghi nhớ · 468 câu hỏi · 24 phòng thí nghiệm · 30 hình minh hoạ · 167 thuật ngữ · ~23 giờ nội dung.**
 
@@ -24,6 +24,7 @@ Phần lớn khoá học trực tuyến tối ưu cho **cảm giác đã học**
 
 Ngoài ra:
 
+- **Song ngữ Việt – Anh cho phần vỏ giao diện**, đổi bằng một nút trên thanh điều hướng, lựa chọn được ghi nhớ. **Giáo trình vẫn là tiếng Việt** — app nói rõ điều đó khi bạn chọn English, thay vì hứa "song ngữ" rồi để người ta bấm vào một bài học toàn tiếng Việt.
 - **Bản đồ thành thạo tự phai mờ.** Điểm của một khái niệm giảm dần theo thời gian nếu không gặp lại. Không có dấu tích xanh vĩnh viễn ru ngủ người học.
 - **Trần thẻ mới mỗi ngày.** Chặn "núi nợ ôn tập" — nguyên nhân số một khiến người ta bỏ các ứng dụng lặp lại ngắt quãng.
 - **Chuỗi ngày khoan dung.** Ngưỡng rất thấp và không trừng phạt khi nghỉ; mục đích là giữ thói quen, không phải tạo cảm giác tội lỗi.
@@ -111,6 +112,9 @@ src/
 │   ├── registry.ts     Danh sách id hình vẽ / phòng lab hợp lệ
 │   ├── glossary.ts     Từ điển thuật ngữ song ngữ
 │   └── t0…t10*.ts      11 chặng học
+├── i18n/             Song ngữ VI/EN cho phần vỏ giao diện
+│   ├── index.ts        Kho trạng thái + t() + useT()
+│   └── vi.json, en.json  Cùng một tập khoá, được kiểm thử đối chiếu
 ├── lib/
 │   ├── srs.ts          FSRS — bộ lập lịch lặp lại ngắt quãng
 │   ├── mastery.ts      Mô hình người học, hiệu chuẩn, huy hiệu
@@ -119,19 +123,20 @@ src/
 │   ├── router.ts       Định tuyến theo hash (không phụ thuộc)
 │   ├── highlight.ts    Tô màu cú pháp tối giản
 │   └── utils.ts        Tiện ích số học và chuỗi
-├── components/       Dựng khối nội dung, câu hỏi, hình vẽ SVG, tìm kiếm
+├── components/       Icon, dựng khối nội dung, câu hỏi, hình vẽ SVG, tìm kiếm
 ├── labs/             24 phòng thí nghiệm tương tác
 ├── pages/            10 trang
 └── styles/           Design tokens + thư viện thành phần
 
 public/sw.js          Service worker: nạp sẵn, cache-first, tái dùng chunk cũ
+public/manifest.webmanifest  Khai báo PWA để cài được như ứng dụng
 scripts/build-sw.mjs  Nhúng danh sách tệp thật + phiên bản băm sau mỗi lần build
 ```
 
 ## Kiểm thử và bảo đảm chất lượng
 
 ```bash
-npm test        # 574 kiểm thử
+npm test        # 584 kiểm thử
 npm run lint
 npx tsc -b --noEmit
 ```
@@ -139,15 +144,35 @@ npx tsc -b --noEmit
 - **Bộ máy trí nhớ** (`srs.test.ts`): tính đơn điệu của khoảng cách theo điểm chấm, vòng đời thẻ, và các bất biến an toàn (không sinh NaN, độ khó luôn trong [1, 10], tôn trọng trần khoảng cách).
 - **Toàn vẹn giáo trình** (`content.test.ts`): mọi bài **phải** có `why` đủ bốn phần, có điểm truy hồi, có yếu tố trực quan, có thẻ ghi nhớ; mọi câu hỏi phải có giải thích; id không trùng trên toàn khoá; bài tiên quyết tồn tại và không tạo chu trình; mọi id hình vẽ và phòng lab đều có thật.
 - **Trợ năng**: kiểm toán bằng axe-core (WCAG 2.1 A + AA) trên 8 trang × 2 chủ đề, kể cả khi bảng tìm kiếm đang mở — **0 vi phạm**.
+- **Bộ biểu tượng** (`icon.test.ts`): quét toàn bộ mã giao diện để chặn emoji quay lại, và đảm bảo mọi tên icon trong dữ liệu đều trỏ tới một hình có thật.
+- **Song ngữ** (`i18n.test.ts`): hai tệp từ điển có đúng cùng tập khoá, cùng bộ biến nội suy, bản English không sót dấu tiếng Việt, và không lời gọi `t()` nào trỏ tới khoá không tồn tại.
 - **Phòng lab**: cả 24 lab được kéo thanh trượt tới hai cực, bật/tắt mọi công tắc — không sinh `NaN`, không lỗi console.
 - **Đầu-cuối**: vòng học hoàn chỉnh (đọc bài → điểm dừng truy hồi → kiểm tra cuối bài → kích hoạt thẻ → phiên ôn tập) và khả năng ngoại tuyến đều được kiểm bằng trình duyệt thật.
 
-Toàn bộ ứng dụng **không dùng thư viện ngoài nào** ngoài React: bộ định tuyến, biểu đồ, hình vẽ, tô màu cú pháp, mô hình học máy và bộ dựng markdown đều tự viết. Điều này giữ bản build nhỏ, hoạt động ngoại tuyến, và không có phần nào là hộp đen với người muốn đọc mã.
+Toàn bộ ứng dụng **không dùng thư viện ngoài nào** ngoài React: bộ định tuyến, biểu đồ, hình vẽ, tô màu cú pháp, mô hình học máy, bộ dựng markdown, lớp song ngữ và bộ biểu tượng đều tự viết (hình học icon chép từ Lucide, khoảng 60 hình trong số hơn 1.500 hình của bộ gốc, thay vì kéo cả gói vào). Điều này giữ bản build nhỏ, hoạt động ngoại tuyến, và không có phần nào là hộp đen với người muốn đọc mã.
 
 ## Dữ liệu của người học
 
 Mọi tiến độ nằm trong `localStorage` của trình duyệt. Không có bản sao ở đâu khác — nghĩa là riêng tư tuyệt đối, nhưng cũng nghĩa là **xoá dữ liệu duyệt web sẽ mất sạch**. Trang Cài đặt có nút xuất/nhập tệp JSON để sao lưu và chuyển sang máy khác.
 
+## Triển khai
+
+Đẩy lên nhánh `main` là CI tự chạy kiểm tra kiểu, lint, toàn bộ bộ kiểm thử, dựng bản tĩnh và đưa lên GitHub Pages. Pull request vẫn được kiểm tra đầy đủ nhưng không chạm tới site đang chạy.
+
+Lần đầu cần bật thủ công một lần: **Settings → Pages → Source: GitHub Actions**.
+
 ## Giấy phép và phạm vi
 
+Hai giấy phép, vì mã nguồn và nội dung giảng dạy là hai loại tài sản khác nhau:
+
+- **Mã nguồn** (mọi thứ trừ `src/content/`): MIT.
+- **Nội dung giảng dạy** (`src/content/`): CC BY-NC-SA 4.0.
+
+Chi tiết và các thành phần của bên thứ ba: xem [LICENSE](LICENSE).
+
 Nội dung về tấn công (chặng 8 và 9) mang tính **phòng thủ và nghiên cứu**: giải thích cơ chế ở mức khái niệm để người học biết cách bảo vệ hệ thống, và mọi mô phỏng đều chạy trên mô hình đồ chơi trong trình duyệt. Áp dụng các kỹ thuật này lên hệ thống bạn không sở hữu hoặc không được uỷ quyền là hành vi trái pháp luật ở hầu hết các quốc gia.
+
+## Liên hệ
+
+- Facebook: https://www.facebook.com/thien.phuc.450676/
+- Telegram: https://t.me/Benedetta24k

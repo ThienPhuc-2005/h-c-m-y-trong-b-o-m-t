@@ -1,0 +1,93 @@
+# AEGIS — ghi chú cho người (và máy) làm việc trên mã nguồn
+
+Ứng dụng học tập chạy hoàn toàn trong trình duyệt: React + TypeScript + Vite,
+**không có thư viện ngoài nào ngoài React**. Bộ định tuyến, biểu đồ, hình vẽ,
+tô màu cú pháp, bộ dựng markdown, các mô hình học máy trong phòng lab và bộ icon
+đều tự viết. Trước khi thêm một `npm install`, hãy cân nhắc: cam kết này giữ bản
+build nhỏ, chạy được ngoại tuyến từ USB, và không có phần nào là hộp đen.
+
+## Lệnh
+
+```bash
+npm install
+npm run dev       # máy chủ phát triển, cổng 5173
+npm run build     # tsc -b && vite build && nhúng danh sách tệp vào service worker
+npm run preview   # xem thử bản đã dựng
+npm test          # vitest, chạy một lượt
+npm run test:watch
+npm run lint      # oxlint
+npx tsc -b --noEmit
+```
+
+Trước khi commit, chạy đủ ba thứ: `npx tsc -b --noEmit`, `npm run lint`, `npm test`.
+CI chạy đúng ba lệnh đó cộng thêm `npm run build`.
+
+## Cấu trúc
+
+```
+src/
+├── content/          Toàn bộ giáo trình dưới dạng dữ liệu thuần
+│   ├── types.ts        Lược đồ — nguyên tắc sư phạm mã hoá thành kiểu dữ liệu
+│   ├── registry.ts     Danh sách id hình vẽ / phòng lab hợp lệ
+│   ├── glossary.ts     Từ điển thuật ngữ song ngữ
+│   ├── index.ts        Điểm tập hợp + truy vấn dùng chung + auditCourse()
+│   └── t0…t10*.ts      11 chặng học, mỗi chặng một tệp
+├── i18n/             Song ngữ VI/EN cho phần VỎ giao diện
+│   ├── index.ts        Store + t() + useT() + setLang()
+│   └── vi.json, en.json
+├── lib/
+│   ├── srs.ts          FSRS — bộ lập lịch lặp lại ngắt quãng
+│   ├── mastery.ts      Mô hình người học, hiệu chuẩn, huy hiệu
+│   ├── plan.ts         Bộ lập kế hoạch hằng ngày
+│   ├── storage.ts      Kho localStorage + xuất/nhập
+│   ├── router.ts       Định tuyến theo hash
+│   ├── highlight.ts    Tô màu cú pháp tối giản
+│   └── utils.ts        Tiện ích số học, chuỗi, định dạng theo ngôn ngữ
+├── components/
+│   ├── Icon.tsx        Bộ icon Lucide nhúng sẵn + logo mạng xã hội
+│   ├── Blocks.tsx      Dựng khối nội dung bài học
+│   ├── Quiz.tsx, Figures.tsx, Markdown.tsx, Search.tsx, Shared.tsx
+├── labs/             24 phòng thí nghiệm tương tác
+├── pages/            10 trang
+└── styles/           tokens.css (design tokens) + components.css + base.css
+
+public/sw.js          Service worker: nạp sẵn, cache-first, tái dùng chunk cũ
+public/manifest.webmanifest + icon.svg + icon-maskable.svg
+scripts/build-sw.mjs  Nhúng danh sách tệp thật + phiên bản băm sau mỗi lần build
+```
+
+## Ba quy ước dễ vi phạm
+
+**Icon.** Không dùng emoji trong mã giao diện. Mọi biểu tượng đi qua
+`<Icon name="…" />`; thêm hình mới thì thêm vào `SHAPES` trong
+`components/Icon.tsx` (hình học Lucide, viewBox 24×24, nét 2px). Trường `icon`
+trong dữ liệu (chặng học, huy hiệu, phòng lab) chứa **tên icon**, không phải ký
+tự. `src/components/icon.test.ts` chặn emoji quay lại.
+
+**Song ngữ.** Không hardcode chữ hiển thị trong component. Thêm khoá vào **cả
+hai** `vi.json` và `en.json` rồi gọi `t('muc.khoa')`; trong component dùng
+`const t = useT()` để nó vẽ lại khi đổi ngôn ngữ. Ở tầng `lib/` (không phải
+component) gọi thẳng `t` nhập từ `../i18n`, hoặc trả về **khoá** để nơi gọi dịch
+— xem `plan.ts` và `mastery.ts`. `src/i18n/i18n.test.ts` đối chiếu hai tệp, kiểm
+biến nội suy, và bắt khoá gõ sai.
+
+Phạm vi i18n là **vỏ giao diện**. Giáo trình trong `src/content/` vẫn là tiếng
+Việt và không có kế hoạch dịch; khi chọn English, app nói rõ điều đó với người
+dùng (`content.noticeLong`).
+
+**Nội dung.** Mọi bài học phải có `why` đủ bốn phần, có điểm truy hồi, có yếu tố
+trực quan, có thẻ ghi nhớ; mọi câu hỏi phải có `why`. `content.test.ts` sẽ trượt
+nếu thiếu. Id thẻ và câu hỏi là **khoá lưu tiến độ của người học** — đổi id là
+xoá tiến độ của họ.
+
+## Dữ liệu người học
+
+Toàn bộ nằm ở `localStorage['aegis.progress.v1']`, ngôn ngữ nằm riêng ở
+`localStorage['lang']`. Thêm trường mới vào `Progress` thì cập nhật `migrate()`
+trong `storage.ts` — nó hợp nhất với mặc định nên dữ liệu cũ không vỡ.
+
+## Triển khai
+
+`vite.config.ts` đặt `base: './'` và app dùng định tuyến theo hash, nên bản build
+chạy ở bất kỳ đâu: GitHub Pages dưới thư mục con, máy chủ nội bộ, USB, hay mở
+thẳng `index.html`. Đẩy lên `main` là CI tự dựng và triển khai lên GitHub Pages.

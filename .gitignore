@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Cấu hình công cụ cục bộ, không thuộc về dự án
+.claude/

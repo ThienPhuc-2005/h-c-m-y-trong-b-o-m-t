@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# Đẩy nhiều commit liên tiếp thì chỉ giữ lần chạy mới nhất: hai lượt triển khai
+# chạy song song có thể về đích lệch thứ tự và đưa bản CŨ lên site.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   kiem-tra:
     name: Typecheck, lint, test, build
@@ -24,7 +30,7 @@ jobs:
         run: npx tsc -b --noEmit
       - name: Lint
         run: npm run lint
-      - name: Kiểm thử (bộ máy trí nhớ + toàn vẹn nội dung)
+      - name: Kiểm thử (bộ máy trí nhớ, toàn vẹn nội dung, icon, song ngữ)
         run: npm test
       - name: Dựng bản tĩnh
         run: npm run build
@@ -33,3 +39,25 @@ jobs:
           name: dist
           path: dist
           retention-days: 7
+      # Chỉ đóng gói cho Pages ở nhánh chính. Pull request vẫn được kiểm tra đầy
+      # đủ nhưng không bao giờ chạm tới site đang chạy.
+      - name: Đóng gói cho GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  trien-khai:
+    name: Triển khai GitHub Pages
+    needs: kiem-tra
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

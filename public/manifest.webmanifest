@@ -1,0 +1,40 @@
+{
+  "name": "AEGIS — Học máy cho An ninh mạng",
+  "short_name": "AEGIS",
+  "description": "Khoá học tiếng Việt về học máy ứng dụng cho an ninh mạng, có phòng thí nghiệm tương tác và hệ thống ôn tập ngắt quãng. Chạy hoàn toàn ngoại tuyến.",
+  "lang": "vi",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f8fb",
+  "theme_color": "#f7f8fb",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ôn tập hôm nay",
+      "short_name": "Ôn tập",
+      "url": "./#/on-tap"
+    },
+    {
+      "name": "Phòng thí nghiệm",
+      "short_name": "Phòng lab",
+      "url": "./#/phong-lab"
+    }
+  ]
+}

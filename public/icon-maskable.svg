@@ -1,0 +1,15 @@
+<!-- Bản "maskable": hệ điều hành có thể cắt biểu tượng thành tròn, vuông bo góc
+     hay giọt nước tuỳ máy. Vì vậy hình chính phải nằm gọn trong vùng an toàn —
+     đường tròn đường kính 80% ở giữa — và nền phải phủ kín khung, nếu không sẽ
+     lộ ra viền trắng lởm chởm sau khi cắt. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="AEGIS">
+  <rect width="512" height="512" fill="#f7f8fb"/>
+  <g transform="translate(154 154) scale(6.4)">
+    <path d="M16 2 L28 7 v9 c0 7.2-5 12.6-12 14.9C9 28.6 4 23.2 4 16 V7 z" fill="#4f46e5" opacity="0.14"/>
+    <path d="M16 2 L28 7 v9 c0 7.2-5 12.6-12 14.9C9 28.6 4 23.2 4 16 V7 z" fill="none" stroke="#4f46e5" stroke-width="1.8"/>
+    <path d="M16 15.6 L10.5 18.6 M16 15.6 L21.5 18.6 M10.5 20 L21.5 20" stroke="#4f46e5" stroke-width="1.3" opacity="0.65"/>
+    <circle cx="16" cy="13" r="2.6" fill="#4f46e5"/>
+    <circle cx="10.5" cy="20" r="2" fill="#0891b2"/>
+    <circle cx="21.5" cy="20" r="2" fill="#0891b2"/>
+  </g>
+</svg>
