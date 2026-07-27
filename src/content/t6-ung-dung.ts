@@ -18,7 +18,7 @@ export const track6: Track = {
   icon: 'target',
   hue: 't6',
   blurb:
-    'Chín bài toán, mỗi bài một hệ thống hoàn chỉnh: dữ liệu lấy ở đâu, đặc trưng nào đáng tiền, mô hình nào đủ dùng, đo bằng con số nào, chạy ở chỗ nào trong hạ tầng, và kẻ tấn công sẽ né ra sao. Đây là chặng biến kiến thức rời rạc thành thứ chạy được trong sản xuất.',
+    'Mười một bài toán, mỗi bài một hệ thống hoàn chỉnh: dữ liệu lấy ở đâu, đặc trưng nào đáng tiền, mô hình nào đủ dùng, đo bằng con số nào, chạy ở chỗ nào trong hạ tầng, và kẻ tấn công sẽ né ra sao. Kèm hai công cụ mà phần lớn giáo trình bỏ qua: khử mùa vụ trước khi hỏi “hôm nay có bất thường không”, và nhìn log như một đồ thị để thấy di chuyển ngang. Đây là chặng biến kiến thức rời rạc thành thứ chạy được trong sản xuất.',
   outcomes: [
     'Thiết kế được bộ đặc trưng cho phishing, mã độc PE, tên miền DGA, luồng mạng, log hệ thống và giao dịch — và giải thích được vì sao chọn từng đặc trưng',
     'Chọn đúng họ mô hình cho từng dạng dữ liệu: bảng số, chuỗi ký tự, chuỗi sự kiện, đồ thị quan hệ',
@@ -26,6 +26,8 @@ export const track6: Track = {
     'Chỉ ra được điểm né tránh của từng hệ thống trước khi kẻ tấn công tìm ra',
     'Phân biệt được bất thường với độc hại, và biết khi nào KHÔNG nên dùng phát hiện bất thường',
     'Viết được bản thiết kế một hệ thống phát hiện đầu-cuối đủ chi tiết để bảo vệ trước hội đồng kỹ thuật',
+    'Khử nhịp ngày và nhịp tuần khỏi chuỗi khối lượng trước khi chấm điểm bất thường, thay vì đặt một ngưỡng cố định sai ở mọi khung giờ',
+    'Mô hình hoá log xác thực thành đồ thị và chỉ ra di chuyển ngang bằng thay đổi bậc, cạnh mới và độ trung tâm',
   ],
   lessons: [
     /* ====================================================================== */
@@ -2219,6 +2221,322 @@ export const track6: Track = {
 
     /* ====================================================================== */
     {
+      id: 't6-l10',
+      trackId: 'ung-dung',
+      title: 'Mùa vụ và phân rã chuỗi thời gian',
+      subtitle: 'Trước khi hỏi “hôm nay có bất thường không”, phải trả lời “hôm nay đáng lẽ phải như thế nào”',
+      minutes: 21,
+      practiceMinutes: 3,
+      level: 'nang-cao',
+      prereqs: ['t6-l6'],
+      why: {
+        short:
+          'Gần như mọi đường cơ sở khối lượng trong bảo mật đều là chuỗi thời gian có nhịp ngày và nhịp tuần rất mạnh; bỏ qua nhịp đó thì ngưỡng của bạn vừa kêu suốt giờ hành chính vừa mù tịt lúc nửa đêm.',
+        scenario:
+          'Bạn dựng cảnh báo “số lần đăng nhập thất bại vượt 1.000 mỗi giờ”. Sáng thứ Hai nào nó cũng kêu vì cả công ty vào làm cùng lúc, nên analyst đã tắt tiếng nó từ lâu. Đêm thứ Bảy, một đợt dò mật khẩu tạo 400 lần thất bại trong một giờ — gấp mười lần mức nền của khung giờ đó — và không ai biết.',
+        roles: ['Detection Engineer', 'Threat Hunter', 'Security Data Scientist', 'SOC Analyst'],
+        costOfNotKnowing:
+          'Bạn xây UEBA và phát hiện bất thường trên dữ liệu chưa khử mùa vụ, rồi kết luận rằng “phát hiện bất thường tạo quá nhiều báo động giả nên không dùng được” — trong khi thứ tạo ra báo động giả không phải thuật toán mà là việc so sáng thứ Hai với đêm Chủ nhật.',
+      },
+      objectives: [
+        'Tách một chuỗi khối lượng thành ba thành phần xu hướng, mùa vụ và phần dư, rồi nói rõ thành phần nào mới dùng để phát hiện',
+        'Giải thích vì sao phải dùng STL ở chế độ bền vững khi dữ liệu có tấn công, và điều gì hỏng nếu không',
+        'Chọn thang đo độ lệch bền vững thay cho độ lệch chuẩn khi chấm điểm phần dư',
+        'Nêu được đường cơ sở ngây thơ “cùng giờ tuần trước” mạnh tới đâu và khi nào nó đủ dùng',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Số lần đăng nhập thất bại của một công ty: 9h sáng thứ Ba trung bình 820 lần/giờ, 3h sáng Chủ nhật trung bình 12 lần/giờ. Bạn đặt một ngưỡng cố định duy nhất cho cả tuần. Đặt ở đâu cũng được — hãy thử nghĩ xem chuyện gì xảy ra với hai khung giờ đó.',
+          reveal:
+            'Không có chỗ nào đặt được, và đó là toàn bộ vấn đề.\n\nĐặt ngưỡng ở **1.000**: đêm Chủ nhật có thể tăng từ 12 lên 900 lần — gấp **75 lần** mức nền, gần như chắc chắn là một đợt dò mật khẩu — mà vẫn im lặng.\n\nĐặt ngưỡng ở **50**: nó kêu mỗi ngày làm việc, suốt cả ngày làm việc. Sau hai tuần, cảnh báo bị tắt tiếng. Về mặt thực tế, hệ thống phát hiện của bạn đã ngừng tồn tại.\n\nMột con số không thể vừa đúng cho hai khung giờ chênh nhau **70 lần**. Điều bạn cần không phải một ngưỡng tốt hơn, mà là một **kỳ vọng** thay đổi theo giờ trong ngày và theo ngày trong tuần. Khi đó câu hỏi trở thành: *lệch bao nhiêu so với mức đáng lẽ phải có ở đúng khung giờ này?* — và câu đó có một ngưỡng duy nhất trả lời được.',
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Phân rã: ba thành phần, và chỉ một cái dùng để phát hiện',
+          md: 'Mô hình cộng tính viết một chuỗi thành:\n\n> y(t) = **xu hướng**(t) + **mùa vụ**(t) + **phần dư**(t)\n\n**Xu hướng** là chuyển động chậm: công ty tuyển thêm người, hạ tầng mở rộng, một dịch vụ bị khai tử.\n\n**Mùa vụ** là nhịp lặp lại: chu kỳ 24 giờ theo giờ làm việc, chu kỳ 168 giờ theo ngày trong tuần. Dữ liệu bảo mật thường có **cả hai** cùng lúc.\n\n**Phần dư** là phần còn lại sau khi trừ đi hai cái trên — và đây mới là thứ bạn chấm điểm.\n\nKhi khối lượng thay đổi theo tỉ lệ chứ không theo lượng tuyệt đối (công ty tăng gấp đôi thì đỉnh sáng thứ Hai cũng tăng gấp đôi), hãy dùng mô hình **nhân tính**, hoặc đơn giản hơn: lấy log chuỗi rồi dùng mô hình cộng tính. Với dữ liệu đếm có số 0, dùng log(y + 1).',
+        },
+        { t: 'h', text: 'Vì sao phải là STL bền vững, không phải phân rã cổ điển', level: 2 },
+        {
+          t: 'p',
+          md: 'STL viết tắt của *Seasonal-Trend decomposition using Loess*: nó ước lượng mùa vụ bằng cách làm trơn cục bộ, nên mùa vụ được phép **thay đổi dần theo thời gian** — đúng với thực tế, vì thói quen làm việc của tổ chức có đổi. Nhưng lý do quan trọng hơn nhiều để chọn STL nằm ở tham số `robust`.',
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Cuộc tấn công tự giấu mình vào đường cơ sở',
+          md: 'Đây là cái bẫy đặc trưng của bảo mật, và nó không xuất hiện trong tài liệu dự báo doanh số.\n\nPhân rã cổ điển ước lượng mùa vụ bằng **trung bình cộng** các chu kỳ. Giả sử thứ Ba tuần trước có một đợt dò mật khẩu tạo 5.000 lần thất bại lúc 3h sáng. Trung bình cộng sẽ kéo ước lượng mùa vụ của khung “3h sáng thứ Ba” lên cao. Hệ quả: cuộc tấn công **tự nâng mức nền của chính khung giờ nó xảy ra**, nên phần dư của nó nhỏ đi, và một đợt tương tự tuần sau càng khó bị bắt hơn.\n\nCòn tệ hơn: nếu bạn huấn luyện lại đường cơ sở định kỳ trên dữ liệu gần nhất mà không lọc, kẻ tấn công chỉ cần tăng dần khối lượng qua nhiều tuần là dạy được hệ thống coi mức mới là bình thường. Đó chính là đầu độc đường cơ sở, và nó không cần chạm vào tập huấn luyện nào cả.\n\n`STL(..., robust=True)` giảm trọng số các điểm có phần dư lớn khi ước lượng lại xu hướng và mùa vụ. Cuộc tấn công vẫn nằm trong dữ liệu, nhưng nó không còn được tính vào định nghĩa “bình thường”. Trong bảo mật, đây không phải tuỳ chọn cho đẹp — nó là mặc định đúng.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Phân rã chuỗi theo giờ và chấm điểm phần dư bằng thang đo bền vững',
+          code: `import numpy as np
+import pandas as pd
+from statsmodels.tsa.seasonal import STL
+
+# s: pandas Series, chỉ mục theo giờ, giá trị là số lần đăng nhập thất bại
+# Cần ÍT NHẤT hai chu kỳ đầy đủ; ba chu kỳ trở lên mới thật sự ổn định
+s = s.asfreq('h').fillna(0)
+
+# Dữ liệu đếm biến thiên theo tỉ lệ -> log trước, rồi dùng mô hình cộng tính
+y = np.log1p(s)
+
+# period=168 là nhịp TUẦN (24 x 7). Nhịp tuần thường mạnh hơn nhịp ngày trong
+# dữ liệu doanh nghiệp, vì cuối tuần khác hẳn ngày thường.
+# robust=True: đừng để đợt tấn công tuần trước tự nâng mức nền của chính nó.
+kq = STL(y, period=168, robust=True).fit()
+du = kq.resid
+
+# Độ lệch chuẩn bị chính các điểm bất thường thổi phồng. MAD thì không:
+# nó chịu được tới 50% dữ liệu bị nhiễm mà vẫn cho thang đo đúng.
+mad = np.median(np.abs(du - np.median(du)))
+sigma = 1.4826 * mad          # quy MAD về đơn vị độ lệch chuẩn của phân phối chuẩn
+diem = (du - np.median(du)) / max(sigma, 1e-9)
+
+# Chỉ quan tâm chiều TĂNG với dò mật khẩu; sụt giảm là câu chuyện khác
+# (mất log, đứt thu thập) và đáng có cảnh báo riêng.
+canh_bao = s[diem > 4]
+print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
+      f'({len(canh_bao) / len(s) * 100:.2f}%)')`,
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't6l10-cp1',
+              kind: 'mcq',
+              tags: ['chuoi-thoi-gian', 'duong-co-so'],
+              q: 'Vì sao chấm điểm phần dư bằng độ lệch chuẩn lại là lựa chọn tồi trong bối cảnh phát hiện tấn công?',
+              options: [
+                'Độ lệch chuẩn tính chậm hơn MAD trên chuỗi dài',
+                'Chính các điểm bất thường bạn muốn tìm làm độ lệch chuẩn phồng lên, khiến ngưỡng tự nới rộng ra',
+                'Độ lệch chuẩn chỉ dùng được cho dữ liệu phân phối chuẩn',
+                'Độ lệch chuẩn không định nghĩa được với dữ liệu đếm',
+              ],
+              answer: 1,
+              why: 'Độ lệch chuẩn bình phương các độ lệch, nên một đỉnh lớn duy nhất kéo nó lên rất mạnh. Ngưỡng “trung bình cộng ba lần độ lệch chuẩn” vì thế **tự nới ra** đúng lúc dữ liệu có tấn công — càng tấn công mạnh, ngưỡng càng cao. MAD có điểm gãy 50%: quá nửa dữ liệu phải bị nhiễm thì nó mới hỏng. Hệ số 1,4826 chỉ để quy MAD về cùng đơn vị với độ lệch chuẩn cho dễ đọc.',
+              distractorWhy: [
+                'Tốc độ không phải vấn đề; cả hai đều rẻ trên chuỗi cỡ này.',
+                '',
+                'Độ lệch chuẩn tính được cho mọi phân phối có phương sai hữu hạn; vấn đề là độ nhạy với điểm ngoại lai.',
+                'Dữ liệu đếm vẫn có độ lệch chuẩn bình thường.',
+              ],
+            },
+            {
+              id: 't6l10-cp2',
+              kind: 'truefalse',
+              tags: ['chuoi-thoi-gian'],
+              q: 'Có thể phân rã tin cậy một chuỗi có nhịp tuần khi chỉ có 10 ngày dữ liệu.',
+              answer: false,
+              why: 'Muốn ước lượng một thành phần mùa vụ, bạn phải quan sát nó lặp lại vài lần. Mười ngày chưa đầy hai chu kỳ tuần, nên thuật toán không tách nổi “thứ Bảy thấp” khỏi “tuần này tình cờ thấp”. Tối thiểu là hai chu kỳ đầy đủ, và trong thực tế nên có **ba tới bốn tuần** trở lên. Khi chưa đủ dữ liệu, hãy dùng đường cơ sở ngây thơ cùng giờ tuần trước hoặc gộp theo nhóm giờ, và nói rõ với người dùng rằng đường cơ sở còn non.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Đừng bỏ qua đường cơ sở ngây thơ', level: 2 },
+        {
+          t: 'p',
+          md: 'Trước khi dựng STL, hãy đo một đường cơ sở tốn đúng một dòng: **giá trị cùng giờ, cùng thứ, tuần trước**. Nó bắt trọn cả nhịp ngày lẫn nhịp tuần, không cần thư viện, không cần huấn luyện, và giải thích được cho analyst trong một câu. Trên nhiều chuỗi bảo mật, nó thắng những mô hình phức tạp hơn hẳn.',
+        },
+        {
+          t: 'table',
+          caption: 'Bốn đường cơ sở theo thứ tự nên thử. Chỉ leo lên bậc sau khi bậc trước đã được đo và không đủ.',
+          head: ['Đường cơ sở', 'Bắt được gì', 'Điểm yếu', 'Khi nào đủ dùng'],
+          rows: [
+            ['Ngưỡng cố định', 'Không gì cả', 'Kêu suốt giờ cao điểm, mù lúc thấp điểm', 'Chỉ khi chuỗi thật sự phẳng, hiếm gặp'],
+            ['Cùng giờ tuần trước', 'Nhịp ngày và nhịp tuần', 'Nhiễu vì chỉ dựa vào một quan sát duy nhất; hỏng khi tuần trước có sự cố', 'Đường cơ sở đầu tiên nên đo, thường đã đủ tốt'],
+            ['Trung vị của cùng khung giờ trong 4–8 tuần', 'Nhịp ngày và tuần, ổn định hơn nhiều', 'Không theo kịp xu hướng thay đổi nhanh', 'Lựa chọn mặc định tốt cho hầu hết bảng điều khiển SOC'],
+            ['STL bền vững trên log', 'Cả xu hướng, mùa vụ thay đổi dần, và chống nhiễm bẩn', 'Cần đủ lịch sử, cần chọn chu kỳ, khó giải thích hơn', 'Khi xu hướng thật sự dịch chuyển hoặc cần phần dư sạch làm đặc trưng'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Bốn chuyện làm hỏng mùa vụ mà mô hình không tự biết',
+          md: '**Nhiều múi giờ.** Một công ty toàn cầu không có “3h sáng”. Hãy phân rã theo từng vùng hoặc từng múi giờ của người dùng, đừng gộp rồi lấy trung bình — gộp lại sẽ làm nhịp ngày phẳng đi và bạn mất chính tín hiệu đang cần.\n\n**Ngày lễ và sự kiện đã biết.** Tết, nghỉ lễ, ngày phát hành sản phẩm, đợt cập nhật hàng loạt. Chúng là ngoại lai có thể dự đoán trước, nên hãy đưa vào dưới dạng biến ngoại sinh hoặc lập lịch tạm ngưng cảnh báo, thay vì để chúng thành báo động giả rồi bào mòn lòng tin.\n\n**Thay đổi tổ chức.** Đổi lịch làm việc, sáp nhập, chuyển sang làm từ xa. Mùa vụ đứt gãy chứ không trôi dần, và STL cần vài chu kỳ mới bắt kịp. Hãy ghi các mốc này vào một tệp và đối chiếu khi cảnh báo tăng bất thường.\n\n**Đếm sự kiện thay vì đếm thực thể.** Một máy hỏng có thể tạo 50.000 dòng log; số dòng tăng vọt trong khi số **máy** liên quan vẫn là một. Với hầu hết bài toán bảo mật, chuỗi đáng theo dõi là số thực thể riêng biệt, không phải số sự kiện thô.',
+        },
+        {
+          t: 'compare',
+          title: 'Phần dư dùng làm gì: cảnh báo trực tiếp hay làm đặc trưng',
+          left: {
+            title: 'Cảnh báo thẳng trên phần dư',
+            items: [
+              'Đơn giản, giải thích được trong một câu cho analyst',
+              'Không cần nhãn, chạy được ngay từ tuần đầu',
+              'Chỉ thấy được bất thường về khối lượng, mù với bất thường về thành phần',
+              'Ngưỡng đặt theo số cảnh báo mỗi ngày mà đội chịu được',
+              'Đủ dùng cho dò mật khẩu, rút dữ liệu ồ ạt, quét cổng',
+            ],
+          },
+          right: {
+            title: 'Đưa phần dư vào mô hình như một đặc trưng',
+            items: [
+              'Kết hợp được với đặc trưng thực thể, danh tiếng, đồ thị',
+              'Bắt được các trường hợp khối lượng bình thường nhưng cấu trúc lạ',
+              'Cần nhãn, hoặc cần một mô hình bất thường ở bài t6-l6',
+              'Khó giải thích hơn, cần công cụ ở bài t10-l4',
+              'Đúng hướng cho UEBA ở bài ngay sau đây',
+            ],
+          },
+        },
+        {
+          t: 'checklist',
+          title: 'Trước khi bật một cảnh báo dựa trên khối lượng',
+          items: [
+            'Đã vẽ chuỗi ra và nhìn bằng mắt ít nhất bốn tuần liên tiếp',
+            'Đã xác định chu kỳ thật: nhịp ngày, nhịp tuần, hay cả hai',
+            'Đã chọn giữa cộng tính và nhân tính, hoặc lấy log nếu biến thiên theo tỉ lệ',
+            'Đang dùng chế độ bền vững để tấn công cũ không tự nâng mức nền',
+            'Đang chấm điểm bằng thang đo bền vững, không phải độ lệch chuẩn',
+            'Đã so với đường cơ sở ngây thơ cùng giờ tuần trước và chứng minh được là hơn',
+            'Đã tách theo múi giờ, và đã có danh sách ngày lễ cùng sự kiện đã biết',
+            'Đang đếm thực thể riêng biệt chứ không đếm dòng log thô',
+          ],
+        },
+      ],
+      keyTakeaways: [
+        'Một ngưỡng cố định không thể vừa đúng cho khung giờ cao điểm vừa đúng cho lúc nửa đêm khi hai mức nền chênh nhau hàng chục lần',
+        'Phân rã tách chuỗi thành xu hướng, mùa vụ và phần dư; chỉ phần dư mới dùng để phát hiện',
+        'Trong bảo mật bắt buộc dùng STL bền vững: phân rã cổ điển để tấn công cũ tự nâng mức nền của chính khung giờ nó xảy ra',
+        'Chấm điểm phần dư bằng MAD chứ không bằng độ lệch chuẩn, vì độ lệch chuẩn bị chính các đỉnh cần tìm thổi phồng',
+        'Luôn đo đường cơ sở ngây thơ cùng giờ tuần trước trước khi dựng mô hình phức tạp — nó thường đã rất mạnh',
+      ],
+      cards: [
+        {
+          id: 't6l10-c1',
+          front: 'Phân rã chuỗi thời gian cho ba thành phần nào, và thành phần nào dùng để phát hiện?',
+          back: 'Xu hướng, mùa vụ và phần dư. Chỉ chấm điểm trên phần dư — phần còn lại sau khi trừ nhịp có thể dự đoán được.',
+          tags: ['chuoi-thoi-gian', 'duong-co-so'],
+        },
+        {
+          id: 't6l10-c2',
+          front: 'Vì sao phân rã cổ điển nguy hiểm khi dữ liệu có chứa tấn công?',
+          back: 'Nó ước lượng mùa vụ bằng trung bình cộng, nên một đợt tấn công kéo mức nền của chính khung giờ đó lên và tự làm phần dư của mình nhỏ đi. STL với robust=True giảm trọng số các điểm ngoại lai.',
+          tags: ['chuoi-thoi-gian', 'dau-doc'],
+        },
+        {
+          id: 't6l10-c3',
+          front: 'Vì sao dùng MAD thay cho độ lệch chuẩn khi chấm điểm phần dư?',
+          back: 'Độ lệch chuẩn bị chính các điểm bất thường thổi phồng nên ngưỡng tự nới rộng đúng lúc có tấn công. MAD chịu được tới 50% dữ liệu bị nhiễm.',
+          tags: ['chuoi-thoi-gian', 'thong-ke-ben-vung'],
+        },
+        {
+          id: 't6l10-c4',
+          front: 'Cần tối thiểu bao nhiêu dữ liệu để phân rã một chuỗi có nhịp tuần?',
+          back: 'Ít nhất hai chu kỳ đầy đủ, trong thực tế nên có ba tới bốn tuần trở lên. Ít hơn thì không tách được mùa vụ khỏi dao động ngẫu nhiên.',
+          tags: ['chuoi-thoi-gian'],
+        },
+        {
+          id: 't6l10-c5',
+          front: 'Đường cơ sở ngây thơ nào nên luôn đo trước khi dựng mô hình chuỗi thời gian?',
+          back: 'Giá trị cùng giờ, cùng thứ, tuần trước. Nó bắt cả nhịp ngày lẫn nhịp tuần, không cần huấn luyện, và thường đã rất khó vượt.',
+          tags: ['chuoi-thoi-gian', 'duong-co-so'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't6-l10-q1',
+          kind: 'mcq',
+          tags: ['chuoi-thoi-gian', 'duong-co-so'],
+          q: 'Chuỗi số byte tải lên của một nhân viên có nhịp tuần rõ rệt. Bạn nên chấm điểm bất thường trên đại lượng nào?',
+          options: [
+            'Giá trị thô của chuỗi',
+            'Phần dư sau khi trừ xu hướng và mùa vụ',
+            'Thành phần mùa vụ',
+            'Thành phần xu hướng',
+          ],
+          answer: 1,
+          why: 'Xu hướng và mùa vụ là phần **dự đoán được** — chúng mô tả điều đáng lẽ phải xảy ra. Bất thường theo định nghĩa là phần không giải thích được, tức phần dư. Chấm trên giá trị thô là quay lại đúng bài toán ngưỡng cố định ở đầu bài; chấm trên mùa vụ hay xu hướng thì đang chấm chính cái nhịp bình thường của tổ chức.',
+          distractorWhy: [
+            'Giá trị thô bị nhịp ngày và tuần chi phối, nên mọi ngưỡng đặt trên nó đều sai ở ít nhất một khung giờ.',
+            '',
+            'Mùa vụ chính là phần bình thường lặp lại; nó không mang thông tin bất thường.',
+            'Xu hướng là chuyển động chậm nhiều tháng, quá chậm để phản ánh một sự kiện bảo mật.',
+          ],
+        },
+        {
+          id: 't6-l10-q2',
+          kind: 'mcq',
+          tags: ['chuoi-thoi-gian', 'dau-doc'],
+          q: 'Kẻ tấn công tăng dần khối lượng rút dữ liệu trong tám tuần, mỗi tuần nhích lên một chút. Đường cơ sở của bạn tự huấn luyện lại hằng tuần trên dữ liệu gần nhất, không lọc. Chuyện gì xảy ra?',
+          options: [
+            'Cảnh báo kêu ngay tuần đầu vì xu hướng tăng bị phát hiện',
+            'Đường cơ sở dần coi mức mới là bình thường, nên phần dư luôn nhỏ và không bao giờ kêu',
+            'Thành phần mùa vụ hấp thụ toàn bộ nên xu hướng không đổi',
+            'Không có gì xảy ra vì STL luôn bền vững với thay đổi chậm',
+          ],
+          answer: 1,
+          why: 'Đây là đầu độc đường cơ sở, và nó không cần chạm vào tập huấn luyện nào — chỉ cần đủ kiên nhẫn. Mỗi tuần mức tăng nhỏ nằm trong dao động bình thường nên phần dư không vượt ngưỡng, rồi tuần sau mức đó đã thành một phần của đường cơ sở. Chế độ bền vững chống được **đỉnh nhọn**, không chống được **trôi chậm có chủ đích**. Cách phòng: neo đường cơ sở vào một cửa sổ lịch sử dài đã được kiểm định, theo dõi mức tuyệt đối song song với phần dư, và cảnh báo riêng khi chính đường cơ sở dịch chuyển quá một tỉ lệ nào đó.',
+          distractorWhy: [
+            'Mức tăng mỗi tuần được thiết kế để nằm dưới ngưỡng, nên tuần đầu không có gì kêu.',
+            '',
+            'Mùa vụ chỉ hấp thụ thành phần lặp theo chu kỳ; một mức tăng đơn điệu sẽ đi vào xu hướng.',
+            'Chế độ bền vững giảm trọng số điểm ngoại lai đơn lẻ, không nhận ra một dịch chuyển từ từ.',
+          ],
+        },
+        {
+          id: 't6-l10-q3',
+          kind: 'truefalse',
+          tags: ['chuoi-thoi-gian', 'duong-co-so'],
+          q: 'Với công ty có nhân viên ở nhiều múi giờ, nên gộp toàn bộ đăng nhập thành một chuỗi rồi phân rã một lần cho gọn.',
+          answer: false,
+          why: 'Gộp nhiều múi giờ làm các nhịp ngày lệch pha nhau chồng lên nhau, và kết quả là một chuỗi tổng **phẳng hơn nhiều** so với từng vùng. Bạn mất đúng tín hiệu cần tìm: một lần đăng nhập lúc 3h sáng giờ địa phương của người dùng đó vẫn là bất thường, kể cả khi ở nơi khác đang là giờ làm việc. Hãy phân rã theo từng vùng hoặc chuẩn hoá timestamp về múi giờ của chính người dùng trước khi dựng chuỗi.',
+        },
+        {
+          id: 't6-l10-q4',
+          kind: 'mcq',
+          tags: ['chuoi-thoi-gian'],
+          q: 'Chuỗi khối lượng của bạn tăng theo tỉ lệ: công ty lớn gấp đôi thì đỉnh sáng thứ Hai cũng gấp đôi. Xử lý thế nào?',
+          options: [
+            'Giữ nguyên mô hình cộng tính, tăng ngưỡng lên gấp đôi',
+            'Lấy log chuỗi rồi dùng mô hình cộng tính, hoặc dùng thẳng mô hình nhân tính',
+            'Chuẩn hoá chuỗi về khoảng 0 tới 1 theo giá trị lớn nhất',
+            'Chuyển sang đếm sự kiện thay vì đếm thực thể',
+          ],
+          answer: 1,
+          why: 'Khi biên độ mùa vụ tỉ lệ với mức nền, mô hình cộng tính sẽ ước lượng một biên độ trung bình — quá lớn cho giai đoạn đầu và quá nhỏ cho giai đoạn sau. Lấy log biến quan hệ nhân thành quan hệ cộng, nên mô hình cộng tính lại đúng. Với dữ liệu đếm có giá trị 0, dùng log(y + 1). Đây cũng là lý do đoạn mã trong bài gọi `np.log1p` trước khi phân rã.',
+          distractorWhy: [
+            'Tăng ngưỡng thủ công chỉ đúng tại một thời điểm rồi lại sai ngay khi quy mô đổi tiếp.',
+            '',
+            'Chuẩn hoá theo giá trị lớn nhất rất nhạy với một đỉnh ngoại lai duy nhất và không sửa được vấn đề biên độ.',
+            'Đếm thực thể là lời khuyên tốt nhưng cho một vấn đề khác, không giải quyết chuyện biên độ theo tỉ lệ.',
+          ],
+        },
+        {
+          id: 't6-l10-q5',
+          kind: 'multi',
+          tags: ['chuoi-thoi-gian', 'duong-co-so'],
+          q: 'Chọn các phát biểu ĐÚNG về việc dựng đường cơ sở khối lượng cho bảo mật.',
+          options: [
+            'Nên đo đường cơ sở cùng giờ tuần trước làm mốc so sánh trước khi dựng mô hình phức tạp',
+            'Ngày lễ và đợt cập nhật hàng loạt nên được xử lý như sự kiện đã biết thay vì để thành báo động giả',
+            'Chuỗi số thực thể riêng biệt thường đáng theo dõi hơn chuỗi số dòng log thô',
+            'Có hai chu kỳ dữ liệu là đủ để đường cơ sở ổn định trong thực tế',
+          ],
+          answers: [0, 1, 2],
+          why: 'Ba phát biểu đầu đều là thực hành chuẩn: mốc ngây thơ để biết mô hình phức tạp có đáng không, sự kiện đã biết để không bào mòn lòng tin của analyst, và đếm thực thể để một máy hỏng không giả dạng thành một đợt tấn công. Phát biểu 4 **sai**: hai chu kỳ là mức tối thiểu về mặt toán học để tách được mùa vụ, nhưng trong thực tế cần ba tới bốn chu kỳ trở lên thì ước lượng mới đủ ổn định để đặt ngưỡng.',
+        },
+      ],
+      further: [
+        {
+          title: 'Forecasting: Principles and Practice — Hyndman và Athanasopoulos, chương phân rã chuỗi',
+          note: 'Đọc miễn phí trên mạng. Phần STL và phần nhiều mùa vụ là đủ cho mọi việc trong bài này; bỏ qua phần dự báo nếu bạn chỉ cần phát hiện.',
+        },
+        {
+          title: 'statsmodels — STL và MSTL',
+          note: 'MSTL xử lý nhiều chu kỳ cùng lúc, ví dụ vừa 24 giờ vừa 168 giờ. Đọc khi một chu kỳ duy nhất không mô tả đủ dữ liệu của bạn.',
+        },
+        {
+          title: 'Automatic Anomaly Detection in the Cloud Via Statistical Learning — Twitter (2015)',
+          note: 'Mô tả S-H-ESD, biến thể phát hiện bất thường dựa trên phân rã và thống kê bền vững, cùng lý do phải chống nhiễm bẩn khi dữ liệu chứa chính thứ bạn đang tìm.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
       id: 't6-l7',
       trackId: 'ung-dung',
       title: 'UEBA và mối đe doạ nội bộ',
@@ -2545,6 +2863,344 @@ export const track6: Track = {
         {
           title: 'EU AI Act — Điều 5 và Phụ lục III',
           note: 'Danh mục thực hành bị cấm và danh mục hệ thống rủi ro cao, trong đó có quản lý lao động. Đọc trực tiếp văn bản, đừng đọc bản tóm tắt của nhà cung cấp.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't6-l11',
+      trackId: 'ung-dung',
+      title: 'Học máy trên đồ thị cho di chuyển ngang',
+      subtitle: 'Từ đặc trưng đồ thị sang học TRÊN đồ thị — và vì sao PageRank thường đã đủ',
+      minutes: 25,
+      practiceMinutes: 3,
+      level: 'chuyen-gia',
+      prereqs: ['t5-l4', 't6-l7'],
+      why: {
+        short:
+          'Di chuyển ngang là một hiện tượng của cấu trúc kết nối chứ không của từng sự kiện riêng lẻ: mỗi lần đăng nhập đều hợp lệ, chỉ có hình dạng đường đi mới lộ ra cuộc tấn công.',
+        scenario:
+          'Kẻ tấn công có thông tin đăng nhập hợp lệ của một nhân viên kế toán. Mọi phiên đăng nhập đều đúng mật khẩu, đúng máy trạm, đúng giao thức. Không dòng log nào bất thường khi xét riêng. Nhưng trong hai giờ, tài khoản đó chạm tới 40 máy chủ mà nó chưa từng chạm — và đó là một hình dạng nhìn thấy được, nếu bạn nhìn dữ liệu như một đồ thị.',
+        roles: ['Threat Hunter', 'Detection Engineer', 'Security Data Scientist', 'ML Engineer'],
+        costOfNotKnowing:
+          'Bạn dựng phát hiện trên từng sự kiện độc lập và bỏ lọt toàn bộ họ kỹ thuật sau khi kẻ tấn công đã vào được bên trong — giai đoạn mà chúng dành nhiều thời gian nhất và để lại nhiều dấu vết nhất.',
+      },
+      objectives: [
+        'Mô hình hoá log xác thực thành đồ thị và chỉ ra di chuyển ngang trông như thế nào trên đó',
+        'Phân biệt ba mức tiếp cận: chỉ số cấu trúc, nhúng nút, và mạng nơ-ron đồ thị — cùng chi phí của từng mức',
+        'Giải thích vì sao bảo mật gần như luôn cần phương pháp quy nạp thay vì chuyển dẫn',
+        'Nhận ra rò rỉ thời gian trong đồ thị, dạng rò rỉ mà cách chia tập thông thường không chặn được',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Một tài khoản kế toán bình thường đăng nhập vào 3 máy chủ. Hôm nay nó đăng nhập vào 40 máy chủ, mỗi lần đều đúng mật khẩu và đúng giao thức. Nếu bạn chỉ có bảng log phẳng gồm các dòng (người dùng, máy đích, thời gian), đặc trưng nào bắt được chuyện này, và đặc trưng nào thì không?',
+          reveal:
+            'Đặc trưng **theo dòng** không bắt được gì: mỗi dòng riêng lẻ hoàn toàn hợp lệ. Đó là lý do bộ phát hiện dựa trên sự kiện đơn lẻ mù hoàn toàn với giai đoạn này.\n\nĐặc trưng **tổng hợp theo thực thể** bắt được kha khá: số máy đích riêng biệt trong một giờ tăng từ 3 lên 40 là một tín hiệu rất mạnh, và bạn đã dựng được nó từ bài t5-l4. **Hãy làm cái này trước.**\n\nĐặc trưng **đồ thị** bắt được thứ mà tổng hợp theo thực thể vẫn bỏ sót: 40 máy đó nằm ở đâu trong mạng? Nếu chúng trải khắp bốn phân vùng mà kế toán chưa từng chạm, đó là một câu chuyện khác hẳn so với 40 máy trong cùng một cụm. Cụ thể hơn nữa: đường đi từ máy trạm kế toán tới máy chủ cơ sở dữ liệu tài chính đi qua **những cạnh chưa từng tồn tại trước đây** — và độ dài, hình dạng, độ hiếm của đường đi ấy chính là thứ chỉ đồ thị mới nói được.\n\nĐiểm mấu chốt của cả bài: giá trị tăng thêm của đồ thị nằm ở **quan hệ nhiều bước**, không ở việc đếm. Nếu bài toán của bạn chỉ cần đếm, đừng dựng đồ thị.',
+        },
+        {
+          t: 'figure',
+          id: 'fig-graph-lateral',
+          caption: 'Cùng một tập log, hai cách nhìn. Dạng bảng thì mỗi dòng đều hợp lệ; dạng đồ thị thì đường đi từ máy trạm tới máy chủ nhạy cảm hiện ra như một chuỗi cạnh mới xuất hiện.',
+        },
+        { t: 'h', text: 'Dựng đồ thị: quyết định đầu tiên quan trọng hơn thuật toán', level: 2 },
+        {
+          t: 'p',
+          md: 'Trước khi chọn mô hình, bạn phải chọn **nút là gì và cạnh là gì**. Lựa chọn này quyết định phần lớn kết quả, và nó thường bị bỏ qua để nhảy thẳng vào phần thuật toán.',
+        },
+        {
+          t: 'table',
+          caption: 'Bốn cách dựng đồ thị từ dữ liệu bảo mật, và câu hỏi mà mỗi cách trả lời được.',
+          head: ['Nút', 'Cạnh', 'Trả lời được câu hỏi gì', 'Cạm bẫy'],
+          rows: [
+            ['Người dùng và máy', 'Một lần xác thực thành công', 'Di chuyển ngang, lạm dụng thông tin đăng nhập', 'Máy chủ hạ tầng nối với tất cả nên luôn nổi bật một cách vô nghĩa'],
+            ['Địa chỉ IP nội bộ', 'Một luồng mạng', 'Quét mạng, kênh chỉ huy điều khiển', 'DHCP làm một IP đổi chủ; phải phân giải về danh tính thật'],
+            ['Tiến trình', 'Quan hệ cha con', 'Chuỗi thực thi bất thường, sống nhờ công cụ sẵn có', 'Đồ thị rất sâu và rất thưa, phần lớn nhánh vô hại'],
+            ['Tệp và máy', 'Lần đầu tệp xuất hiện trên máy', 'Lan truyền mã độc, mẫu hiếm gặp', 'Cực kỳ lệch: hầu hết tệp chỉ xuất hiện đúng một lần'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Bắt đầu từ chỉ số cấu trúc, đừng bắt đầu từ mạng nơ-ron',
+          md: 'Ba đại lượng dưới đây tính được bằng vài dòng, giải thích được cho analyst trong một câu, và trong nhiều triển khai thật đã chiếm phần lớn giá trị:\n\n**Bậc của nút và mức thay đổi bậc.** Máy trạm này hôm nay nối tới bao nhiêu đích, so với trung vị 30 ngày của chính nó? Đây là đặc trưng đồ thị mạnh nhất tính theo tỉ lệ công sức.\n\n**Cạnh mới.** Cặp (nguồn, đích) này đã từng xuất hiện trong 90 ngày qua chưa? Trong mạng doanh nghiệp, phần lớn cặp là lặp lại; một cạnh hoàn toàn mới tới tài sản nhạy cảm là tín hiệu đáng đọc.\n\n**PageRank và các độ đo trung tâm.** Ai là nút quan trọng trong đồ thị xác thực? Điều đáng chú ý không phải bản thân thứ hạng — máy chủ tệp luôn đứng đầu — mà là **thay đổi thứ hạng**: một máy trạm bình thường đột nhiên có độ trung tâm cao nghĩa là nó đang trở thành điểm trung chuyển.\n\nBa đặc trưng này đưa thẳng vào mô hình gradient boosting bạn đã có ở chặng 3. Không cần một hệ thống mới, và bạn giữ được toàn bộ khả năng giải thích.',
+        },
+        { t: 'h', text: 'Mức hai: nhúng nút bằng node2vec', level: 2 },
+        {
+          t: 'p',
+          md: 'Nhúng nút biến mỗi nút thành một vector, sao cho các nút “giống nhau” trên đồ thị thì gần nhau trong không gian vector. **node2vec** làm việc đó bằng cách đi bộ ngẫu nhiên từ mỗi nút để sinh ra các “câu” gồm chuỗi nút, rồi huấn luyện một mô hình skip-gram y hệt như với văn bản. Vector thu được dùng làm đặc trưng cho bất kỳ mô hình nào.',
+        },
+        {
+          t: 'callout',
+          kind: 'math',
+          title: 'Hai tham số quyết định node2vec học ra cái gì',
+          md: 'node2vec điều khiển bước đi bằng hai tham số, và chọn sai chúng là lý do phổ biến nhất khiến nhúng đồ thị “không hoạt động”:\n\n**Tham số quay lại p** điều chỉnh khả năng đi ngược về nút vừa rời.\n\n**Tham số ra vào q** mới là cái quan trọng. Với **q nhỏ (dưới 1)**, bước đi có xu hướng đi xa dần, giống duyệt theo chiều sâu, nên nhúng học ra **cộng đồng**: hai nút gần nhau vì chúng ở cùng một cụm. Với **q lớn (trên 1)**, bước đi quanh quẩn gần nút gốc, giống duyệt theo chiều rộng, nên nhúng học ra **vai trò cấu trúc**: hai nút gần nhau vì chúng có hình dạng lân cận giống nhau, kể cả khi nằm ở hai đầu mạng.\n\nTrong bảo mật, thứ ta thường cần là **vai trò**: “máy này hành xử như một bộ điều khiển miền” là câu hỏi hữu ích hơn “máy này thuộc cụm nào”. Vậy nên với bài toán vai trò, hãy bắt đầu từ q lớn hơn 1. Với bài toán phân vùng mạng hay tìm cụm bị chiếm, dùng q nhỏ.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't6l11-cp1',
+              kind: 'mcq',
+              tags: ['do-thi', 'di-chuyen-ngang'],
+              q: 'Bạn tính PageRank trên đồ thị xác thực và thấy các máy chủ tệp cùng bộ điều khiển miền đứng đầu bảng. Nên làm gì với kết quả này?',
+              options: [
+                'Cảnh báo về các nút đứng đầu vì chúng quan trọng nhất',
+                'Bỏ thứ hạng tuyệt đối, theo dõi mức THAY ĐỔI thứ hạng của từng nút so với chính nó',
+                'Loại các máy chủ đó khỏi đồ thị rồi tính lại',
+                'Kết luận PageRank không dùng được cho đồ thị xác thực',
+              ],
+              answer: 1,
+              why: 'Máy chủ tệp đứng đầu là chuyện đương nhiên và lặp lại mỗi ngày — nó không mang tin. Tín hiệu nằm ở **độ lệch so với chính nút đó trong quá khứ**: một máy trạm kế toán leo từ phân vị 40 lên phân vị 99 trong một ngày nghĩa là nó đang trở thành điểm trung chuyển, đúng dấu hiệu của một máy bị chiếm dùng làm bàn đạp. Nguyên tắc này lặp lại xuyên suốt UEBA: so một thực thể với quá khứ của chính nó, không so với toàn bộ quần thể.',
+              distractorWhy: [
+                'Các nút đứng đầu là hạ tầng bình thường; cảnh báo về chúng tạo ra danh sách y hệt nhau mỗi ngày.',
+                '',
+                'Loại chúng đi làm hỏng cấu trúc đồ thị, mà chúng lại chính là đích thường thấy của di chuyển ngang.',
+                'PageRank dùng rất tốt cho đồ thị xác thực, chỉ cần đọc đúng đại lượng.',
+              ],
+            },
+            {
+              id: 't6l11-cp2',
+              kind: 'truefalse',
+              tags: ['do-thi', 'ro-ri-du-lieu'],
+              q: 'Dựng đồ thị từ toàn bộ 90 ngày dữ liệu rồi chia nút ngẫu nhiên thành tập huấn luyện và tập kiểm thử là cách chia hợp lệ.',
+              answer: false,
+              why: 'Đây là rò rỉ thời gian ở dạng đặc biệt khó thấy. Cạnh của **ngày 90** đã tham gia vào việc tính bậc, độ trung tâm và nhúng của một nút nằm trong tập huấn luyện — nên mô hình đã nhìn thấy tương lai, dù không dòng dữ liệu nào bị sao chép qua ranh giới. Cách chia đúng: cắt theo thời gian, dựng lại đồ thị **chỉ từ các cạnh trước mốc cắt**, rồi mới tính đặc trưng. Con số đo được sẽ thấp hơn đáng kể — và đó là con số thật.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Mức ba: mạng nơ-ron đồ thị, và điều kiện bắt buộc', level: 2 },
+        {
+          t: 'p',
+          md: 'Mạng nơ-ron đồ thị hoạt động theo cơ chế **truyền thông điệp**: mỗi vòng, một nút gộp biểu diễn của các nút lân cận rồi cập nhật biểu diễn của chính mình. Sau k vòng, biểu diễn của một nút chứa thông tin từ toàn bộ vùng lân cận cách nó k bước. Với di chuyển ngang, k bằng 2 hoặc 3 thường là đủ, vì đường đi đáng quan tâm ngắn.',
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Quy nạp hay chuyển dẫn — chọn sai là hệ thống vô dụng khi chạy thật',
+          md: 'Đây là quyết định kỹ thuật quan trọng nhất khi đưa GNN vào bảo mật, và nó thường bị phát hiện quá muộn.\n\nPhương pháp **chuyển dẫn** (GCN thuần, node2vec ở dạng cơ bản) học một vector riêng cho từng nút **có trong lúc huấn luyện**. Một máy mới cắm vào mạng sáng nay không có vector nào cả, và cách duy nhất để có là huấn luyện lại toàn bộ.\n\nPhương pháp **quy nạp** (GraphSAGE và các biến thể) học một **hàm tổng hợp** từ đặc trưng của lân cận. Nút mới chưa từng thấy vẫn được chấm điểm ngay, vì hàm áp dụng được cho lân cận bất kỳ.\n\nMạng doanh nghiệp thay đổi mỗi ngày: máy mới, nhân viên mới, container sinh ra rồi mất đi trong vài phút. Chuyển dẫn nghĩa là phải huấn luyện lại liên tục để theo kịp, và trong khoảng thời gian giữa hai lần huấn luyện, mọi thực thể mới đều vô hình — mà thực thể mới lại đúng là thứ đáng nghi nhất.\n\nQuy tắc: trong bảo mật, mặc định chọn quy nạp. Nếu định dùng phương pháp chuyển dẫn, hãy trả lời trước câu hỏi *“một máy xuất hiện lúc 9h sáng nay được chấm điểm bằng cách nào?”*',
+        },
+        {
+          t: 'compare',
+          title: 'Ba mức tiếp cận, xếp theo thứ tự nên thử',
+          left: {
+            title: 'Chỉ số cấu trúc và nhúng',
+            items: [
+              'Bậc, thay đổi bậc, cạnh mới, PageRank, k-core',
+              'Tính bằng networkx hoặc một truy vấn SQL, chạy trên máy để bàn',
+              'Giải thích được: “tài khoản này chạm 40 máy, bình thường là 3”',
+              'Đưa thẳng vào mô hình gradient boosting đang có',
+              'Nên là nơi bắt đầu, và với nhiều tổ chức là nơi kết thúc',
+            ],
+          },
+          right: {
+            title: 'Mạng nơ-ron đồ thị',
+            items: [
+              'Học biểu diễn nhiều bước, kết hợp đặc trưng nút và cấu trúc',
+              'Cần hạ tầng huấn luyện, lấy mẫu lân cận, và người vận hành nó',
+              'Khó giải thích; analyst cần đường đi cụ thể chứ không cần khoảng cách vector',
+              'Bắt buộc dùng biến thể quy nạp vì đồ thị đổi hằng ngày',
+              'Chỉ đáng làm khi đã vắt kiệt cột bên trái và đo được là chưa đủ',
+            ],
+          },
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Đặc trưng đồ thị theo cửa sổ thời gian, không rò rỉ tương lai',
+          code: `import networkx as nx
+import pandas as pd
+
+def dac_trung_do_thi(log, moc, cua_so_ngay=30):
+    """Đặc trưng cho MỖI thực thể tại thời điểm moc.
+
+    Quy tắc bất di bất dịch: chỉ dùng các cạnh có thời gian < moc.
+    Dùng cả log rồi mới cắt là dạng rò rỉ khó thấy nhất trên đồ thị.
+    """
+    qua_khu = log[(log.thoi_gian < moc)
+                  & (log.thoi_gian >= moc - pd.Timedelta(days=cua_so_ngay))]
+
+    G = nx.from_pandas_edgelist(qua_khu, 'nguon', 'dich',
+                                create_using=nx.DiGraph())
+    pr = nx.pagerank(G, alpha=0.85)
+    canh_cu = set(zip(qua_khu.nguon, qua_khu.dich))
+
+    # Cửa sổ hiện tại: một giờ ngay sau mốc, phần ta muốn chấm điểm
+    hien_tai = log[(log.thoi_gian >= moc)
+                   & (log.thoi_gian < moc + pd.Timedelta(hours=1))]
+
+    ra = []
+    for nguon, nhom in hien_tai.groupby('nguon'):
+        dich_rieng = nhom.dich.nunique()
+        bac_cu = G.out_degree(nguon) if nguon in G else 0
+        moi = sum((nguon, d) not in canh_cu for d in nhom.dich.unique())
+        ra.append({
+            'thuc_the': nguon,
+            'dich_rieng_1h': dich_rieng,
+            # Tỉ lệ so với CHÍNH NÓ trong quá khứ — không so với quần thể
+            'ty_le_so_voi_nen': dich_rieng / max(bac_cu, 1),
+            'canh_moi': moi,
+            'pagerank_qua_khu': pr.get(nguon, 0.0),
+        })
+    return pd.DataFrame(ra)`,
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Ba lý do khiến dự án đồ thị thất bại sau khi mô hình đã chạy tốt',
+          md: '**Quy mô vượt dự tính.** Đồ thị xác thực của một tổ chức cỡ trung có thể lên tới hàng trăm triệu cạnh mỗi tháng. Nhiều thuật toán trung tâm có độ phức tạp siêu tuyến tính; betweenness chính xác trên đồ thị cỡ đó là bất khả thi. Hãy dùng bản xấp xỉ có lấy mẫu, hoặc giới hạn vào đồ thị con quanh các tài sản quan trọng.\n\n**Lây nhãn sang hàng xóm.** Trực giác “hàng xóm của máy bị chiếm cũng đáng ngờ” đúng một phần và sai nguy hiểm ở phần còn lại: mọi máy trong công ty đều là hàng xóm của máy chủ tệp. Truyền nhãn không kiểm soát biến toàn bộ tổ chức thành đáng ngờ trong hai bước.\n\n**Analyst không dùng được kết quả.** Một điểm số 0,91 kèm dòng “nhúng của nút này lệch khỏi cụm” là thứ không hành động được. Cái dùng được là **đường đi cụ thể**: “tài khoản A, từ máy trạm W1, chạm tới máy chủ DB3 qua hai bước chưa từng xuất hiện trong 90 ngày.” Hãy dựng phần giải thích theo đường đi ngay từ đầu, đừng để đến lúc bàn giao mới nghĩ tới.',
+        },
+        {
+          t: 'checklist',
+          title: 'Trước khi đưa mô hình đồ thị vào vận hành',
+          items: [
+            'Đã đo mô hình đơn giản chỉ dùng đếm thực thể, và chứng minh được đồ thị hơn nó',
+            'Đồ thị được dựng lại theo từng mốc thời gian, chỉ từ cạnh trong quá khứ',
+            'Đã chuẩn hoá định danh: một máy đổi IP vẫn là một nút, không phải hai',
+            'Đã xử lý các nút hạ tầng nối với tất cả, thay vì để chúng chiếm hết bảng xếp hạng',
+            'Nếu dùng GNN thì là biến thể quy nạp, và đã trả lời được câu hỏi máy mới sáng nay chấm điểm thế nào',
+            'Đầu ra kèm đường đi cụ thể để analyst đọc, không chỉ có điểm số',
+            'Đã ước lượng chi phí tính toán ở quy mô thật, không chỉ trên đồ thị mẫu',
+          ],
+        },
+      ],
+      keyTakeaways: [
+        'Di chuyển ngang là hiện tượng của cấu trúc kết nối: từng sự kiện đều hợp lệ, chỉ hình dạng đường đi mới lộ ra tấn công',
+        'Quyết định nút là gì và cạnh là gì ảnh hưởng tới kết quả nhiều hơn việc chọn thuật toán',
+        'Bậc, thay đổi bậc, cạnh mới và PageRank đưa vào mô hình sẵn có thường chiếm phần lớn giá trị với chi phí rất thấp',
+        'Trong bảo mật phải dùng phương pháp quy nạp, vì đồ thị đổi hằng ngày và thực thể mới lại là thứ đáng nghi nhất',
+        'Dựng đồ thị từ toàn bộ lịch sử rồi chia nút ngẫu nhiên là rò rỉ thời gian; phải dựng lại đồ thị chỉ từ cạnh trước mốc cắt',
+      ],
+      cards: [
+        {
+          id: 't6l11-c1',
+          front: 'Vì sao di chuyển ngang khó bắt bằng phát hiện theo từng sự kiện?',
+          back: 'Vì mỗi lần xác thực riêng lẻ đều hợp lệ — đúng thông tin đăng nhập, đúng giao thức. Tín hiệu nằm ở cấu trúc đường đi qua nhiều bước, không nằm trong bất kỳ dòng log đơn lẻ nào.',
+          tags: ['do-thi', 'di-chuyen-ngang'],
+        },
+        {
+          id: 't6l11-c2',
+          front: 'Với PageRank trên đồ thị xác thực, đại lượng nào mới mang tín hiệu?',
+          back: 'Mức thay đổi thứ hạng của một nút so với quá khứ của chính nó. Thứ hạng tuyệt đối chỉ nói lên rằng máy chủ tệp là máy chủ tệp.',
+          tags: ['do-thi', 'pagerank'],
+        },
+        {
+          id: 't6l11-c3',
+          front: 'Tham số q của node2vec điều khiển điều gì?',
+          back: 'q nhỏ dưới 1 cho bước đi giống duyệt theo chiều sâu và học ra cộng đồng; q lớn trên 1 cho bước đi giống duyệt theo chiều rộng và học ra vai trò cấu trúc. Bảo mật thường cần vai trò, tức q lớn.',
+          tags: ['do-thi', 'node2vec'],
+        },
+        {
+          id: 't6l11-c4',
+          front: 'Vì sao bảo mật gần như luôn cần phương pháp đồ thị quy nạp?',
+          back: 'Vì mạng có nút mới mỗi ngày. Phương pháp chuyển dẫn không chấm điểm được nút chưa có lúc huấn luyện, mà nút mới lại thường là thứ đáng nghi nhất.',
+          tags: ['do-thi', 'gnn'],
+        },
+        {
+          id: 't6l11-c5',
+          front: 'Rò rỉ thời gian trên đồ thị xảy ra thế nào, và chặn bằng cách nào?',
+          back: 'Dựng đồ thị từ toàn bộ lịch sử rồi chia nút ngẫu nhiên khiến cạnh tương lai tham gia vào đặc trưng của nút huấn luyện. Chặn bằng cách cắt theo thời gian và dựng lại đồ thị chỉ từ cạnh trước mốc cắt.',
+          tags: ['do-thi', 'ro-ri-du-lieu'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't6-l11-q1',
+          kind: 'mcq',
+          tags: ['do-thi', 'di-chuyen-ngang'],
+          q: 'Giá trị tăng thêm thật sự của mô hình đồ thị so với đặc trưng tổng hợp theo thực thể nằm ở đâu?',
+          options: [
+            'Đồ thị đếm chính xác hơn số máy đích riêng biệt',
+            'Đồ thị nắm được quan hệ nhiều bước: đường đi dẫn tới đâu và đi qua vùng nào',
+            'Đồ thị luôn chạy nhanh hơn trên dữ liệu lớn',
+            'Đồ thị không cần nhãn còn tổng hợp theo thực thể thì cần',
+          ],
+          answer: 1,
+          why: 'Đếm số đích riêng biệt là việc mà một câu `GROUP BY` làm được, và bạn nên làm nó trước. Đồ thị chỉ đáng dựng khi câu hỏi liên quan tới **quan hệ bắc cầu**: đường đi từ máy trạm này tới tài sản nhạy cảm dài mấy bước, đi qua những phân vùng nào, các cạnh trên đường đó hiếm tới đâu. Nếu bài toán không cần thông tin nhiều bước, đồ thị chỉ thêm chi phí vận hành mà không thêm tín hiệu.',
+          distractorWhy: [
+            'Đếm thì bảng phẳng làm rẻ hơn và chính xác như nhau.',
+            '',
+            'Ngược lại: thuật toán đồ thị thường đắt hơn nhiều so với phép gộp trên bảng.',
+            'Cả hai cách đều dùng được ở chế độ có nhãn lẫn không nhãn.',
+          ],
+        },
+        {
+          id: 't6-l11-q2',
+          kind: 'mcq',
+          tags: ['do-thi', 'gnn'],
+          q: 'Bạn triển khai GCN chuyển dẫn để chấm điểm máy trong mạng. Sáng nay có 30 máy mới được cấp phát. Chuyện gì xảy ra?',
+          options: [
+            'Chúng được chấm điểm bình thường nhờ đặc trưng nút',
+            'Chúng không có biểu diễn nào cho tới lần huấn luyện lại tiếp theo, nên tạm thời vô hình',
+            'Chúng nhận điểm bằng trung bình của các máy lân cận',
+            'Mô hình báo lỗi và dừng toàn bộ pipeline',
+          ],
+          answer: 1,
+          why: 'Phương pháp chuyển dẫn học một vector riêng cho từng nút **có mặt lúc huấn luyện**. Nút mới đơn giản là không tồn tại trong bảng nhúng. Khoảng mù này đặc biệt tai hại vì tài sản mới xuất hiện — máy lạ cắm vào mạng, container bất thường — chính là nhóm đáng theo dõi nhất. Đó là lý do GraphSAGE và các phương pháp quy nạp học **hàm tổng hợp** thay vì bảng tra, nên áp dụng được ngay cho lân cận chưa từng thấy.',
+          distractorWhy: [
+            'Đặc trưng nút chỉ giúp được nếu mô hình học hàm trên đặc trưng, tức là phương pháp quy nạp.',
+            '',
+            'Lấy trung bình lân cận chính là ý tưởng của phương pháp quy nạp; GCN chuyển dẫn không làm việc đó cho nút mới.',
+            'Thường không có lỗi ồn ào nào — nút mới bị bỏ qua lặng lẽ, và đó mới là điều nguy hiểm.',
+          ],
+        },
+        {
+          id: 't6-l11-q3',
+          kind: 'truefalse',
+          tags: ['do-thi', 'lan-truyen-nhan'],
+          q: 'Nếu một máy được xác nhận bị chiếm, nên tự động nâng điểm rủi ro cho mọi máy kề nó trong đồ thị xác thực.',
+          answer: false,
+          why: 'Nghe hợp lý nhưng sập ngay vì cấu trúc đồ thị thật: gần như mọi máy trong tổ chức đều kề với máy chủ tệp, bộ điều khiển miền hoặc máy chủ cập nhật. Truyền nhãn không kiểm soát sẽ nhuộm đỏ cả công ty chỉ trong hai bước. Muốn dùng ý tưởng này thì phải có điều kiện: chỉ truyền qua **cạnh hiếm** hoặc cạnh mới xuất hiện, chặn lan qua các nút hạ tầng bậc cao, và giới hạn số bước. Đây là ví dụ điển hình của việc trực giác về đồ thị cần được kiểm chứng bằng phân bố bậc thật.',
+        },
+        {
+          id: 't6-l11-q4',
+          kind: 'mcq',
+          tags: ['do-thi', 'ro-ri-du-lieu'],
+          q: 'Đội bạn báo cáo PR-AUC 0,94 cho mô hình GNN phát hiện di chuyển ngang. Bạn phát hiện đồ thị được dựng một lần từ cả 90 ngày rồi mới chia tập theo thời gian. Vấn đề là gì?',
+          options: [
+            'Không có vấn đề, vì tập đã được chia theo thời gian',
+            'Đặc trưng đồ thị của mẫu huấn luyện đã chứa thông tin từ các cạnh trong tương lai, nên con số 0,94 là ảo',
+            'Chia theo thời gian làm mất cân bằng lớp nên PR-AUC bị thổi phồng',
+            'GNN không dùng được cho dữ liệu có yếu tố thời gian',
+          ],
+          answer: 1,
+          why: 'Chia tập theo thời gian là điều kiện cần nhưng chưa đủ. Nếu đồ thị được dựng một lần từ toàn bộ 90 ngày thì bậc, PageRank và biểu diễn của một nút trong tập huấn luyện đã được tính từ cả những cạnh của ngày thứ 90. Mô hình đã nhìn thấy tương lai, dù không dòng dữ liệu nào bị sao chép qua ranh giới. Cách sửa: với mỗi mốc thời gian, dựng lại đồ thị **chỉ từ cạnh trước mốc đó** rồi mới tính đặc trưng — đúng như hàm trong đoạn mã của bài. Con số sau khi sửa sẽ thấp hơn nhiều.',
+          distractorWhy: [
+            'Chia tập đúng nhưng đặc trưng vẫn rò rỉ; ranh giới thời gian phải áp cho cả bước dựng đồ thị.',
+            '',
+            'Mất cân bằng ảnh hưởng tới cách đọc PR-AUC nhưng không phải nguyên nhân ở đây.',
+            'GNN dùng được cho dữ liệu thời gian, miễn là đồ thị được dựng tôn trọng trục thời gian.',
+          ],
+        },
+        {
+          id: 't6-l11-q5',
+          kind: 'multi',
+          tags: ['do-thi', 'van-hanh'],
+          q: 'Chọn các phát biểu ĐÚNG khi đưa mô hình đồ thị vào vận hành trong SOC.',
+          options: [
+            'Nên đo trước một mô hình chỉ dùng đếm thực thể để biết đồ thị có thật sự hơn không',
+            'Đầu ra nên kèm đường đi cụ thể, vì analyst không hành động được với khoảng cách vector',
+            'Các nút hạ tầng nối với hầu hết máy cần được xử lý riêng, nếu không chúng chiếm hết bảng xếp hạng',
+            'Betweenness centrality chính xác nên được tính lại mỗi giờ trên toàn bộ đồ thị',
+          ],
+          answers: [0, 1, 2],
+          why: 'Ba phát biểu đầu là thực hành chuẩn: có mốc so sánh rẻ tiền, có phần giải thích mà con người dùng được, và xử lý các nút bậc cực cao vốn luôn nổi bật một cách vô nghĩa. Phát biểu 4 **sai** về mặt chi phí: betweenness chính xác có độ phức tạp cỡ tích số nút với số cạnh, nên trên đồ thị hàng trăm triệu cạnh thì mỗi giờ một lần là bất khả thi. Trong thực tế người ta dùng bản xấp xỉ có lấy mẫu, hoặc chỉ tính trên đồ thị con quanh các tài sản quan trọng.',
+        },
+      ],
+      further: [
+        {
+          title: 'node2vec: Scalable Feature Learning for Networks — Grover và Leskovec (2016)',
+          note: 'Bài báo gốc. Đọc kỹ phần bàn về p và q cùng hai hình minh hoạ homophily và structural equivalence — đó là phần quyết định bạn dùng đúng hay sai.',
+        },
+        {
+          title: 'Inductive Representation Learning on Large Graphs — Hamilton, Ying, Leskovec (2017)',
+          note: 'GraphSAGE. Đây là bài giải thích rõ nhất vì sao quy nạp mới là thứ dùng được cho đồ thị luôn thay đổi, đúng tình huống của mạng doanh nghiệp.',
+        },
+        {
+          title: 'Comprehensive, Multi-Source Cyber-Security Events — bộ dữ liệu xác thực của Los Alamos (2015)',
+          note: 'Log xác thực thật của một tổ chức lớn trong 58 ngày, có gắn nhãn hoạt động của đội đỏ. Bộ dữ liệu chuẩn để thử nghiệm phát hiện di chuyển ngang; đọc kèm phần cạm bẫy ở bài t2-l5 trước khi dùng.',
         },
       ],
     },

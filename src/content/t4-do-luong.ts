@@ -26,7 +26,7 @@ export const track4: Track = {
   icon: 'chart',
   hue: 't4',
   blurb:
-    'Năm bài về câu hỏi khó nhất trong ML bảo mật: mô hình này tốt hay không, và tốt theo nghĩa nào. Bạn đã có bốn con số của ma trận nhầm lẫn từ cuối chặng 2; ở đây bạn học đọc đường cong ROC và PR, đặt ngưỡng bằng chi phí thật thay vì con số 0,5 mặc định, xử lý mất cân bằng mà không phá hiệu chuẩn, và quy mọi thứ về đơn vị mà tổ chức thực sự chi trả: giờ analyst và số vụ bị bỏ lọt. Đây là chặng phân biệt người hiểu bài toán với người chỉ biết gọi thư viện.',
+    'Bảy bài về câu hỏi khó nhất trong ML bảo mật: mô hình này tốt hay không, và tốt theo nghĩa nào. Bạn đã có bốn con số của ma trận nhầm lẫn từ cuối chặng 2; ở đây bạn học đọc đường cong ROC và PR, đặt ngưỡng bằng chi phí thật thay vì con số 0,5 mặc định, xử lý mất cân bằng mà không phá hiệu chuẩn, chứng minh mô hình mới thật sự hơn mô hình cũ chứ không chỉ may mắn, cho mô hình quyền nói “tôi không chắc”, và quy mọi thứ về đơn vị mà tổ chức thực sự chi trả: giờ analyst và số vụ bị bỏ lọt. Đây là chặng phân biệt người hiểu bài toán với người chỉ biết gọi thư viện.',
   outcomes: [
     'Đọc đường cong ROC và PR, và nói được vì sao ROC-AUC nói dối trên dữ liệu bảo mật',
     'Chọn và bảo vệ được lựa chọn giữa precision, recall, F-beta, ROC-AUC và PR-AUC cho từng bài toán cụ thể',
@@ -34,6 +34,8 @@ export const track4: Track = {
     'Xử lý mất cân bằng lớp mà không phá hỏng hiệu chuẩn và không tự tạo rò rỉ dữ liệu',
     'Hiệu chuẩn điểm mô hình để con số 0,9 thực sự có nghĩa là 90 phần trăm',
     'Trình bày hiệu năng phát hiện bằng bộ chỉ số lãnh đạo dùng được: precision@k, tải cảnh báo, MTTD, MTTR',
+    'Chứng minh mô hình mới hơn mô hình cũ bằng phép kiểm theo cặp và khoảng tin cậy của hiệu số, không phải bằng hai con số đặt cạnh nhau',
+    'Dựng bộ dự đoán conformal để mô hình được phép nói “không chắc” với mức bỏ sót đặt trước',
   ],
   lessons: [
     /* ====================================================================== */
@@ -1287,6 +1289,727 @@ export const track4: Track = {
         {
           title: 'scikit-learn — Probability calibration',
           note: 'Đọc phần CalibratedClassifierCV và FrozenEstimator. Từ phiên bản 1.6, cách hiệu chuẩn một mô hình đã huấn luyện sẵn đã thay đổi.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't4-l8',
+      trackId: 'do-luong',
+      title: 'So sánh hai mô hình cho ra kết luận đứng vững',
+      subtitle: 'Chênh 0,03 PR-AUC là tiến bộ thật hay là nhiễu của một tập kiểm thử?',
+      minutes: 24,
+      practiceMinutes: 3,
+      level: 'nang-cao',
+      prereqs: ['t4-l3'],
+      why: {
+        short:
+          'Mọi quyết định thay mô hình đều dựa trên một phép so sánh, nhưng so hai con số trần trụi thì không phân biệt được tiến bộ thật với dao động của một lần chia dữ liệu.',
+        scenario:
+          'Bạn vừa huấn luyện phiên bản mới. PR-AUC 0,71 so với 0,68 của mô hình đang chạy. Trưởng nhóm hỏi: “chắc chưa, đủ để thay cái đang chạy chưa?” Câu trả lời trung thực cần một khoảng tin cậy cho **hiệu số**, không phải hai con số đặt cạnh nhau.',
+        roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer'],
+        costOfNotKnowing:
+          'Bạn thay mô hình đang chạy ổn bằng một mô hình chỉ hơn nhờ may mắn chia tập, rồi mất nhiều tuần truy tìm vì sao số liệu sản xuất không khớp số liệu ngoại tuyến — trong khi nguyên nhân là chưa từng có khác biệt nào để mà khớp.',
+      },
+      objectives: [
+        'Giải thích vì sao hai chỉ số đo trên CÙNG một tập kiểm thử có sai số tương quan, và vì sao điều đó bắt buộc phải dùng phép kiểm theo cặp',
+        'Dựng bảng bất đồng và chạy kiểm định McNemar cho hai bộ phân loại ở một ngưỡng cố định',
+        'Ước lượng khoảng tin cậy cho HIỆU SỐ của một chỉ số bằng bootstrap theo cặp',
+        'Phân biệt ý nghĩa thống kê với ý nghĩa vận hành, và nêu được khi nào một khác biệt có ý nghĩa thống kê vẫn đáng bị từ chối',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Hai mô hình phát hiện mã độc chạy trên cùng 50.000 tệp kiểm thử. Mô hình A đúng 48.600 tệp, mô hình B đúng 48.538 tệp — chênh nhau 62 tệp. Bạn kết luận được gì? Nếu chưa đủ, bạn cần biết thêm con số nào?',
+          reveal:
+            'Chưa kết luận được gì, và con số còn thiếu là **hai mô hình bất đồng ở bao nhiêu tệp**.\n\nHãy hình dung hai thái cực. Nếu A và B cho cùng đáp án ở 49.900 tệp và chỉ khác nhau ở 100 tệp, thì việc A thắng 62 trong số ít ỏi đó là một tín hiệu rất mạnh. Nếu A và B khác nhau ở 20.000 tệp mà A chỉ thắng ròng 62, thì đó gần như chắc chắn là tung đồng xu.\n\nCùng một hiệu số 62, hai kết luận trái ngược. Điều quyết định không phải tổng số đúng, mà là **cấu trúc bất đồng** giữa hai mô hình trên từng mẫu.\n\nĐó chính xác là thứ kiểm định McNemar dùng, và là lý do mọi phép so sánh trên cùng một tập kiểm thử phải là phép kiểm **theo cặp**.',
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Vì sao không được dùng phép kiểm thông thường',
+          md: 'Phép kiểm hai mẫu độc lập (t-test hai mẫu, kiểm định tỉ lệ hai mẫu) giả định hai nhóm quan sát tách rời nhau. Ở đây giả định đó **sai hiển nhiên**: cùng một tệp `invoice_2024.exe` được cả hai mô hình chấm.\n\nMột tệp khó thì khó với cả hai; một tệp dễ thì dễ với cả hai. Phần lớn biến thiên trong hai con số là **biến thiên dùng chung**, đến từ việc bạn bốc trúng tập kiểm thử nào chứ không từ mô hình.\n\nPhép kiểm theo cặp khử đúng phần dùng chung đó. Hệ quả rất thực tế: nó **mạnh hơn nhiều** — phát hiện được khác biệt thật với ít dữ liệu hơn hẳn so với việc coi hai mô hình là độc lập.',
+        },
+        { t: 'h', text: 'Bảng bất đồng: bốn ô cần đếm', level: 2 },
+        {
+          t: 'p',
+          md: 'Với mỗi mẫu trong tập kiểm thử, hỏi hai câu: A đúng hay sai, B đúng hay sai. Bốn khả năng cho bốn ô. Điểm mấu chốt: **hai ô đường chéo không mang thông tin gì** về việc mô hình nào tốt hơn.',
+        },
+        {
+          t: 'table',
+          caption: 'Bảng bất đồng trên 50.000 tệp. Chỉ hai ô lệch tâm quyết định kết luận.',
+          head: ['', 'B đúng', 'B sai'],
+          rows: [
+            ['**A đúng**', '48.188 — cả hai đúng, không phân biệt được', '**412** — A thắng (n₀₁)'],
+            ['**A sai**', '**350** — B thắng (n₁₀)', '1.050 — cả hai sai, không phân biệt được'],
+          ],
+        },
+        {
+          t: 'p',
+          md: 'Số mẫu bất đồng là 412 + 350 = **762**. Giả thuyết không của McNemar không phải “hai mô hình giỏi ngang nhau” theo nghĩa mơ hồ, mà rất cụ thể: *trong các mẫu mà hai mô hình bất đồng, xác suất A đúng bằng đúng 0,5*. Nói cách khác, 762 lần bất đồng đó là 762 lần tung một đồng xu công bằng.',
+        },
+        {
+          t: 'steps',
+          title: 'Chạy kiểm định bằng tay trên con số thật',
+          steps: [
+            {
+              title: 'Bước 1 — Lấy hai ô lệch tâm',
+              md: 'n₀₁ = 412 (A đúng, B sai) và n₁₀ = 350 (A sai, B đúng). Bỏ qua hoàn toàn 48.188 và 1.050. Đây là chỗ người mới hay bối rối: vứt đi 49.238 mẫu nghe như lãng phí, nhưng những mẫu ấy **không chứa thông tin so sánh** — cả hai mô hình xử lý y hệt nhau.',
+            },
+            {
+              title: 'Bước 2 — Tính thống kê kiểm định',
+              md: 'Với hiệu chỉnh liên tục của Edwards: χ² = (|n₀₁ − n₁₀| − 1)² / (n₀₁ + n₁₀) = (|412 − 350| − 1)² / 762 = 61² / 762 = 3.721 / 762 ≈ **4,88**.',
+            },
+            {
+              title: 'Bước 3 — Quy ra giá trị p',
+              md: 'Tra phân phối chi bình phương với 1 bậc tự do: χ² = 4,88 cho **p ≈ 0,027**. Dưới 0,05, nên ta bác bỏ giả thuyết không: khác biệt giữa A và B **không** giải thích được bằng may rủi.',
+            },
+            {
+              title: 'Bước 4 — Hỏi câu quan trọng hơn: hơn bao nhiêu?',
+              md: 'A hơn B đúng 62 tệp trên 50.000, tức **0,124 điểm phần trăm** accuracy. Có ý nghĩa thống kê, và gần như chắc chắn **vô nghĩa về vận hành**. Nếu B rẻ hơn, nhanh hơn, hay dễ giải thích hơn, hãy chọn B. Bước này mới là bước ra quyết định; ba bước trên chỉ để bạn biết con số 62 là thật chứ không phải ảo.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Khi n₀₁ + n₁₀ nhỏ, đừng dùng xấp xỉ chi bình phương',
+          md: 'Xấp xỉ chi bình phương chỉ đáng tin khi tổng số mẫu bất đồng đủ lớn — quy tắc ngón tay cái phổ biến là **từ 25 trở lên**. Dưới ngưỡng đó hãy dùng **kiểm định nhị thức chính xác**: dưới giả thuyết không, n₀₁ tuân theo phân phối nhị thức B(n₀₁ + n₁₀, 0,5), và bạn tính trực tiếp xác suất hai phía.\n\nTrường hợp này rất hay gặp trong bảo mật, vì hai phiên bản của cùng một mô hình thường chỉ khác nhau ở dăm chục mẫu. `statsmodels` xử lý giúp bạn: `mcnemar(bang, exact=True)` khi ít mẫu, `exact=False, correction=True` khi nhiều.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'McNemar trên hai bộ dự đoán nhãn cứng',
+          code: `import numpy as np
+from statsmodels.stats.contingency_tables import mcnemar
+
+# y_that, du_doan_a, du_doan_b: mảng nhãn 0/1 trên CÙNG một tập kiểm thử
+a_dung = du_doan_a == y_that
+b_dung = du_doan_b == y_that
+
+n01 = int(np.sum(a_dung & ~b_dung))   # A đúng, B sai
+n10 = int(np.sum(~a_dung & b_dung))   # A sai, B đúng
+bang = [[int(np.sum(a_dung & b_dung)), n01],
+        [n10, int(np.sum(~a_dung & ~b_dung))]]
+
+# Ít mẫu bất đồng thì dùng nhị thức chính xác, nhiều thì dùng chi bình phương
+it_mau = (n01 + n10) < 25
+kq = mcnemar(bang, exact=it_mau, correction=not it_mau)
+
+print(f'Bất đồng: {n01} + {n10} = {n01 + n10}')
+print(f'p = {kq.pvalue:.4f}  ({"chính xác" if it_mau else "chi bình phương"})')
+
+# Luôn in kèm ĐỘ LỚN, nếu không bạn sẽ báo cáo một chiến thắng 0,1 điểm phần trăm
+# như thể nó là một bước tiến
+chenh = (n01 - n10) / len(y_that)
+print(f'Chênh lệch accuracy: {chenh * 100:+.3f} điểm phần trăm')`,
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't4l8-cp1',
+              kind: 'mcq',
+              tags: ['so-sanh-mo-hinh', 'mcnemar'],
+              q: 'Hai mô hình cùng đúng ở 9.000 mẫu và cùng sai ở 800 mẫu. A đúng-B sai ở 12 mẫu; A sai-B đúng ở 4 mẫu. Bạn nên làm gì?',
+              options: [
+                'Chạy McNemar với xấp xỉ chi bình phương, kết luận theo p thu được',
+                'Dùng kiểm định nhị thức chính xác, vì chỉ có 16 mẫu bất đồng',
+                'Kết luận A tốt hơn vì 12 lớn gấp ba lần 4',
+                'Dùng t-test hai mẫu độc lập trên hai vector độ chính xác',
+              ],
+              answer: 1,
+              why: 'Tổng bất đồng là 12 + 4 = **16**, dưới ngưỡng 25 nên xấp xỉ chi bình phương không còn đáng tin. Kiểm định nhị thức chính xác cho p hai phía ≈ 0,077 — **không** đủ để bác bỏ ở mức 0,05, dù tỉ lệ 12 so với 4 trông rất thuyết phục. Đây là bài học cốt lõi: với số nhỏ, tỉ lệ ba-trên-một hoàn toàn nằm trong tầm may rủi.',
+              distractorWhy: [
+                'Xấp xỉ chi bình phương cần đủ mẫu bất đồng; ở đây chỉ có 16 nên nó sẽ cho giá trị p lạc quan quá mức.',
+                '',
+                'Đúng là 12 gấp ba lần 4, nhưng với cỡ mẫu 16 thì tỉ lệ đó xuất hiện khá thường xuyên kể cả khi hai mô hình ngang nhau.',
+                'Hai vector độ chính xác đo trên cùng các mẫu nên không độc lập; t-test hai mẫu độc lập vi phạm giả định ngay từ đầu.',
+              ],
+            },
+            {
+              id: 't4l8-cp2',
+              kind: 'truefalse',
+              tags: ['so-sanh-mo-hinh', 'nguong'],
+              q: 'Kiểm định McNemar so sánh được hai mô hình mà không cần chọn ngưỡng trước.',
+              answer: false,
+              why: 'McNemar làm việc trên **nhãn cứng** đúng/sai, mà nhãn cứng chỉ tồn tại sau khi bạn đã áp một ngưỡng. Đổi ngưỡng là đổi bảng bất đồng, và có thể đổi cả kết luận. Đây là giới hạn thật sự đáng kể trong bảo mật, nơi ngưỡng được chọn theo công suất đội SOC chứ không cố định ở 0,5. Muốn so sánh không phụ thuộc ngưỡng — PR-AUC, precision@k — bạn cần bootstrap theo cặp ở phần sau của bài.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Bootstrap theo cặp: khi chỉ số không phải nhãn cứng', level: 2 },
+        {
+          t: 'p',
+          md: 'McNemar không trả lời được câu hỏi mở đầu bài — “PR-AUC 0,71 so với 0,68 có thật không” — vì PR-AUC là một chỉ số tổng hợp trên mọi ngưỡng, không phải một đếm đúng/sai. Công cụ cho việc này là **bootstrap theo cặp**, và nguyên tắc của nó chỉ gói trong một câu: *lấy mẫu lại một lần, chấm điểm cả hai mô hình trên cùng mẫu đó, rồi ghi lại HIỆU SỐ.*',
+        },
+        {
+          t: 'callout',
+          kind: 'math',
+          title: 'Vì sao phải ghi hiệu số, không phải hai phân phối riêng',
+          md: 'Cách làm sai rất phổ biến: dựng khoảng tin cậy cho PR-AUC của A, dựng khoảng tin cậy cho PR-AUC của B, rồi xem chúng có chồng lấn không.\n\nHai khoảng chồng lấn **không** có nghĩa là khác biệt không đáng kể. Vì hai chỉ số tương quan mạnh với nhau, phân phối của hiệu số hẹp hơn nhiều so với những gì hai khoảng riêng lẻ gợi ý. Bạn có thể gặp trường hợp hai khoảng chồng lấn khá nhiều mà khoảng tin cậy của hiệu số vẫn nằm gọn về một phía của số 0.\n\nQuy tắc: **luôn bootstrap trực tiếp đại lượng bạn muốn kết luận.** Nếu câu hỏi là “A có hơn B không” thì đại lượng đó là hiệu số.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Khoảng tin cậy cho hiệu số PR-AUC bằng bootstrap theo cặp',
+          code: `import numpy as np
+from sklearn.metrics import average_precision_score
+
+def hieu_so_pr_auc(y, diem_a, diem_b, so_lan=2000, seed=0):
+    rng = np.random.default_rng(seed)
+    n = len(y)
+    hieu = np.empty(so_lan)
+    for i in range(so_lan):
+        # MỘT bộ chỉ số dùng cho CẢ HAI mô hình — đây chính là chỗ "theo cặp"
+        idx = rng.integers(0, n, n)
+        # Mẫu lặp lại có thể rơi vào trường hợp không còn mẫu dương nào
+        if y[idx].sum() == 0:
+            hieu[i] = np.nan
+            continue
+        hieu[i] = (average_precision_score(y[idx], diem_a[idx])
+                   - average_precision_score(y[idx], diem_b[idx]))
+    hieu = hieu[~np.isnan(hieu)]
+    return hieu.mean(), np.percentile(hieu, [2.5, 97.5])
+
+tb, (thap, cao) = hieu_so_pr_auc(y_test, diem_a, diem_b)
+print(f'Hiệu số PR-AUC: {tb:+.4f}, khoảng tin cậy 95%: [{thap:+.4f}, {cao:+.4f}]')
+
+# Đọc kết quả: khoảng CHỨA số 0 nghĩa là dữ liệu hiện có không phân biệt được
+# hai mô hình. Đó KHÔNG phải bằng chứng rằng chúng bằng nhau.`,
+        },
+        {
+          t: 'compare',
+          title: 'Chọn công cụ theo câu hỏi bạn đang hỏi',
+          left: {
+            title: 'Kiểm định McNemar',
+            items: [
+              'Câu hỏi: ở ngưỡng đang chạy, mô hình nào sai ít hơn?',
+              'Đầu vào là nhãn cứng, nên bắt buộc chốt ngưỡng trước',
+              'Tính trong một phần nghìn giây, không cần lấy mẫu lại',
+              'Cho giá trị p, không cho độ lớn khác biệt — phải tự tính thêm',
+              'Dùng khi đang quyết định thay mô hình ở một điểm hoạt động cụ thể',
+            ],
+          },
+          right: {
+            title: 'Bootstrap theo cặp',
+            items: [
+              'Câu hỏi: chỉ số tổng hợp hơn kém nhau bao nhiêu, và chắc tới đâu?',
+              'Chạy được với mọi chỉ số: PR-AUC, precision@k, tải cảnh báo, chi phí',
+              'Tốn tính toán: hai nghìn lần chấm điểm lại toàn tập',
+              'Cho thẳng khoảng tin cậy của hiệu số — chính là thứ cần báo cáo',
+              'Dùng khi so sánh mô hình trên toàn dải ngưỡng, hoặc khi cần đưa con số cho lãnh đạo',
+            ],
+          },
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Ba cách tự đánh lừa mình mà kiểm định không cứu được',
+          md: '**1. So nhiều lần rồi chỉ kể lần thắng.** Thử 20 cấu hình siêu tham số rồi kiểm định cái tốt nhất so với mô hình cũ: ở mức 0,05, kỳ vọng có khoảng một lần “có ý nghĩa” thuần tuý do may rủi. Hoặc hiệu chỉnh đa so sánh (Holm là lựa chọn mặc định hợp lý), hoặc chốt trước một ứng viên duy nhất rồi mới mở tập kiểm thử.\n\n**2. Bootstrap trên dữ liệu có trật tự thời gian.** Lấy mẫu lại từng dòng độc lập giả định các dòng hoán vị được cho nhau. Log bảo mật thì không: một chiến dịch tấn công tạo ra hàng nghìn dòng gần như trùng nhau trong vài giờ. Bootstrap theo dòng sẽ cho khoảng tin cậy **hẹp giả tạo**. Hãy lấy mẫu lại theo **khối thời gian** hoặc theo chiến dịch, hoặc đơn giản là đánh giá trên vài cửa sổ thời gian tách rời rồi xem kết luận có ổn định không.\n\n**3. Dùng lại tập kiểm thử tới lần thứ mười.** Mỗi lần bạn nhìn tập kiểm thử rồi sửa mô hình, bạn rò rỉ thêm một chút thông tin của nó vào lựa chọn thiết kế. Sau vài chục vòng, tập kiểm thử đã âm thầm biến thành tập kiểm định. Giữ một tập niêm phong mà bạn chỉ mở đúng một lần, ngay trước khi triển khai.',
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Câu nên nói trong buổi duyệt mô hình',
+          md: 'Thay vì *“mô hình mới đạt PR-AUC 0,71 so với 0,68”*, hãy nói:\n\n*“Trên tập niêm phong ba tháng gần nhất, mô hình mới hơn mô hình đang chạy 0,03 PR-AUC, khoảng tin cậy 95% của hiệu số là [0,011; 0,048] — không chứa số 0, nên khác biệt là thật. Quy ra vận hành ở ngưỡng đang dùng: cùng 195 cảnh báo mỗi ngày, nó bắt thêm khoảng 4 vụ thật và bỏ sót ít hơn 2 vụ. Chi phí là độ trễ suy luận tăng từ 8 lên 31 mili giây.”*\n\nCâu thứ hai dài hơn, và nó là câu duy nhất trong hai câu cho phép người nghe ra quyết định.',
+        },
+        {
+          t: 'checklist',
+          title: 'Trước khi tuyên bố mô hình mới thắng',
+          items: [
+            'Hai mô hình đã được chấm trên đúng cùng một tập kiểm thử, cùng một tiền xử lý',
+            'Tập kiểm thử ở giai đoạn sau tập huấn luyện về mặt thời gian, và chưa từng dùng để chọn tham số',
+            'Phép so sánh là phép kiểm theo cặp, không phải hai phép kiểm độc lập',
+            'Đã báo cáo khoảng tin cậy của HIỆU SỐ, không phải hai khoảng riêng lẻ',
+            'Đã hiệu chỉnh đa so sánh nếu có nhiều hơn một ứng viên được đem ra kiểm',
+            'Đã quy khác biệt về đơn vị vận hành: cảnh báo mỗi ngày, vụ bắt thêm, vụ bỏ sót',
+            'Đã ghi rõ chi phí kèm theo: độ trễ, bộ nhớ, độ phức tạp vận hành, khả năng giải thích',
+          ],
+        },
+      ],
+      keyTakeaways: [
+        'Hai mô hình đo trên cùng một tập kiểm thử có sai số tương quan; mọi so sánh phải là phép kiểm theo cặp, nếu không bạn đang lãng phí phần lớn độ mạnh thống kê',
+        'McNemar chỉ dùng hai ô bất đồng — các mẫu mà cả hai cùng đúng hoặc cùng sai không mang thông tin so sánh nào',
+        'Dưới 25 mẫu bất đồng thì dùng kiểm định nhị thức chính xác, đừng dùng xấp xỉ chi bình phương',
+        'Với chỉ số không phải nhãn cứng, bootstrap trực tiếp HIỆU SỐ; so hai khoảng tin cậy riêng lẻ có chồng lấn hay không là cách đọc sai',
+        'Có ý nghĩa thống kê không đồng nghĩa với đáng thay: luôn quy khác biệt về cảnh báo mỗi ngày và vụ bỏ sót trước khi quyết định',
+      ],
+      cards: [
+        {
+          id: 't4l8-c1',
+          front: 'Kiểm định McNemar dùng những ô nào của bảng bất đồng, và bỏ qua ô nào?',
+          back: 'Chỉ dùng hai ô lệch tâm: A đúng-B sai và A sai-B đúng. Bỏ hoàn toàn hai ô đường chéo (cùng đúng, cùng sai) vì chúng không phân biệt được hai mô hình.',
+          tags: ['so-sanh-mo-hinh', 'mcnemar'],
+        },
+        {
+          id: 't4l8-c2',
+          front: 'Giả thuyết không của kiểm định McNemar phát biểu chính xác là gì?',
+          back: 'Trong các mẫu mà hai mô hình bất đồng, xác suất mô hình A đúng bằng 0,5 — tức mỗi lần bất đồng là một lần tung đồng xu công bằng.',
+          tags: ['so-sanh-mo-hinh', 'mcnemar'],
+        },
+        {
+          id: 't4l8-c3',
+          front: 'Khi tổng số mẫu bất đồng dưới 25 thì dùng phép kiểm nào?',
+          back: 'Kiểm định nhị thức chính xác với B(n₀₁ + n₁₀, 0,5). Xấp xỉ chi bình phương cho giá trị p lạc quan quá mức khi ít mẫu.',
+          tags: ['so-sanh-mo-hinh', 'mcnemar'],
+        },
+        {
+          id: 't4l8-c4',
+          front: 'Vì sao không được kết luận bằng cách xem hai khoảng tin cậy riêng lẻ có chồng lấn không?',
+          back: 'Hai chỉ số tương quan mạnh nên phân phối của hiệu số hẹp hơn nhiều so với hai khoảng riêng gợi ý. Phải bootstrap trực tiếp hiệu số.',
+          tags: ['so-sanh-mo-hinh', 'bootstrap'],
+        },
+        {
+          id: 't4l8-c5',
+          front: 'Vì sao bootstrap theo dòng lại nguy hiểm với log bảo mật?',
+          back: 'Một chiến dịch tấn công sinh ra hàng nghìn dòng gần trùng nhau, nên các dòng không hoán vị được cho nhau. Bootstrap theo dòng cho khoảng tin cậy hẹp giả tạo; phải lấy mẫu theo khối thời gian hoặc theo chiến dịch.',
+          tags: ['bootstrap', 'chia-theo-thoi-gian'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't4-l8-q1',
+          kind: 'mcq',
+          tags: ['so-sanh-mo-hinh', 'mcnemar'],
+          q: 'Vì sao McNemar bỏ qua các mẫu mà cả hai mô hình cùng đúng?',
+          options: [
+            'Vì chúng thường là các mẫu dễ, không đại diện cho dữ liệu thật',
+            'Vì chúng không chứa thông tin phân biệt hai mô hình — cả hai xử lý y hệt nhau',
+            'Vì giữ chúng lại sẽ làm giá trị p nhỏ đi một cách sai lệch',
+            'Vì chúng làm bảng bất đồng mất tính đối xứng',
+          ],
+          answer: 1,
+          why: 'Câu hỏi cần trả lời là “mô hình nào tốt hơn”. Một mẫu mà cả hai cùng đúng không đóng góp bằng chứng nào cho câu hỏi đó, y như một mẫu mà cả hai cùng sai. Toàn bộ bằng chứng nằm ở chỗ hai mô hình đi khác đường. Đây cũng là nguồn sức mạnh của phép kiểm theo cặp: nó tập trung vào đúng phần dữ liệu có tin.',
+          distractorWhy: [
+            'Độ dễ của mẫu không liên quan; kể cả một mẫu cực khó mà cả hai cùng đúng vẫn không phân biệt được hai mô hình.',
+            '',
+            'Ngược lại: đưa thêm các mẫu đồng thuận vào sẽ làm loãng tín hiệu và khiến phép kiểm yếu đi, chứ không làm p nhỏ đi.',
+            'Bảng vẫn đối xứng hay không là chuyện khác; lý do bỏ là chúng không mang thông tin so sánh.',
+          ],
+        },
+        {
+          id: 't4-l8-q2',
+          kind: 'mcq',
+          tags: ['so-sanh-mo-hinh', 'bootstrap'],
+          q: 'Trong bootstrap theo cặp, điều gì bắt buộc phải giống nhau giữa hai mô hình ở mỗi vòng lặp?',
+          options: [
+            'Số lượng mẫu dương trong mẫu lấy lại',
+            'Bộ chỉ số được lấy mẫu lại — cả hai mô hình chấm trên đúng cùng các mẫu đó',
+            'Ngưỡng quyết định áp cho cả hai mô hình',
+            'Hạt giống ngẫu nhiên dùng khi huấn luyện hai mô hình',
+          ],
+          answer: 1,
+          why: 'Chữ “theo cặp” nằm ở chỗ này: mỗi vòng lặp sinh **một** bộ chỉ số, rồi cả hai mô hình được chấm trên chính bộ đó. Nhờ vậy biến thiên do việc bốc trúng mẫu nào bị khử khỏi hiệu số. Nếu mỗi mô hình được lấy mẫu lại riêng, bạn đánh mất toàn bộ lợi ích và quay về tình huống hai mẫu độc lập.',
+          distractorWhy: [
+            'Số mẫu dương thay đổi giữa các vòng là bình thường; chỉ cần loại các vòng không còn mẫu dương nào.',
+            '',
+            'Bootstrap theo cặp dùng được với chỉ số không cần ngưỡng như PR-AUC, nên đây không phải điều kiện bắt buộc.',
+            'Hạt giống huấn luyện thuộc về giai đoạn tạo mô hình, không liên quan tới thủ tục lấy mẫu lại khi đánh giá.',
+          ],
+        },
+        {
+          id: 't4-l8-q3',
+          kind: 'truefalse',
+          tags: ['so-sanh-mo-hinh'],
+          q: 'Khoảng tin cậy 95% của hiệu số PR-AUC là [−0,004; 0,021], vậy hai mô hình tương đương nhau.',
+          answer: false,
+          why: 'Khoảng chứa số 0 chỉ có nghĩa là **dữ liệu hiện có không đủ để phân biệt** hai mô hình, chứ không phải bằng chứng rằng chúng bằng nhau. Khoảng này còn nghiêng hẳn về phía dương và cho phép khác biệt tới 0,021 — một mức có thể rất đáng kể. Muốn khẳng định tương đương thì phải đặt trước một ngưỡng tương đương và kiểm tra cả khoảng nằm gọn trong ngưỡng đó. Không bác bỏ được giả thuyết không không bao giờ đồng nghĩa với chấp nhận nó.',
+        },
+        {
+          id: 't4-l8-q4',
+          kind: 'mcq',
+          tags: ['so-sanh-mo-hinh', 'chia-theo-thoi-gian'],
+          q: 'Bạn so sánh hai mô hình trên 90 ngày log, trong đó có một chiến dịch tấn công lớn kéo dài 3 ngày sinh ra 40% số mẫu dương. Bootstrap theo từng dòng sẽ gây ra vấn đề gì?',
+          options: [
+            'Khoảng tin cậy quá rộng nên không kết luận được gì',
+            'Khoảng tin cậy hẹp giả tạo, vì các dòng trong cùng chiến dịch gần trùng nhau nên không độc lập',
+            'Chỉ số PR-AUC bị lệch xuống do lấy mẫu có hoàn lại',
+            'Không có vấn đề gì, miễn là số vòng lặp đủ lớn',
+          ],
+          answer: 1,
+          why: 'Bootstrap giả định các đơn vị lấy mẫu độc lập và hoán vị được. Bốn mươi phần trăm mẫu dương đến từ một chiến dịch duy nhất nghĩa là chúng gần như bản sao của nhau — cỡ mẫu **hiệu dụng** nhỏ hơn nhiều so với số dòng. Lấy mẫu theo dòng sẽ báo một độ chắc chắn mà dữ liệu không có. Cách xử lý: lấy mẫu lại theo khối thời gian hoặc theo định danh chiến dịch, để một chiến dịch vào hay ra khỏi mẫu **trọn gói**.',
+          distractorWhy: [
+            'Ngược lại — vấn đề là khoảng hẹp quá mức chứ không rộng quá mức.',
+            '',
+            'Lấy mẫu có hoàn lại không tạo ra thiên lệch hệ thống theo hướng đó; vấn đề nằm ở giả định độc lập.',
+            'Tăng số vòng lặp chỉ làm ước lượng phân phía sai đó chính xác hơn, chứ không sửa được giả định bị vi phạm.',
+          ],
+        },
+        {
+          id: 't4-l8-q5',
+          kind: 'mcq',
+          tags: ['so-sanh-mo-hinh', 'chi-phi'],
+          q: 'Kiểm định cho p = 0,003 và mô hình mới hơn mô hình cũ 0,15 điểm phần trăm recall, nhưng độ trễ suy luận tăng từ 8 lên 240 mili giây. Kết luận hợp lý nhất?',
+          options: [
+            'Thay ngay, vì p = 0,003 là bằng chứng rất mạnh',
+            'Khác biệt là thật nhưng quá nhỏ so với cái giá phải trả; giữ mô hình cũ và ghi lại lý do',
+            'Chạy lại kiểm định với tập kiểm thử lớn hơn để chắc chắn',
+            'Thay mô hình nhưng chỉ áp dụng cho một nửa lưu lượng',
+          ],
+          answer: 1,
+          why: 'Giá trị p trả lời câu hỏi “khác biệt này có thật không”, chứ không trả lời “khác biệt này có đáng không”. Ở đây câu trả lời lần lượt là *có* và *không*: 0,15 điểm phần trăm recall gần như không đổi gì trong vận hành, còn độ trễ gấp 30 lần là một thay đổi kiến trúc thật sự. Với cỡ mẫu đủ lớn, mọi khác biệt khác 0 đều sẽ đạt ý nghĩa thống kê — đó là lý do độ lớn và chi phí mới là thứ ra quyết định.',
+          distractorWhy: [
+            'p nhỏ chỉ nói khác biệt không do may rủi; nó không nói khác biệt đủ lớn để đáng đánh đổi.',
+            '',
+            'Tập lớn hơn chỉ làm p nhỏ hơn nữa mà không thay đổi độ lớn 0,15 điểm phần trăm.',
+            'Chia lưu lượng là cách kiểm chứng trong sản xuất, nhưng nó không giải quyết việc lợi ích quá nhỏ so với chi phí.',
+          ],
+        },
+      ],
+      further: [
+        {
+          title: 'Approximate Statistical Tests for Comparing Supervised Classification Learning Algorithms — Dietterich (1998)',
+          note: 'Bài báo kinh điển so sánh năm phép kiểm và chỉ ra cái nào có tỉ lệ dương giả cao. Phần về McNemar và 5×2 cross-validation vẫn là tài liệu tham chiếu chuẩn.',
+        },
+        {
+          title: 'statsmodels — contingency_tables.mcnemar',
+          note: 'Đọc kỹ hai tham số exact và correction. Chọn sai cặp này là cách phổ biến nhất để có một giá trị p không đáng tin.',
+        },
+        {
+          title: 'An Introduction to the Bootstrap — Efron và Tibshirani',
+          note: 'Chương về bootstrap theo cặp và bootstrap cho dữ liệu phụ thuộc. Đọc phần dữ liệu phụ thuộc trước khi áp bootstrap lên log bảo mật.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't4-l9',
+      trackId: 'do-luong',
+      title: 'Định lượng bất định và conformal prediction',
+      subtitle: 'Cho mô hình quyền nói “tôi không chắc” — kèm một bảo đảm bằng con số',
+      minutes: 22,
+      practiceMinutes: 3,
+      level: 'chuyen-gia',
+      prereqs: ['t4-l6'],
+      why: {
+        short:
+          'Mọi bộ phân loại đều bị ép trả về một nhãn kể cả khi bằng chứng gần như bằng không; conformal prediction thay nhãn đơn bằng một TẬP nhãn có bảo đảm phủ đúng theo tỉ lệ bạn đặt trước.',
+        scenario:
+          'Bạn tự động đóng cảnh báo có điểm dưới 0,2 để giảm tải cho analyst. Sếp hỏi: “ta đang bỏ sót bao nhiêu phần trăm vụ thật vì cái luật đó?” Với ngưỡng trần trụi, bạn không trả lời được. Với conformal, con số đó là thứ bạn **đặt ra trước** rồi hệ thống tôn trọng nó.',
+        roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer', 'SOC Analyst'],
+        costOfNotKnowing:
+          'Bạn tự động hoá phân loại cảnh báo bằng một ngưỡng cố định, không có cách nào phân biệt “mô hình khá chắc đây là lành” với “mô hình chưa từng thấy thứ gì giống thế này” — và chính nhóm thứ hai là nơi các vụ tấn công mới ẩn nấp.',
+      },
+      objectives: [
+        'Phân biệt hiệu chuẩn xác suất với bảo đảm phủ của conformal prediction, và nói được cái nào trả lời câu hỏi nào',
+        'Dựng bộ dự đoán conformal chia đôi (split conformal) từ một mô hình đã huấn luyện và một tập hiệu chuẩn',
+        'Đọc ý nghĩa vận hành của bốn loại tập dự đoán trong bài toán nhị phân, kể cả tập rỗng',
+        'Nêu được hai giới hạn phá hỏng bảo đảm trong bảo mật: bảo đảm chỉ ở mức biên, và giả định hoán vị được bị trôi dữ liệu làm hỏng',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Mô hình chấm một tệp là 0,55 khả năng độc hại, và bạn biết mô hình đã được hiệu chuẩn tốt nên con số 0,55 là trung thực. Nhưng hai tệp rất khác nhau vẫn có thể cùng nhận 0,55: một tệp nằm ngay ranh giới giữa hai vùng đông đúc, và một tệp nằm ở vùng mô hình gần như chưa thấy mẫu nào. Hiệu chuẩn có phân biệt được hai trường hợp đó không?',
+          reveal:
+            '**Không.** Và đây chính là khoảng trống mà bài này lấp.\n\nHiệu chuẩn là một lời hứa **theo lô**: trong tất cả các mẫu được chấm 0,55, khoảng 55% thật sự độc hại. Lời hứa đó hoàn toàn đúng, và nó vẫn không nói gì về **một** tệp cụ thể đang nằm trên bàn bạn.\n\nHai tệp trong câu hỏi khác nhau về thứ gọi là bất định do thiếu hiểu biết: tệp thứ nhất khó vì bản chất nó nằm ở ranh giới; tệp thứ hai khó vì mô hình chưa từng học vùng đó. Với tệp thứ hai, con số 0,55 không phải một ước lượng — nó là một phép ngoại suy.\n\nConformal prediction đổi câu hỏi. Thay vì hỏi “xác suất là bao nhiêu”, nó hỏi: *“trả về tập nhãn nhỏ nhất sao cho về lâu dài, nhãn đúng nằm trong tập đó ít nhất 90% số lần.”* Với tệp ranh giới, tập ấy có thể là {lành, độc} — mô hình được phép nói không chắc. Và tỉ lệ 90% là con số **bạn đặt**, không phải con số bạn hy vọng.',
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Bảo đảm mạnh tới mức nghe như không thật — và ba chữ nhỏ đi kèm',
+          md: 'Với mức lỗi α bạn chọn, bộ dự đoán conformal bảo đảm:\n\n> P(nhãn đúng ∈ tập dự đoán) ≥ 1 − α\n\nBảo đảm này **không cần giả định gì về mô hình**. Mô hình có thể là rừng ngẫu nhiên, mạng nơ-ron, hay một hàm trả số ngẫu nhiên — bảo đảm vẫn đúng. Nó cũng không cần cỡ mẫu lớn tới vô hạn: đúng với cỡ mẫu hữu hạn.\n\nĐổi lại, có ba chữ nhỏ mà bỏ qua là hiểu sai hoàn toàn:\n\n**1. Dữ liệu phải hoán vị được (exchangeable).** Đây là giả định duy nhất, và nó là giả định lớn trong bảo mật.\n\n**2. Bảo đảm ở mức BIÊN, không theo điều kiện.** Phủ 90% tính trung bình trên toàn bộ phân phối, không phải 90% cho mỗi lớp hay mỗi nhóm mẫu.\n\n**3. Mô hình tồi vẫn giữ đúng bảo đảm — bằng cách trả về tập vô dụng.** Nếu mô hình không phân biệt được gì, conformal sẽ trung thực trả về {lành, độc} cho 90% số mẫu. Bảo đảm không bị vi phạm; nó chỉ cho bạn thấy mô hình chẳng biết gì. **Kích thước tập** mới là thước đo chất lượng mô hình.',
+        },
+        { t: 'h', text: 'Split conformal: ba bước, không cần huấn luyện lại', level: 2 },
+        {
+          t: 'steps',
+          title: 'Dựng bộ dự đoán conformal trên một mô hình đã có',
+          steps: [
+            {
+              title: 'Bước 1 — Tách một tập hiệu chuẩn chưa từng dùng',
+              md: 'Giống hệt yêu cầu ở bài t4-l6: tập này phải **riêng biệt** với tập huấn luyện. Trong bảo mật, hãy lấy nó ở giai đoạn **sau** về thời gian. Cỡ vài nghìn mẫu là đủ; điều quan trọng hơn cỡ là nó phải giống dữ liệu bạn sẽ gặp khi chạy thật.',
+            },
+            {
+              title: 'Bước 2 — Chấm điểm bất tuân trên tập hiệu chuẩn',
+              md: 'Điểm bất tuân (nonconformity score) đo mức độ mẫu này “trái” với nhãn thật của nó. Lựa chọn đơn giản và hiệu quả cho bài toán phân loại: s = 1 − p̂(nhãn thật | x). Mẫu nào mô hình gán xác suất thấp cho nhãn đúng thì điểm bất tuân cao.',
+            },
+            {
+              title: 'Bước 3 — Lấy phân vị đã hiệu chỉnh',
+              md: 'Với n mẫu hiệu chuẩn và mức lỗi α, lấy q̂ là phân vị thứ **⌈(n+1)(1−α)⌉ / n** của các điểm bất tuân. Chú ý cái +1 và phép làm tròn lên: chúng là lý do bảo đảm đúng với cỡ mẫu hữu hạn thay vì chỉ đúng xấp xỉ. Ví dụ n = 2.000 và α = 0,1: ⌈2.001 × 0,9⌉ = 1.801, tức lấy giá trị lớn thứ 1.801 trong 2.000 điểm.',
+            },
+            {
+              title: 'Bước 4 — Dựng tập cho mẫu mới',
+              md: 'Với mẫu mới x, đưa vào tập mọi nhãn y thoả 1 − p̂(y | x) ≤ q̂. Chỉ vậy thôi. Không huấn luyện lại, không sửa mô hình, chi phí thêm là một phép so sánh.',
+            },
+          ],
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Split conformal cho phân loại nhị phân, khoảng 15 dòng',
+          code: `import numpy as np
+
+# p_cal: xác suất lớp ĐỘC HẠI mà mô hình gán cho từng mẫu hiệu chuẩn
+# y_cal:  nhãn thật 0/1 của tập hiệu chuẩn — tập này chưa từng dùng để huấn luyện
+alpha = 0.10                       # ta chấp nhận bỏ sót nhãn đúng 10% số lần
+
+# Điểm bất tuân: 1 trừ xác suất mô hình gán cho NHÃN THẬT
+p_nhan_that = np.where(y_cal == 1, p_cal, 1 - p_cal)
+diem_bat_tuan = 1 - p_nhan_that
+
+n = len(diem_bat_tuan)
+# Cái +1 và làm tròn LÊN là thứ tạo ra bảo đảm với cỡ mẫu hữu hạn — đừng bỏ
+k = int(np.ceil((n + 1) * (1 - alpha)))
+q = np.sort(diem_bat_tuan)[min(k, n) - 1]
+
+def tap_du_doan(p_doc):
+    """Trả về tập nhãn cho một mẫu mới. Có thể rỗng, một phần tử, hoặc cả hai."""
+    tap = []
+    if 1 - (1 - p_doc) <= q: tap.append(0)   # nhãn 'lành' đủ tuân thủ
+    if 1 - p_doc <= q:       tap.append(1)   # nhãn 'độc'  đủ tuân thủ
+    return tap
+
+# Kiểm chứng trên tập kiểm thử: phủ phải xấp xỉ 1 - alpha
+tap_test = [tap_du_doan(p) for p in p_test]
+phu = np.mean([y in t for y, t in zip(y_test, tap_test)])
+co_don = np.mean([len(t) == 1 for t in tap_test])
+print(f'Phủ thực tế: {phu:.3f} (đặt trước: {1 - alpha:.2f})')
+print(f'Tỉ lệ tập một nhãn — phần tự động hoá được: {co_don:.3f}')`,
+        },
+        { t: 'h', text: 'Bốn loại tập, bốn hành động vận hành khác nhau', level: 2 },
+        {
+          t: 'table',
+          caption: 'Trong bài toán nhị phân, tập dự đoán chỉ có bốn dạng — và mỗi dạng nên đi vào một hàng đợi khác nhau.',
+          head: ['Tập dự đoán', 'Nghĩa là gì', 'Nên làm gì'],
+          rows: [
+            ['{lành}', 'Chỉ nhãn lành đủ tuân thủ. Bằng chứng đủ mạnh về một phía.', 'Tự động đóng, ghi log để lấy mẫu kiểm tra định kỳ'],
+            ['{độc}', 'Chỉ nhãn độc đủ tuân thủ.', 'Đưa lên đầu hàng đợi, hoặc chặn tự động nếu chính sách cho phép'],
+            ['{lành, độc}', 'Cả hai nhãn đều nằm trong mức bất tuân cho phép — mô hình thật sự không phân biệt được.', 'Chuyển cho người xem. Đây chính là chỗ đáng trả tiền cho analyst.'],
+            ['∅ (rỗng)', 'KHÔNG nhãn nào đủ tuân thủ: mẫu này bất thường so với mọi thứ trong tập hiệu chuẩn.', 'Cờ đỏ. Ứng viên cho họ mã độc mới, hoặc dấu hiệu dữ liệu đã trôi.'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Tập rỗng là món quà, đừng vứt nó đi',
+          md: 'Rất nhiều bản cài đặt xử lý tập rỗng bằng cách gán bừa nhãn có xác suất cao nhất. Làm vậy là ném đi tín hiệu giá trị nhất mà conformal tạo ra.\n\nTập rỗng nghĩa là mẫu này bất tuân với **cả hai** nhãn hơn 90% dữ liệu hiệu chuẩn. Trong bảo mật, đó thường là một trong hai chuyện, và cả hai đều đáng biết: một họ mã độc chưa từng gặp, hoặc phân bố dữ liệu đã dịch chuyển tới mức mô hình không còn áp dụng được.\n\nMột chỉ số vận hành đơn giản và rất đáng gắn bảng theo dõi: **tỉ lệ tập rỗng theo ngày**. Nó tăng vọt trước khi các chỉ số hiệu năng kịp xấu đi, vì nó không cần chờ nhãn thật. Bài t10-l2 nói kỹ hơn về việc phát hiện trôi mà không có nhãn.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't4l9-cp1',
+              kind: 'mcq',
+              tags: ['conformal', 'bat-dinh'],
+              q: 'Bạn đặt α = 0,1 và đo trên tập kiểm thử thấy phủ đúng 0,90, nhưng 96% số mẫu nhận tập {lành, độc}. Kết luận?',
+              options: [
+                'Bộ dự đoán conformal bị lỗi cài đặt, vì phủ đúng thì tập phải nhỏ',
+                'Bảo đảm vẫn đúng; kích thước tập cho thấy mô hình nền gần như không phân biệt được gì',
+                'Cần giảm α xuống 0,05 để tập nhỏ lại',
+                'Tập hiệu chuẩn quá nhỏ nên phân vị bị lệch',
+              ],
+              answer: 1,
+              why: 'Phủ và độ hữu ích là hai chuyện tách rời. Conformal **luôn** giữ được phủ, kể cả trên một mô hình vô dụng — nó chỉ trả về tập to. Trả lại 96% tập hai nhãn nghĩa là ở mức chắc chắn 90%, mô hình hầu như không loại được nhãn nào. Việc cần làm là sửa **mô hình nền** — thêm đặc trưng, thêm dữ liệu — chứ không phải chỉnh thủ tục conformal.',
+              distractorWhy: [
+                'Không có lỗi nào: giữ đúng phủ trên một mô hình yếu chính là hành vi được thiết kế.',
+                '',
+                'Giảm α làm tập **to hơn** chứ không nhỏ đi, vì bạn đòi mức chắc chắn cao hơn.',
+                'Tập hiệu chuẩn nhỏ gây dao động quanh mức phủ, nhưng ở đây phủ đúng bằng 0,90 nên đó không phải vấn đề.',
+              ],
+            },
+            {
+              id: 't4l9-cp2',
+              kind: 'mcq',
+              tags: ['conformal', 'mat-can-bang'],
+              q: 'Dữ liệu có 99,5% lành. Bộ conformal đạt phủ biên 90%. Điều gì có thể đang xảy ra với riêng lớp độc hại?',
+              options: [
+                'Lớp độc cũng được phủ khoảng 90%, vì bảo đảm áp dụng cho mọi lớp',
+                'Lớp độc có thể chỉ được phủ 40% hoặc thấp hơn, vì phủ biên bị lớp đa số chi phối',
+                'Lớp độc được phủ cao hơn 90% do nó hiếm',
+                'Không xác định được nếu chưa biết mô hình dùng thuật toán gì',
+              ],
+              answer: 1,
+              why: 'Phủ biên là **trung bình có trọng số** theo tần suất lớp. Với 99,5% mẫu là lành, chỉ cần phủ tốt lớp lành là con số tổng đã gần 90% rồi, còn lớp độc muốn thế nào cũng được. Đây là cái bẫy nguy hiểm nhất của conformal trong bảo mật, vì lớp bạn quan tâm luôn là lớp hiếm. Cách chữa: **conformal theo lớp** (Mondrian) — tính phân vị riêng cho từng lớp, đổi lại cần đủ mẫu hiệu chuẩn ở lớp hiếm.',
+              distractorWhy: [
+                'Bảo đảm mặc định là ở mức biên; phủ theo từng lớp phải yêu cầu riêng bằng biến thể Mondrian.',
+                '',
+                'Độ hiếm không tự tạo ra phủ cao; nếu có thì thường ngược lại.',
+                'Kết luận này không phụ thuộc thuật toán — nó là hệ quả của định nghĩa phủ biên.',
+              ],
+            },
+          ],
+        },
+        {
+          t: 'compare',
+          title: 'Hiệu chuẩn và conformal trả lời hai câu hỏi khác nhau',
+          left: {
+            title: 'Hiệu chuẩn (bài t4-l6)',
+            items: [
+              'Câu hỏi: con số 0,87 có đúng nghĩa 87% không?',
+              'Cho một số duy nhất cho mỗi mẫu',
+              'Đúng theo nghĩa trung bình trên lô, không bảo đảm gì cho một mẫu cụ thể',
+              'Cần mô hình đủ tốt thì con số mới hữu ích',
+              'Đầu vào cho mọi phép tính chi phí kỳ vọng',
+            ],
+          },
+          right: {
+            title: 'Conformal prediction',
+            items: [
+              'Câu hỏi: cho tôi tập nhãn chứa nhãn đúng ít nhất 90% số lần',
+              'Cho một tập nhãn, có thể rỗng hoặc chứa cả hai',
+              'Bảo đảm phủ đúng với cỡ mẫu hữu hạn, không cần giả định về mô hình',
+              'Đúng kể cả với mô hình tồi — khi đó tập to ra',
+              'Đầu vào cho quyết định tự động hoá: cái nào đóng máy, cái nào cần người',
+            ],
+          },
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Giả định hoán vị được, và vì sao bảo mật là nơi nó dễ gãy nhất',
+          md: 'Conformal cần dữ liệu hiệu chuẩn và dữ liệu mới **hoán vị được** — nôm na là chúng đến từ cùng một phân phối. Đúng ba tình huống rất thường gặp trong bảo mật phá vỡ điều đó:\n\n**Trôi theo thời gian.** Họ mã độc tháng này khác tháng trước. Tập hiệu chuẩn của quý trước không còn hoán vị được với lưu lượng hôm nay, và phủ thực tế tụt xuống dưới mức bạn đặt — âm thầm, vì không có gì báo.\n\n**Đối thủ chủ động.** Kẻ tấn công cố ý tạo mẫu ở vùng mô hình yếu. Đó là dịch chuyển phân phối **có chủ đích**, tình huống xấu nhất cho mọi bảo đảm dựa trên giả định phân phối.\n\n**Dữ liệu theo cụm.** Một chiến dịch sinh hàng nghìn mẫu gần trùng nhau; chúng không hoán vị được với các mẫu độc lập, đúng như vấn đề bootstrap ở bài t4-l8.\n\nCách sống chung, không phải cách chữa dứt: hiệu chuẩn lại theo **cửa sổ trượt** thay vì một lần rồi thôi, theo dõi phủ thực tế trên phần dữ liệu có nhãn muộn, và coi tỉ lệ tập rỗng như cảm biến báo trôi. Có một nhánh nghiên cứu về conformal dưới dịch chuyển phân phối, nhưng nó đòi hỏi biết được dạng dịch chuyển — điều mà ta hiếm khi biết.',
+        },
+        {
+          t: 'checklist',
+          title: 'Đưa conformal vào một quy trình phân loại cảnh báo',
+          items: [
+            'Chọn α theo mức bỏ sót mà tổ chức chấp nhận được, và ghi con số đó vào tài liệu vận hành',
+            'Tập hiệu chuẩn ở giai đoạn sau tập huấn luyện về thời gian, chưa từng dùng để chọn tham số',
+            'Dùng conformal theo lớp nếu lớp dương hiếm — phủ biên gần như luôn nói dối về lớp hiếm',
+            'Định tuyến bốn loại tập vào bốn luồng khác nhau, đừng gộp tập rỗng vào tập một nhãn',
+            'Gắn bảng theo dõi hai chỉ số: phủ thực tế theo tuần và tỉ lệ tập rỗng theo ngày',
+            'Đặt lịch hiệu chuẩn lại theo cửa sổ trượt, và coi giả định hoán vị được là thứ sẽ hỏng chứ không phải có thể hỏng',
+          ],
+        },
+      ],
+      keyTakeaways: [
+        'Conformal prediction đổi nhãn đơn thành TẬP nhãn kèm bảo đảm phủ ≥ 1 − α, đúng với cỡ mẫu hữu hạn và không cần giả định gì về mô hình',
+        'Giả định duy nhất là dữ liệu hoán vị được — và đó chính là giả định mà trôi dữ liệu, đối thủ chủ động và dữ liệu theo cụm phá vỡ',
+        'Bảo đảm luôn được giữ; chất lượng mô hình thể hiện ở KÍCH THƯỚC tập, không ở mức phủ',
+        'Phủ biên bị lớp đa số chi phối, nên với dữ liệu bảo mật mất cân bằng phải dùng conformal theo lớp',
+        'Tập rỗng là tín hiệu cảnh báo sớm về mẫu lạ hoặc dữ liệu đã trôi — định tuyến riêng, đừng gán bừa nhãn',
+      ],
+      cards: [
+        {
+          id: 't4l9-c1',
+          front: 'Conformal prediction bảo đảm điều gì, và với giả định nào?',
+          back: 'Bảo đảm nhãn đúng nằm trong tập dự đoán với xác suất ít nhất 1 − α, đúng với cỡ mẫu hữu hạn và mọi mô hình. Giả định duy nhất: dữ liệu hiệu chuẩn và dữ liệu mới hoán vị được.',
+          tags: ['conformal', 'bat-dinh'],
+        },
+        {
+          id: 't4l9-c2',
+          front: 'Nếu mô hình nền rất tồi, conformal sẽ hỏng theo cách nào?',
+          back: 'Không hỏng về bảo đảm — phủ vẫn đạt. Nó hỏng về độ hữu ích: trả về tập chứa cả hai nhãn cho hầu hết mẫu. Kích thước tập mới là thước đo chất lượng mô hình.',
+          tags: ['conformal'],
+        },
+        {
+          id: 't4l9-c3',
+          front: 'Vì sao phủ biên 90% có thể là con số nguy hiểm trong bảo mật?',
+          back: 'Phủ biên là trung bình theo tần suất lớp. Với 99,5% mẫu lành, phủ tổng 90% vẫn cho phép lớp độc hiếm chỉ được phủ 40%. Cần conformal theo lớp (Mondrian).',
+          tags: ['conformal', 'mat-can-bang'],
+        },
+        {
+          id: 't4l9-c4',
+          front: 'Tập dự đoán rỗng nghĩa là gì và nên xử lý ra sao?',
+          back: 'Không nhãn nào đủ tuân thủ: mẫu bất thường so với toàn bộ tập hiệu chuẩn. Định tuyến riêng như cờ đỏ — ứng viên họ mã độc mới hoặc dấu hiệu trôi dữ liệu. Đừng gán bừa nhãn xác suất cao nhất.',
+          tags: ['conformal', 'troi-du-lieu'],
+        },
+        {
+          id: 't4l9-c5',
+          front: 'Trong split conformal, vì sao công thức phân vị có cái +1 và làm tròn lên?',
+          back: 'Lấy phân vị thứ ⌈(n+1)(1−α)⌉/n thay vì (1−α) đơn thuần chính là chỗ tạo ra bảo đảm đúng với cỡ mẫu hữu hạn, thay vì chỉ đúng xấp xỉ khi n lớn.',
+          tags: ['conformal'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't4-l9-q1',
+          kind: 'mcq',
+          tags: ['conformal', 'hieu-chuan'],
+          q: 'Khác biệt cốt lõi giữa hiệu chuẩn xác suất và conformal prediction là gì?',
+          options: [
+            'Hiệu chuẩn cần tập riêng còn conformal thì không',
+            'Hiệu chuẩn làm con số xác suất trung thực theo lô; conformal cho tập nhãn kèm bảo đảm phủ áp dụng được cho từng dự đoán',
+            'Conformal chỉ dùng được cho bài toán hồi quy',
+            'Hiệu chuẩn đúng với mọi mô hình, còn conformal đòi mô hình phải đủ tốt',
+          ],
+          answer: 1,
+          why: 'Hiệu chuẩn trả lời “con số này có đúng nghĩa không”, và lời hứa của nó là lời hứa trung bình trên lô. Conformal trả lời “tập nào chứa nhãn đúng với mức chắc chắn tôi đặt ra”, và bảo đảm đó gắn với thủ tục nên áp dụng được cho từng dự đoán. Hai thứ bổ sung nhau: hiệu chuẩn cho phép tính chi phí kỳ vọng, conformal cho phép quyết định cái nào tự động đóng và cái nào cần người.',
+          distractorWhy: [
+            'Cả hai đều cần một tập riêng chưa dùng để huấn luyện.',
+            '',
+            'Conformal dùng được cho cả phân loại lẫn hồi quy; với hồi quy nó cho khoảng dự đoán.',
+            'Ngược lại: chính conformal mới đúng với mọi mô hình, kể cả mô hình tồi.',
+          ],
+        },
+        {
+          id: 't4-l9-q2',
+          kind: 'truefalse',
+          tags: ['conformal'],
+          q: 'Giảm α từ 0,10 xuống 0,05 sẽ làm các tập dự đoán nhỏ lại.',
+          answer: false,
+          why: 'Ngược lại. α nhỏ nghĩa là bạn đòi mức chắc chắn cao hơn — phủ 95% thay vì 90% — nên ngưỡng bất tuân q̂ phải nới rộng ra để nhiều nhãn hơn lọt vào tập. Hệ quả: nhiều tập hai nhãn hơn, ít mẫu tự động hoá được hơn. Đây chính là đánh đổi trung tâm của conformal, và nó là một đánh đổi **hiện rõ** thay vì bị giấu trong một con số ngưỡng tuỳ ý.',
+        },
+        {
+          id: 't4-l9-q3',
+          kind: 'mcq',
+          tags: ['conformal', 'troi-du-lieu'],
+          q: 'Bạn hiệu chuẩn conformal một lần vào tháng 1 và chạy suốt năm. Tháng 8, phủ thực tế đo được chỉ còn 0,71 dù bạn đặt α = 0,1. Nguyên nhân hợp lý nhất?',
+          options: [
+            'Cài đặt sai công thức phân vị',
+            'Giả định hoán vị được đã bị phá vỡ vì phân bố dữ liệu trôi so với tháng 1',
+            'Tập hiệu chuẩn tháng 1 quá lớn nên phân vị bị lệch',
+            'α = 0,1 là quá nhỏ với dữ liệu bảo mật',
+          ],
+          answer: 1,
+          why: 'Bảo đảm chỉ đúng khi dữ liệu mới hoán vị được với dữ liệu hiệu chuẩn. Sau bảy tháng, họ mã độc, hạ tầng và hành vi người dùng đều đã đổi, nên tập tháng 1 không còn đại diện. Phủ tụt là **triệu chứng của trôi**, không phải lỗi cài đặt. Cách xử lý là hiệu chuẩn lại theo cửa sổ trượt và theo dõi phủ liên tục — coi việc giả định sẽ hỏng là điều chắc chắn xảy ra.',
+          distractorWhy: [
+            'Lỗi công thức sẽ làm phủ sai ngay từ đầu chứ không đúng bảy tháng rồi mới tụt.',
+            '',
+            'Tập hiệu chuẩn lớn làm phân vị chính xác hơn, không gây lệch.',
+            'α không phải nguyên nhân: bạn đặt 0,1 và hệ thống từng tôn trọng được con số đó.',
+          ],
+        },
+        {
+          id: 't4-l9-q4',
+          kind: 'mcq',
+          tags: ['conformal', 'phan-loai-canh-bao'],
+          q: 'Trong quy trình phân loại cảnh báo, giá trị vận hành lớn nhất của conformal nằm ở đâu?',
+          options: [
+            'Nó làm mô hình chính xác hơn nhờ hiệu chuẩn lại xác suất',
+            'Nó chia cảnh báo thành nhóm tự động xử lý được và nhóm bắt buộc cần người, với tỉ lệ bỏ sót đặt trước',
+            'Nó thay thế được việc chọn ngưỡng theo ma trận chi phí',
+            'Nó loại bỏ nhu cầu có tập kiểm thử riêng',
+          ],
+          answer: 1,
+          why: 'Conformal không đụng gì tới mô hình nên không làm nó chính xác hơn. Giá trị nằm ở chỗ nó biến một thang điểm liên tục mờ mịt thành một **quyết định định tuyến** có bảo đảm: tập một nhãn thì máy xử lý, tập hai nhãn thì người xem, tập rỗng thì điều tra. Và mức bỏ sót không còn là thứ bạn phát hiện sau ba tháng — nó là tham số α bạn đặt từ đầu.',
+          distractorWhy: [
+            'Conformal bọc quanh mô hình đã có; nó không huấn luyện lại và không thay đổi khả năng phân biệt.',
+            '',
+            'Hai thứ bổ sung nhau: ma trận chi phí tối ưu chi phí kỳ vọng, conformal bảo đảm mức phủ. Không cái nào thay được cái nào.',
+            'Vẫn cần tập kiểm thử riêng để đo phủ thực tế và kích thước tập.',
+          ],
+        },
+        {
+          id: 't4-l9-q5',
+          kind: 'multi',
+          tags: ['conformal', 'mat-can-bang'],
+          q: 'Chọn các phát biểu ĐÚNG về conformal prediction trong bối cảnh dữ liệu bảo mật mất cân bằng nặng.',
+          options: [
+            'Phủ biên có thể đạt mục tiêu trong khi lớp độc hại bị phủ rất kém',
+            'Conformal theo lớp cần đủ mẫu hiệu chuẩn ở lớp hiếm mới dùng được',
+            'Bảo đảm phủ chỉ đúng nếu mô hình nền đã được hiệu chuẩn xác suất',
+            'Tỉ lệ tập rỗng tăng có thể báo trôi dữ liệu trước khi các chỉ số hiệu năng kịp xấu đi',
+          ],
+          answers: [0, 1, 3],
+          why: 'Phát biểu 1 đúng và là cái bẫy chính: phủ biên bị lớp đa số chi phối. Phát biểu 2 đúng — Mondrian tính phân vị riêng từng lớp nên lớp hiếm phải có đủ mẫu, thường là giới hạn thực tế lớn nhất. Phát biểu 4 đúng vì tập rỗng không cần nhãn thật nên phát hiện được sớm. Phát biểu 3 **sai**: bảo đảm phủ không cần mô hình hiệu chuẩn, không cần mô hình tốt, không cần giả định gì về mô hình — hiệu chuẩn chỉ giúp tập nhỏ và hữu ích hơn.',
+        },
+      ],
+      further: [
+        {
+          title: 'A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification — Angelopoulos và Bates',
+          note: 'Tài liệu nhập môn tốt nhất hiện có, nhiều hình và mã chạy được. Đọc chương split conformal trước, phần lý thuyết sau.',
+        },
+        {
+          title: 'Algorithmic Learning in a Random World — Vovk, Gammerman, Shafer',
+          note: 'Cuốn sách gốc dựng nên toàn bộ khung conformal. Nặng, nhưng là nơi duy nhất trình bày đầy đủ vì sao bảo đảm đúng với cỡ mẫu hữu hạn.',
+        },
+        {
+          title: 'MAPIE — thư viện conformal cho scikit-learn',
+          note: 'Bọc quanh mô hình có sẵn theo giao diện quen thuộc, có hỗ trợ biến thể theo lớp. Đọc phần Mondrian nếu dữ liệu của bạn mất cân bằng.',
         },
       ],
     },
