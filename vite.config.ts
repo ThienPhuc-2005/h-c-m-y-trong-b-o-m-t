@@ -17,6 +17,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Mỗi chặng một chunk riêng. Tổng dung lượng không đổi, nhưng:
+          //  - trình duyệt tải song song nhiều tệp nhỏ thay vì một tệp 1,8 MB;
+          //  - sửa một chặng chỉ làm mất hiệu lực cache của chặng đó, thay vì
+          //    bắt người học tải lại toàn bộ giáo trình.
+          const track = /\/src\/content\/(t\d+)-/.exec(id);
+          if (track) return `chang-${track[1]}`;
           if (id.includes('/src/content/')) return 'noi-dung';
           if (id.includes('/src/labs/')) return 'phong-lab';
           if (id.includes('node_modules')) return 'thu-vien';

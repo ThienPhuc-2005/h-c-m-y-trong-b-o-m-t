@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { TRACKS, ALL_LESSONS, ALL_CARDS, ALL_QUIZ, auditCourse, getLesson } from './index';
 import { isKnownFigure, isKnownLab } from './registry';
-import { TERMS } from './glossary';
+import { ALL_TERMS } from './glossary';
 
 describe('cấu trúc khoá học', () => {
   it('có đủ các chặng và không trùng id', () => {
@@ -95,6 +95,21 @@ describe('tham chiếu tài nguyên', () => {
     }
   });
 
+  it('mọi thuật ngữ được tham chiếu đều tồn tại trong từ điển', () => {
+    // Lỗi này KHÔNG làm sập trang: giao diện lọc bỏ id không tìm thấy. Hậu quả
+    // là dải "Thuật ngữ trong phần này" âm thầm thiếu đúng những từ người học
+    // vừa gặp lần đầu — không ai báo lỗi, chỉ có người học không tra được nghĩa.
+    const have = new Set(ALL_TERMS.map((t) => t.id));
+    const dangling = new Map<string, string[]>();
+    for (const l of ALL_LESSONS) {
+      const used = [...(l.terms ?? []), ...l.blocks.flatMap((b) => (b.t === 'terms' ? b.ids : []))];
+      for (const id of used) {
+        if (!have.has(id)) dangling.set(id, [...(dangling.get(id) ?? []), l.id]);
+      }
+    }
+    expect([...dangling.entries()].map(([id, ls]) => `${id} (dùng ở ${ls.join(', ')})`)).toEqual([]);
+  });
+
   it('mọi phòng lab được tham chiếu đều nằm trong sổ đăng ký', () => {
     for (const l of ALL_LESSONS) {
       for (const b of l.blocks) {
@@ -156,9 +171,12 @@ describe('thẻ ghi nhớ', () => {
 
 describe('từ điển thuật ngữ', () => {
   it('không trùng id và luôn có cả tên Việt lẫn Anh', () => {
-    const ids = TERMS.map((t) => t.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    for (const t of TERMS) {
+    // Phủ cả phần lõi lẫn phần bổ sung: id trùng giữa hai file sẽ khiến mục
+    // sau che mất mục trước mà không có dấu hiệu nào.
+    const ids = ALL_TERMS.map((t) => t.id);
+    const dup = ids.filter((x, i) => ids.indexOf(x) !== i);
+    expect(dup).toEqual([]);
+    for (const t of ALL_TERMS) {
       expect(t.vi.length).toBeGreaterThan(1);
       expect(t.en.length).toBeGreaterThan(1);
       expect(t.def.length).toBeGreaterThan(15);

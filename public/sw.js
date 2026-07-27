@@ -33,17 +33,42 @@ const PRECACHE = self.__PRECACHE__ || ['./', './index.html'];
 const VERSION = self.__SW_VERSION__ || 'dev';
 const CACHE = `aegis-${VERSION}`;
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) =>
-        // addAll thất bại toàn bộ nếu MỘT tệp lỗi; thêm từng tệp để một lỗi lẻ
-        // không làm hỏng toàn bộ khả năng ngoại tuyến.
-        Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => undefined))),
-      )
-      .then(() => self.skipWaiting()),
+/**
+ * Nạp sẵn tài nguyên, TÁI SỬ DỤNG những gì phiên bản trước đã tải.
+ *
+ * Giáo trình được chia thành mỗi chặng một tệp có băm nội dung trong tên. Khi ta
+ * sửa một chặng, chỉ tên tệp của chặng đó đổi; mười chặng còn lại giữ nguyên tên.
+ * Nếu install cứ tải lại toàn bộ, người học phải tải hơn 500 KB chỉ vì một bài
+ * được sửa chính tả. Sao chép từ cache cũ biến con số đó thành vài chục KB.
+ */
+async function precacheReusing() {
+  const cache = await caches.open(CACHE);
+  const oldNames = (await caches.keys()).filter((k) => k !== CACHE);
+  const olds = await Promise.all(oldNames.map((n) => caches.open(n)));
+
+  await Promise.all(
+    PRECACHE.map(async (url) => {
+      // Tệp có băm nội dung trong tên: cùng tên nghĩa là cùng nội dung, dùng lại
+      // được. index.html KHÔNG có băm nên luôn phải lấy bản mới.
+      const reusable = !/\/index\.html$/.test(url) && url !== './';
+      if (reusable) {
+        for (const old of olds) {
+          const hit = await old.match(url);
+          if (hit) {
+            await cache.put(url, hit);
+            return;
+          }
+        }
+      }
+      // Thêm từng tệp một: addAll hỏng toàn bộ nếu MỘT tệp lỗi, và khi đó người
+      // học mất sạch khả năng dùng ngoại tuyến vì một nguyên nhân lặt vặt.
+      await cache.add(url).catch(() => undefined);
+    }),
   );
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(precacheReusing().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {

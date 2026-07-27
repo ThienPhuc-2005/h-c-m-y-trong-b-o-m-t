@@ -1,4 +1,5 @@
 import type { Term } from './types';
+import { TERMS_EXTRA } from './glossary-extra';
 
 /**
  * Từ điển thuật ngữ.
@@ -669,5 +670,11 @@ export const TERMS: Term[] = [
   },
 ];
 
-const byId = new Map(TERMS.map((t) => [t.id, t]));
+/**
+ * Gộp phần bổ sung. Tách file để phần lõi (viết tay từ đầu) không bị lẫn với
+ * phần thêm sau khi kiểm thử phát hiện tham chiếu treo.
+ */
+export const ALL_TERMS: Term[] = [...TERMS, ...TERMS_EXTRA];
+
+const byId = new Map(ALL_TERMS.map((t) => [t.id, t]));
 export const getTerm = (id: string): Term | undefined => byId.get(id);

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { TERMS } from '../content/glossary';
+import { ALL_TERMS } from '../content/glossary';
 import { normalize } from '../lib/utils';
 import { Empty } from '../components/Shared';
 
@@ -14,13 +14,13 @@ export function GlossaryPage() {
 
   const tags = useMemo(() => {
     const m = new Map<string, number>();
-    TERMS.forEach((t) => (t.tags ?? []).forEach((x) => m.set(x, (m.get(x) ?? 0) + 1)));
+    ALL_TERMS.forEach((t) => (t.tags ?? []).forEach((x) => m.set(x, (m.get(x) ?? 0) + 1)));
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, []);
 
   const list = useMemo(() => {
     const nq = normalize(q);
-    return TERMS.filter((t) => {
+    return ALL_TERMS.filter((t) => {
       if (tag && !(t.tags ?? []).includes(tag)) return false;
       if (!nq) return true;
       return (
@@ -37,7 +37,7 @@ export function GlossaryPage() {
       <header>
         <h1 style={{ fontSize: 'var(--fs-2xl)' }}>Thuật ngữ</h1>
         <p className="muted" style={{ maxWidth: '64ch', marginTop: 'var(--s-2)' }}>
-          {TERMS.length} thuật ngữ, song ngữ Việt–Anh. Tên tiếng Anh không phải để làm màu: mọi công cụ, tài
+          {ALL_TERMS.length} thuật ngữ, song ngữ Việt–Anh. Tên tiếng Anh không phải để làm màu: mọi công cụ, tài
           liệu và buổi phỏng vấn trong ngành đều dùng nó. Chú ý các mục "Đừng nhầm với" — phần lớn lỗi hiểu
           sai không đến từ việc không biết, mà từ việc lẫn lộn hai khái niệm gần nhau.
         </p>
@@ -52,7 +52,7 @@ export function GlossaryPage() {
         />
         <div className="row-wrap" style={{ gap: 'var(--s-2)' }}>
           <button className={`chip ${tag === null ? 'chip-brand' : ''}`} onClick={() => setTag(null)}>
-            Tất cả ({TERMS.length})
+            Tất cả ({ALL_TERMS.length})
           </button>
           {tags.map(([t, n]) => (
             <button key={t} className={`chip ${tag === t ? 'chip-brand' : ''}`} onClick={() => setTag(tag === t ? null : t)}>

@@ -22,7 +22,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ALL_LESSONS, getTrack } from '../content';
-import { TERMS } from '../content/glossary';
+import { ALL_TERMS } from '../content/glossary';
 import { LABS } from '../labs';
 import { navigate } from '../lib/router';
 import { normalize } from '../lib/utils';
@@ -59,7 +59,7 @@ function buildIndex(): { hit: Omit<Hit, 'score'>; hay: string }[] {
     });
   }
 
-  for (const t of TERMS) {
+  for (const t of ALL_TERMS) {
     out.push({
       hit: {
         kind: 'thuat-ngu',
