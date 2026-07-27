@@ -409,18 +409,18 @@ export function exportJSON(): string {
   return JSON.stringify({ ...state, exportedAt: new Date().toISOString() }, null, 2);
 }
 
-export function importJSON(text: string): { ok: boolean; message: string } {
+export function importJSON(text: string): { ok: boolean; messageKey: string } {
   try {
     const parsed = JSON.parse(text) as Partial<Progress>;
     if (typeof parsed !== 'object' || parsed === null || !('lessons' in parsed || 'cards' in parsed)) {
-      return { ok: false, message: 'Tệp không đúng định dạng tiến độ AEGIS.' };
+      return { ok: false, messageKey: 'settings.importWrongFormat' };
     }
     state = migrate(parsed);
     persist();
     emit();
-    return { ok: true, message: 'Đã khôi phục tiến độ.' };
+    return { ok: true, messageKey: 'settings.importOk' };
   } catch {
-    return { ok: false, message: 'Không đọc được tệp JSON.' };
+    return { ok: false, messageKey: 'settings.importBadJson' };
   }
 }
 

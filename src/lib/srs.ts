@@ -34,13 +34,15 @@
  */
 
 /** Người học tự đánh giá lần nhớ lại vừa rồi. */
+import { t } from '../i18n';
+
 export type Grade = 1 | 2 | 3 | 4; // 1 Quên · 2 Khó · 3 Được · 4 Dễ
 
-export const GRADE_META: Record<Grade, { label: string; desc: string; cls: string; key: string }> = {
-  1: { label: 'Quên rồi', desc: 'Không nhớ nổi, cần học lại', cls: 'grade-1', key: '1' },
-  2: { label: 'Khó', desc: 'Nhớ ra nhưng phải vật lộn', cls: 'grade-2', key: '2' },
-  3: { label: 'Được', desc: 'Nhớ ra sau vài giây', cls: 'grade-3', key: '3' },
-  4: { label: 'Dễ', desc: 'Bật ra ngay lập tức', cls: 'grade-4', key: '4' },
+export const GRADE_META: Record<Grade, { labelKey: string; descKey: string; cls: string; key: string }> = {
+  1: { labelKey: 'grade.1', descKey: 'grade.1desc', cls: 'grade-1', key: '1' },
+  2: { labelKey: 'grade.2', descKey: 'grade.2desc', cls: 'grade-2', key: '2' },
+  3: { labelKey: 'grade.3', descKey: 'grade.3desc', cls: 'grade-3', key: '3' },
+  4: { labelKey: 'grade.4', descKey: 'grade.4desc', cls: 'grade-4', key: '4' },
 };
 
 export type CardState = 'new' | 'learning' | 'review' | 'relearning';
@@ -302,12 +304,12 @@ export function previewIntervals(
 
 /** Định dạng khoảng cách sang tiếng Việt tự nhiên. */
 export function formatInterval(days: number): string {
-  if (days < 1 / 1440) return 'ngay';
-  if (days < 1 / 24) return `${Math.round(days * 1440)} phút`;
-  if (days < 1) return `${Math.round(days * 24)} giờ`;
-  if (days < 30) return `${Math.round(days)} ngày`;
-  if (days < 365) return `${(days / 30.44).toFixed(days < 90 ? 1 : 0)} tháng`;
-  return `${(days / 365).toFixed(1)} năm`;
+  if (days < 1 / 1440) return t('interval.now');
+  if (days < 1 / 24) return t('interval.min', { n: Math.round(days * 1440) });
+  if (days < 1) return t('interval.hour', { n: Math.round(days * 24) });
+  if (days < 30) return t('interval.day', { n: Math.round(days) });
+  if (days < 365) return t('interval.month', { n: (days / 30.44).toFixed(days < 90 ? 1 : 0) });
+  return t('interval.year', { n: (days / 365).toFixed(1) });
 }
 
 /** Thẻ có đến hạn tại thời điểm `now` không? */

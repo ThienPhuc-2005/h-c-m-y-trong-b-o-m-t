@@ -83,31 +83,36 @@ export function acceptsAnswer(input: string, accepted: string[]): boolean {
   });
 }
 
-export const fmtNum = (n: number) => new Intl.NumberFormat('vi-VN').format(n);
+import { t, getLang } from '../i18n';
+
+/** Mã vùng cho Intl — quyết định dấu phân cách nghìn và thứ tự ngày/tháng. */
+const locale = () => (getLang() === 'en' ? 'en-GB' : 'vi-VN');
+
+export const fmtNum = (n: number) => new Intl.NumberFormat(locale()).format(n);
 
 export function fmtDuration(minutes: number): string {
-  if (minutes < 1) return '< 1 phút';
-  if (minutes < 60) return `${Math.round(minutes)} phút`;
+  if (minutes < 1) return t('duration.underMinute');
+  if (minutes < 60) return t('duration.minutes', { n: Math.round(minutes) });
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);
-  return m ? `${h} giờ ${m} phút` : `${h} giờ`;
+  return m ? t('duration.hoursMinutes', { h, m }) : t('duration.hours', { h });
 }
 
 export function fmtRelative(ts: number): string {
-  if (!ts) return 'chưa bao giờ';
+  if (!ts) return t('duration.never');
   const diff = Date.now() - ts;
   const min = diff / 60000;
-  if (min < 1) return 'vừa xong';
-  if (min < 60) return `${Math.round(min)} phút trước`;
+  if (min < 1) return t('duration.justNow');
+  if (min < 60) return t('duration.minutesAgo', { n: Math.round(min) });
   const h = min / 60;
-  if (h < 24) return `${Math.round(h)} giờ trước`;
+  if (h < 24) return t('duration.hoursAgo', { n: Math.round(h) });
   const d = h / 24;
-  if (d < 30) return `${Math.round(d)} ngày trước`;
-  return new Date(ts).toLocaleDateString('vi-VN');
+  if (d < 30) return t('duration.daysAgo', { n: Math.round(d) });
+  return new Date(ts).toLocaleDateString(locale());
 }
 
 export function fmtDate(ts: number): string {
-  return new Date(ts).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(ts).toLocaleDateString(locale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 /** Trung bình cộng an toàn. */

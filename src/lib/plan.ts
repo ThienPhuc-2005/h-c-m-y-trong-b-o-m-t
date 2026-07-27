@@ -47,7 +47,8 @@ export interface DailyPlan {
   goalMet: boolean;
   minutesToday: number;
   /** Một câu định hướng hiển thị trên trang chủ. */
-  headline: string;
+  /** Khoá dịch + biến nội suy cho câu dẫn ở đầu trang chủ. */
+  headline: { key: string; vars?: Record<string, string | number> };
 }
 
 /** Ước lượng thời gian: thẻ ôn ~9 giây, thẻ mới ~20 giây, câu luyện tập ~35 giây. */
@@ -129,18 +130,18 @@ function headlineFor(
   goalMet: boolean,
   minutesToday: number,
   p: Progress,
-): string {
+): { key: string; vars?: Record<string, string | number> } {
   const started = Object.keys(p.lessons).length > 0;
-  if (!started) return 'Bắt đầu từ bài đầu tiên — 14 phút, không cần biết gì trước.';
+  if (!started) return { key: 'plan.start' };
   if (dueN > 0) {
     const est = Math.max(1, Math.round((dueN * SEC_REVIEW) / 60));
-    return `${dueN} thẻ đang ở ngưỡng sắp quên. Khoảng ${est} phút để giữ lại tất cả.`;
+    return { key: 'plan.due', vars: { n: dueN, mins: est } };
   }
-  if (goalMet && lesson) return `Đã đạt mục tiêu ${p.settings.dailyGoalMinutes} phút hôm nay. Học thêm là phần thưởng, không phải nghĩa vụ.`;
-  if (freshN > 0) return `Không còn thẻ đến hạn. ${freshN} thẻ mới đang chờ được đưa vào bộ nhớ dài hạn.`;
-  if (lesson) return `Trí nhớ đang khoẻ. Thời điểm tốt để học bài mới: ${lesson.title}.`;
-  if (minutesToday > 0) return 'Hôm nay bạn đã học xong mọi thứ đến hạn. Nghỉ ngơi cũng là một phần của việc học.';
-  return 'Không còn gì đến hạn. Bạn có thể luyện tập xen kẽ để củng cố.';
+  if (goalMet && lesson) return { key: 'plan.goalMet', vars: { goal: p.settings.dailyGoalMinutes } };
+  if (freshN > 0) return { key: 'plan.fresh', vars: { n: freshN } };
+  if (lesson) return { key: 'plan.nextLesson', vars: { title: lesson.title } };
+  if (minutesToday > 0) return { key: 'plan.restedToday' };
+  return { key: 'plan.nothingDue' };
 }
 
 /* -------------------------------------------------------------------------- */
