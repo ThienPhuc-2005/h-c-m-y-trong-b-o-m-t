@@ -64,6 +64,12 @@ export const track9: Track = {
           t: 'p',
           md: 'Bạn không cần hiểu transformer để bảo vệ ứng dụng LLM. Bạn cần hiểu **đúng ba thứ**: token, cách mô hình sinh chữ, và cửa sổ ngữ cảnh. Ba thứ đó giải thích được gần như mọi lỗ hổng trong chặng này.',
         },
+        {
+          t: 'callout',
+          kind: 'ethics',
+          title: 'Phạm vi hợp pháp — đọc trước khi thử bất cứ điều gì trong chặng này',
+          md: 'Chặng 9 dạy kỹ thuật tấn công để bạn **phòng thủ** được. Ranh giới cụ thể:\n\n**Chỉ thử trên hệ thống của bạn.** Prompt injection nhắm vào một trợ lý AI mà bạn không sở hữu là truy cập trái phép, y hệt như với một API thường — việc bạn chỉ gõ chữ tiếng Việt vào ô chat không làm nó thành hợp pháp. Trợ lý AI của công ty bạn cũng cần **uỷ quyền bằng văn bản** với phạm vi rõ ràng trước khi bạn dò.\n\n**Điều khoản dịch vụ là ràng buộc thật.** Hầu hết nhà cung cấp mô hình cấm dò tìm lỗ hổng trên sản phẩm công cộng ngoài chương trình bug bounty của chính họ. Nếu muốn nghiên cứu, hãy dựng mô hình nguồn mở chạy cục bộ — bạn toàn quyền và không ràng buộc ai.\n\n**Jailbreak không phải giấy phép.** Kỹ thuật vượt rào an toàn trong chặng này để bạn đo xem hàng rào của hệ thống mình mạnh tới đâu, không phải để moi ra nội dung mà hàng rào đang chặn. Mục đích khác nhau thì hành vi giống nhau vẫn dẫn tới hậu quả khác nhau — với bạn và với tổ chức của bạn.\n\n**Tìm được lỗi thật thì báo cáo có trách nhiệm.** Báo cho bên vận hành, cho họ thời gian vá, đừng đăng bản khai thác chạy được lên mạng xã hội. Các phòng lab trong chặng này đều là **mô phỏng ngoại tuyến**, không gọi ra mô hình thật, nên bạn thoải mái nghịch.',
+        },
         { t: 'h', text: 'Token: đơn vị mà mô hình thật sự nhìn thấy', level: 2 },
         {
           t: 'p',
@@ -494,7 +500,7 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
           t: 'lab',
           id: 'lab-prompt-injection',
           intro:
-            'Hộp cát cho phép bạn đóng vai kẻ tấn công. Bạn có một tác tử với system prompt phòng thủ và ba công cụ. Hãy thử: (1) đòi lộ system prompt bằng đường trực tiếp; (2) giấu chỉ dẫn trong "tài liệu đính kèm" để tấn công gián tiếp; (3) siết system prompt lại rồi thử lại — và quan sát rằng bạn chỉ phải đổi cách diễn đạt chứ không cần kỹ thuật mới.',
+            'Hộp cát dựng sẵn bốn tác tử: ba cái đang đọc phải nội dung có chỉ dẫn giấu (email, trang web, phiếu sự cố) và một cái đọc nội dung sạch để đối chứng. Bạn không gõ lời tấn công — bạn bật tắt năm biện pháp phòng thủ và xem cái nào thật sự cứu được tác tử. Hai điều đáng để ý: chỉ dẫn độc hại **luôn** lọt vào ngữ cảnh dù bật gì đi nữa, và hai biện pháp kiến trúc (tách đặc quyền, con người xác nhận) một mình đã mạnh hơn cả ba biện pháp lọc chuỗi cộng lại.',
         },
         { t: 'h', text: 'Những kênh chèn có thật trong một doanh nghiệp', level: 2 },
         {
