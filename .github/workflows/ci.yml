@@ -1,0 +1,35 @@
+name: Kiểm tra và triển khai
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kiem-tra:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Kiểm tra kiểu
+        run: npx tsc -b --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Kiểm thử (bộ máy trí nhớ + toàn vẹn nội dung)
+        run: npm test
+      - name: Dựng bản tĩnh
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7

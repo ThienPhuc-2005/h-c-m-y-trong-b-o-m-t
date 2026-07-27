@@ -119,22 +119,27 @@ function nextDifficulty(d: number, g: Grade): number {
 
 /** Độ ổn định mới khi NHỚ ĐƯỢC (grade ≥ 2). */
 function stabilityOnRecall(d: number, s: number, r: number, g: Grade): number {
+  // s phải > 0: Math.pow(0, số âm) = Infinity, và 0 × Infinity = NaN. Một thẻ
+  // có s = 0 lọt vào trạng thái review (dữ liệu cũ hỏng, nhập tệp sai) sẽ âm
+  // thầm biến toàn bộ lịch ôn thành NaN mà giao diện vẫn hiển thị bình thường.
+  const s0 = Math.max(s, MIN_S);
   const hardPenalty = g === 2 ? W[15] : 1;
   const easyBonus = g === 4 ? W[16] : 1;
   const inc =
     Math.exp(W[8]) *
     (11 - d) *
-    Math.pow(s, -W[9]) *
+    Math.pow(s0, -W[9]) *
     (Math.exp(W[10] * (1 - r)) - 1) *
     hardPenalty *
     easyBonus;
-  return clamp(s * (1 + inc), MIN_S, MAX_S);
+  return clamp(s0 * (1 + inc), MIN_S, MAX_S);
 }
 
 /** Độ ổn định mới khi QUÊN (grade = 1). Luôn thấp hơn hẳn — đó là điều đúng. */
 function stabilityOnLapse(d: number, s: number, r: number): number {
-  const sf = W[11] * Math.pow(d, -W[12]) * (Math.pow(s + 1, W[13]) - 1) * Math.exp(W[14] * (1 - r));
-  return clamp(Math.min(sf, s), MIN_S, MAX_S);
+  const s0 = Math.max(s, MIN_S);
+  const sf = W[11] * Math.pow(Math.max(d, 1), -W[12]) * (Math.pow(s0 + 1, W[13]) - 1) * Math.exp(W[14] * (1 - r));
+  return clamp(Math.min(sf, s0), MIN_S, MAX_S);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -180,7 +185,16 @@ export function schedule(
   const maxInterval = opts.maxInterval ?? 3650;
   const rng = opts.rng ?? Math.random;
 
-  const elapsedDays = mem.last > 0 ? (now - mem.last) / DAY : 0;
+  // Vệ sinh đầu vào: trạng thái trí nhớ có thể đến từ tệp sao lưu của phiên bản
+  // cũ hoặc từ localStorage bị sửa tay. Thà kẹp về khoảng hợp lệ còn hơn để một
+  // giá trị lạ lan thành NaN khắp lịch ôn.
+  mem = {
+    ...mem,
+    s: Number.isFinite(mem.s) ? clamp(mem.s, 0, MAX_S) : 0,
+    d: Number.isFinite(mem.d) ? clamp(mem.d, 0, 10) : 0,
+  };
+
+  const elapsedDays = mem.last > 0 ? Math.max(0, (now - mem.last) / DAY) : 0;
   const next: CardMemory = { ...mem, reps: mem.reps + 1, last: now };
 
   /* ---- Thẻ mới ---------------------------------------------------------- */
