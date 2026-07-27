@@ -1213,5 +1213,1139 @@ export const track3: Track = {
         },
       ],
     },
+
+    /* ====================================================================== */
+    {
+      id: 't3-l5',
+      trackId: 'ml-cot-loi',
+      title: 'Random Forest và Gradient Boosting',
+      subtitle: 'Vua của dữ liệu bảng — và cái bẫy nằm ngay trong bảng feature importance mà ai cũng khoe',
+      minutes: 20,
+      level: 'trung-cap',
+      prereqs: ['t3-l4'],
+      why: {
+        short:
+          'Với dữ liệu dạng bảng — thứ chiếm phần lớn bảo mật — tổ hợp cây vẫn là mô hình mạnh nhất tính trên mỗi giờ công bỏ ra, và bạn sẽ dùng nó nhiều hơn tất cả các mô hình khác cộng lại.',
+        scenario:
+          'Bạn có 4,2 triệu dòng NetFlow đã trích 87 đặc trưng, hạn 2 tuần, không GPU. Bạn cần một mô hình đủ tốt để đưa vào production và một bảng giải thích đặc trưng nào quan trọng để thuyết phục ban lãnh đạo. Đây gần như là định nghĩa của bài toán mà gradient boosting sinh ra để giải.',
+        roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer'],
+        costOfNotKnowing:
+          'Bạn trình bày bảng feature importance mặc định của thư viện, ai đó dựa vào đó ra quyết định thu thập dữ liệu, và ba tháng sau phát hiện đặc trưng đứng đầu bảng chỉ là một định danh có lực lượng cao.',
+      },
+      objectives: [
+        'Phân biệt bagging và boosting theo cơ chế giảm phương sai hay giảm thiên lệch',
+        'Chọn được siêu tham số khởi điểm hợp lý cho LightGBM/XGBoost trên dữ liệu bảo mật',
+        'Chỉ ra bốn cái bẫy khi đọc feature importance và nêu cách kiểm chứng thay thế cho từng cái',
+      ],
+      blocks: [
+        {
+          t: 'p',
+          md: 'Một dữ kiện đáng để bắt đầu: mô hình chuẩn đi kèm bộ dữ liệu **EMBER** — chuẩn công khai để so sánh mô hình phát hiện mã độc PE — không phải mạng nơ-ron mà là một **LightGBM** trên đặc trưng tĩnh trích tay, và nó đạt ROC-AUC trên 0,99. Bức tranh tương tự lặp lại ở khắp nơi: trong các cuộc thi Kaggle trên dữ liệu bảng, gradient boosting thắng áp đảo suốt gần một thập kỷ. Nghiên cứu của Grinsztajn, Oyallon và Varoquaux (NeurIPS 2022) đã phân tích có hệ thống vì sao mô hình cây vẫn vượt deep learning trên dữ liệu bảng.',
+        },
+        { t: 'figure', id: 'fig-ensemble', caption: 'Bagging huấn luyện nhiều cây song song trên các mẫu bootstrap rồi lấy trung bình. Boosting huấn luyện tuần tự, mỗi cây sửa sai cho tổng các cây trước.' },
+        { t: 'h', text: 'Bagging: dùng chính điểm yếu của cây làm nguyên liệu', level: 2 },
+        {
+          t: 'p',
+          md: 'Bài trước kết thúc bằng một phát hiện: cây đơn **bất ổn định**, đổi vài phần trăm dữ liệu là ra cây khác hẳn. Breiman (2001) biến đúng điểm yếu đó thành sức mạnh với **Random Forest**:',
+        },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Bootstrap:** mỗi cây được huấn luyện trên một mẫu lấy có hoàn lại từ dữ liệu gốc, cùng kích thước. Mỗi cây thấy khoảng 63% số mẫu duy nhất; phần còn lại gọi là out-of-bag và dùng để ước lượng lỗi miễn phí.',
+            '**Ngẫu nhiên hoá đặc trưng:** ở **mỗi** nút, cây chỉ được xét một tập con đặc trưng (thường là căn bậc hai của tổng số). Đây mới là mấu chốt — nó ngăn mọi cây cùng chọn một đặc trưng mạnh ở nút gốc và trở nên giống nhau.',
+            '**Trung bình:** dự đoán cuối là trung bình xác suất của tất cả các cây. Sai số ngẫu nhiên của từng cây triệt tiêu lẫn nhau; phần tín hiệu chung thì còn lại.',
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Bagging giảm phương sai, không giảm thiên lệch',
+          md: 'Trung bình N ước lượng không thiên lệch nhưng nhiễu sẽ cho một ước lượng ít nhiễu hơn — nhưng vẫn **giữ nguyên** thiên lệch. Nghĩa là: nếu từng cây riêng lẻ đã bỏ sót một quy luật (vì bạn giới hạn độ sâu quá chặt chẳng hạn), rừng cũng bỏ sót. Đó là lý do trong Random Forest người ta thường để cây **mọc sâu**: mỗi cây thiên lệch thấp, phương sai cao, và phép trung bình sẽ lo phần phương sai.',
+        },
+        { t: 'h', text: 'Boosting: mỗi cây sửa sai cho tổng các cây trước', level: 2 },
+        {
+          t: 'p',
+          md: 'Gradient boosting (Friedman, 2001) đi theo hướng ngược lại. Cây đầu tiên là một cây rất nông (thường 3–8 tầng) và dự đoán khá tệ. Cây thứ hai không học nhãn — nó học **phần dư**, tức phần mà tổng hiện tại đang sai, theo hướng gradient của hàm mất mát. Cây thứ ba học phần dư còn lại. Cứ thế vài trăm tới vài nghìn lần, mỗi lần cộng thêm một lượng nhỏ (`learning_rate`).',
+        },
+        {
+          t: 'compare',
+          title: 'Hai triết lý tổ hợp',
+          left: {
+            title: '🌲 Bagging (Random Forest)',
+            items: [
+              'Các cây độc lập, huấn luyện song song được',
+              'Cây sâu, thiên lệch thấp, phương sai cao',
+              'Mục tiêu: giảm phương sai bằng trung bình',
+              'Rất khó làm hỏng — thêm cây gần như không hại',
+              'Ít siêu tham số cần chỉnh, chạy được ngay lần đầu',
+              'Có ước lượng lỗi out-of-bag miễn phí',
+            ],
+          },
+          right: {
+            title: '🚀 Boosting (XGBoost / LightGBM)',
+            items: [
+              'Các cây tuần tự, cây sau phụ thuộc cây trước',
+              'Cây nông, thiên lệch cao, phương sai thấp',
+              'Mục tiêu: giảm thiên lệch bằng cách sửa dần phần dư',
+              'Thêm quá nhiều cây SẼ quá khớp — cần dừng sớm',
+              'Nhiều siêu tham số, cần tinh chỉnh mới ra hết sức',
+              'Thường thắng RF 2–5 điểm khi được chỉnh tử tế',
+            ],
+          },
+        },
+        {
+          t: 'predict',
+          question:
+            'Bạn tăng số cây trong Random Forest từ 100 lên 2.000. Rồi bạn tăng số cây trong LightGBM từ 100 lên 2.000. Kết quả trên tập kiểm tra thay đổi ra sao trong từng trường hợp?',
+          reveal:
+            '**Random Forest:** hiệu năng tăng nhẹ rồi đi ngang, gần như không bao giờ tệ đi. Bạn chỉ trả giá bằng thời gian và bộ nhớ. Đây là tính chất rất dễ chịu của bagging — thêm cây chỉ làm ước lượng trung bình chính xác hơn.\n\n**LightGBM:** hiệu năng tăng, đạt đỉnh ở đâu đó (có thể là cây thứ 340), rồi **tệ dần** vì các cây sau bắt đầu học nhiễu trong tập huấn luyện. Đây là lý do bạn gần như không bao giờ nên đặt `n_estimators` bằng tay cho boosting — hãy đặt một số lớn và dùng **dừng sớm (early stopping)** trên tập kiểm định để thuật toán tự tìm điểm đỉnh.',
+        },
+        { t: 'h', text: 'Ba thư viện bạn sẽ gặp', level: 2 },
+        {
+          t: 'table',
+          caption: 'Ba cài đặt gradient boosting phổ biến năm 2026, và khi nào chọn cái nào.',
+          head: ['Thư viện', 'Điểm khác biệt kỹ thuật', 'Chọn khi'],
+          rows: [
+            ['XGBoost (Chen & Guestrin, 2016)', 'Mọc cây theo tầng, phạt L1/L2 trên trọng số lá, xử lý thiếu dữ liệu tự động', 'Cần ổn định và hệ sinh thái rộng nhất'],
+            ['LightGBM (Ke và cộng sự, 2017)', 'Mọc theo lá, chia thùng histogram, gộp đặc trưng loại trừ nhau', 'Dữ liệu lớn, cần huấn luyện nhanh nhất'],
+            ['CatBoost', 'Xử lý hạng mục bằng thống kê mục tiêu có sắp thứ tự, chống rò rỉ mục tiêu', 'Nhiều cột hạng mục lực lượng cao'],
+            ['sklearn HistGradientBoosting', 'Cài đặt histogram trong scikit-learn, không phụ thuộc ngoài', 'Muốn ít phụ thuộc, chấp nhận chậm hơn chút'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Siêu tham số khởi điểm cho dữ liệu bảo mật',
+          md: 'Đừng bắt đầu bằng grid search 500 tổ hợp. Bắt đầu bằng: `learning_rate = 0,05`, `num_leaves = 31` (LightGBM) hoặc `max_depth = 6` (XGBoost), `min_child_samples = 100` (dữ liệu bảo mật rất nhiễu, lá nhỏ là lá học nhiễu), `subsample = 0,8`, `colsample_bytree = 0,8`, `n_estimators = 5000` **kèm dừng sớm sau 100 vòng không cải thiện**. Cấu hình này chạy được ngay trong 90% trường hợp và cho bạn một mốc để so trước khi tinh chỉnh nghiêm túc ở bài t3-l8.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Boosting có dừng sớm, và tầm quan trọng đặc trưng đo bằng hoán vị trên tập giữ riêng',
+          code:
+            "import lightgbm as lgb\n" +
+            "from sklearn.inspection import permutation_importance\n" +
+            "from sklearn.metrics import average_precision_score\n" +
+            "\n" +
+            "# X_train sớm hơn X_val, X_val sớm hơn X_test theo thời gian.\n" +
+            "clf = lgb.LGBMClassifier(\n" +
+            "    n_estimators=5000, learning_rate=0.05, num_leaves=31,\n" +
+            "    min_child_samples=100, subsample=0.8, subsample_freq=1,\n" +
+            "    colsample_bytree=0.8, reg_lambda=1.0,\n" +
+            "    is_unbalance=True, random_state=42,\n" +
+            ")\n" +
+            "clf.fit(X_train, y_train,\n" +
+            "        eval_set=[(X_val, y_val)], eval_metric='average_precision',\n" +
+            "        callbacks=[lgb.early_stopping(100, verbose=False)])\n" +
+            "print('Số cây thực dùng:', clf.best_iteration_)\n" +
+            "print('PR-AUC test:', round(average_precision_score(\n" +
+            "    y_test, clf.predict_proba(X_test)[:, 1]), 4))\n" +
+            "\n" +
+            "# KHÔNG dùng clf.feature_importances_ để báo cáo. Dùng hoán vị trên dữ liệu chưa thấy:\n" +
+            "r = permutation_importance(clf, X_test, y_test, n_repeats=10,\n" +
+            "                           scoring='average_precision', random_state=42)\n" +
+            "for i in r.importances_mean.argsort()[::-1][:10]:\n" +
+            "    print(f'{X_test.columns[i]:<32} {r.importances_mean[i]:+.4f} +/- {r.importances_std[i]:.4f}')\n",
+        },
+        { t: 'h', text: 'Vì sao tổ hợp cây là vua của dữ liệu bảng trong bảo mật', level: 2 },
+        {
+          t: 'list',
+          items: [
+            '**Đặc trưng không đồng nhất.** Một hàng NetFlow có số đếm, tỉ lệ, cờ nhị phân, hạng mục và entropy trộn lẫn. Cây không quan tâm thang đo, không cần chuẩn hoá, không cần phân phối chuẩn.',
+            '**Ngưỡng phi tuyến là bản chất của bảo mật.** "Trên 50 kết nối một phút thì đáng ngờ" là một bậc thang, đúng thứ cây biểu diễn tự nhiên còn mô hình tuyến tính phải được nắn tay.',
+            '**Chịu được đặc trưng vô dụng.** Ném vào 200 cột trong đó 150 cột vô nghĩa, cây vẫn tìm ra 50 cột có ích. Mạng nơ-ron thì bị nhiễu kéo đi.',
+            '**Xử lý giá trị thiếu ngay trong thuật toán.** LightGBM và XGBoost học luôn hướng đi cho giá trị thiếu. Trong log bảo mật, thiếu dữ liệu là chuyện thường ngày và bản thân nó cũng là tín hiệu.',
+            '**Huấn luyện nhanh trên CPU.** Vài triệu hàng, vài chục giây tới vài phút. Bạn thử được 30 ý tưởng đặc trưng trong một buổi chiều — điều này quan trọng hơn 1 điểm AUC.',
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'warn',
+          title: 'Giới hạn thật: cây không ngoại suy',
+          md: 'Mô hình cây dự đoán bằng giá trị trung bình của các lá. Nếu tập huấn luyện có `bytes_sent` tối đa là 8 GB và hôm nay xuất hiện một phiên 400 GB, cây sẽ đối xử với nó **y hệt** phiên 8 GB — nó không có khái niệm "xa hơn nữa thì đáng ngờ hơn nữa". Đây là lý do bạn nên bổ sung luật ngưỡng cứng cho các trường hợp cực đoan, hoặc thêm đặc trưng dạng tỉ lệ so với đường cơ sở của chính thực thể đó thay vì giá trị tuyệt đối.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't3l5-cp1',
+              kind: 'mcq',
+              tags: ['random-forest', 'gbdt'],
+              q: 'Mô hình LightGBM của bạn đạt PR-AUC 0,91 trên tập huấn luyện và 0,58 trên tập kiểm định, và bạn đang dùng n_estimators = 3000 cố định. Việc đầu tiên nên làm?',
+              options: [
+                'Tăng learning_rate để mô hình học nhanh hơn',
+                'Bật dừng sớm trên tập kiểm định và xem số cây tối ưu thực sự là bao nhiêu',
+                'Tăng num_leaves để mô hình mạnh hơn',
+                'Chuyển sang Random Forest vì boosting không hợp dữ liệu này',
+              ],
+              answer: 1,
+              why: 'Khoảng cách 0,91 và 0,58 với số cây cố định rất lớn là bức tranh kinh điển của boosting chạy quá đà. Dừng sớm cho bạn biết ngay điểm đỉnh thật — rất có thể là cây thứ 200 chứ không phải 3000 — và nó là thay đổi rẻ nhất, nhanh nhất, không cần đoán. Ba lựa chọn còn lại đều làm mô hình phức tạp hơn hoặc bỏ cuộc quá sớm.',
+              distractorWhy: [
+                'Tốc độ học cao hơn làm mô hình bám nhiễu nhanh hơn nữa.',
+                '',
+                'Nhiều lá hơn nghĩa là cây phức tạp hơn — đi đúng hướng ngược lại.',
+                'Boosting chưa được cho cơ hội chạy đúng cách thì chưa có cơ sở để bỏ.',
+              ],
+            },
+          ],
+        },
+        { t: 'h', text: 'Feature importance và bốn cái bẫy của nó', level: 2 },
+        {
+          t: 'p',
+          md: 'Bảng `feature_importances_` là thứ được đưa vào slide nhiều nhất và bị hiểu sai nhiều nhất trong toàn ngành. Bốn vấn đề, xếp theo mức độ nguy hiểm:',
+        },
+        {
+          t: 'steps',
+          title: 'Bốn cái bẫy, và cách kiểm chứng thay thế',
+          steps: [
+            {
+              title: 'Bẫy 1 — Thiên lệch về đặc trưng lực lượng cao',
+              md: 'Tầm quan trọng dựa trên độ vẩn đục (mặc định của scikit-learn và LightGBM) cộng dồn mức giảm vẩn đục ở mọi nút dùng đặc trưng đó. Đặc trưng có nhiều giá trị khác nhau có nhiều cơ hội được chọn hơn, nên nó **luôn** trông quan trọng — kể cả khi nó là số ngẫu nhiên. **Kiểm chứng:** thêm một cột nhiễu ngẫu nhiên vào dữ liệu; mọi đặc trưng xếp dưới cột nhiễu đó là rác.',
+            },
+            {
+              title: 'Bẫy 2 — Đo trên tập huấn luyện, không phải dữ liệu mới',
+              md: 'Tầm quan trọng mặc định được tính từ quá trình xây cây, tức là trên dữ liệu mô hình đã thấy. Một đặc trưng giúp ghi nhớ tập huấn luyện sẽ có điểm cao dù vô dụng ngoài đời. **Kiểm chứng:** dùng `permutation_importance` trên tập kiểm tra — xáo trộn một cột và đo mức tụt của chỉ số thật.',
+            },
+            {
+              title: 'Bẫy 3 — Đặc trưng tương quan chia nhau điểm',
+              md: 'Nếu `so_ket_noi_1phut` và `so_ket_noi_5phut` tương quan 0,95, cây dùng lúc cái này lúc cái kia và mỗi cái nhận nửa số điểm. Cả hai trông tầm thường, trong khi nhóm hai đặc trưng đó có thể là tín hiệu mạnh nhất. **Kiểm chứng:** hoán vị theo **nhóm** đặc trưng tương quan, hoặc gộp chúng lại trước.',
+            },
+            {
+              title: 'Bẫy 4 — Quan trọng không phải nhân quả, và không phải hướng',
+              md: 'Điểm quan trọng chỉ nói "mô hình dựa vào cột này nhiều", không nói "cột này gây ra tấn công" và cũng không nói giá trị cao thì độc hay lành. **Kiểm chứng:** dùng SHAP (TreeSHAP chạy rất nhanh trên mô hình cây) để thấy cả độ lớn lẫn hướng đóng góp ở từng mẫu.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'story',
+          title: 'Chuyện có thật: đặc trưng số một hoá ra là cái nhãn',
+          md: 'Một đội xây mô hình phân loại cảnh báo, PR-AUC 0,97, mọi người rất vui. Bảng importance cho thấy `assignee_team` chiếm 61% tổng tầm quan trọng. Điều tra ra: cảnh báo đúng luôn được chuyển sang đội ứng cứu sự cố, còn cảnh báo giả thì đóng tại chỗ. Trường đó được ghi **sau khi** analyst ra kết luận. Mô hình không dự đoán gì cả — nó đọc câu trả lời từ tương lai. Quy tắc rút ra: **bất kỳ đặc trưng nào chiếm trên 50% tầm quan trọng đều phải được coi là nghi phạm rò rỉ cho tới khi chứng minh được ngược lại.**',
+        },
+        { t: 'terms', ids: ['random-forest', 'gbdt', 'shap', 'qua-khop', 'ro-ri-du-lieu'] },
+      ],
+      keyTakeaways: [
+        'Bagging huấn luyện cây độc lập rồi trung bình để giảm phương sai; boosting huấn luyện tuần tự để giảm thiên lệch.',
+        'Thêm cây vào Random Forest gần như vô hại; thêm cây vào boosting SẼ quá khớp, nên luôn dùng dừng sớm.',
+        'Tổ hợp cây thắng trên dữ liệu bảng vì không cần chuẩn hoá, bắt ngưỡng phi tuyến tự nhiên, chịu được cột vô dụng và xử lý giá trị thiếu.',
+        'Cây không ngoại suy: giá trị vượt ngoài khoảng huấn luyện được đối xử như giá trị lớn nhất đã thấy.',
+        'Feature importance mặc định thiên lệch về đặc trưng lực lượng cao và được đo trên tập huấn luyện — dùng permutation importance trên tập kiểm tra để báo cáo.',
+        'Một đặc trưng chiếm trên 50% tầm quan trọng là nghi phạm rò rỉ nhãn cho tới khi chứng minh ngược lại.',
+      ],
+      cards: [
+        {
+          id: 't3l5-c1',
+          front: 'Bagging và boosting nhắm vào thành phần lỗi nào khác nhau?',
+          back: 'Bagging giảm phương sai bằng cách trung bình nhiều cây sâu độc lập. Boosting giảm thiên lệch bằng cách cộng dần các cây nông sửa phần dư.',
+          tags: ['random-forest', 'gbdt'],
+        },
+        {
+          id: 't3l5-c2',
+          front: 'Vì sao Random Forest ngẫu nhiên hoá đặc trưng ở MỖI nút chứ không chỉ lấy mẫu bootstrap?',
+          back: 'Nếu không, mọi cây đều chọn cùng một đặc trưng mạnh ở nút gốc và trở nên giống nhau — trung bình các cây giống nhau thì không giảm được phương sai.',
+          tags: ['random-forest'],
+        },
+        {
+          id: 't3l5-c3',
+          front: 'Vì sao không nên đặt n_estimators cố định cho gradient boosting?',
+          back: 'Vì boosting quá khớp khi thêm quá nhiều cây. Đặt một số lớn và dùng dừng sớm trên tập kiểm định để thuật toán tự tìm điểm đỉnh.',
+          tags: ['gbdt', 'sieu-tham-so'],
+        },
+        {
+          id: 't3l5-c4',
+          front: 'Nêu hai lý do feature importance mặc định của thư viện cây gây hiểu nhầm.',
+          back: 'Nó thiên lệch về đặc trưng có nhiều giá trị khác nhau, và nó được tính trên tập huấn luyện chứ không phải dữ liệu mới.',
+          tags: ['gbdt', 'shap'],
+        },
+        {
+          id: 't3l5-c5',
+          front: 'Mô hình cây xử lý thế nào với giá trị vượt xa mọi giá trị từng thấy khi huấn luyện?',
+          back: 'Nó rơi vào lá cực biên và nhận đúng dự đoán như giá trị lớn nhất đã thấy — cây không ngoại suy được.',
+          tags: ['gbdt', 'gioi-han'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't3l5-q1',
+          kind: 'mcq',
+          tags: ['random-forest', 'gbdt'],
+          q: 'Phát biểu nào mô tả ĐÚNG khác biệt cốt lõi giữa Random Forest và Gradient Boosting?',
+          options: [
+            'Random Forest dùng cây, Gradient Boosting dùng mô hình tuyến tính',
+            'Random Forest huấn luyện các cây độc lập rồi trung bình; Gradient Boosting huấn luyện tuần tự, mỗi cây sửa phần dư của tổng trước đó',
+            'Random Forest chỉ dùng cho phân loại, Gradient Boosting chỉ dùng cho hồi quy',
+            'Random Forest cần chuẩn hoá đặc trưng, Gradient Boosting thì không',
+          ],
+          answer: 1,
+          why: 'Sự khác biệt nằm ở **quan hệ giữa các cây**, không ở loại mô hình cơ sở. Độc lập + trung bình là bagging và nó tấn công phương sai. Tuần tự + sửa phần dư là boosting và nó tấn công thiên lệch. Từ khác biệt này suy ra mọi hệ quả thực tế: khả năng song song hoá, độ nhạy với số cây, độ sâu cây nên đặt bao nhiêu, và có cần dừng sớm hay không.',
+          distractorWhy: [
+            'Cả hai đều dùng cây làm mô hình cơ sở.',
+            '',
+            'Cả hai đều làm được phân loại lẫn hồi quy.',
+            'Không mô hình cây nào cần chuẩn hoá đặc trưng — đó là ưu điểm chung của chúng.',
+          ],
+        },
+        {
+          id: 't3l5-q2',
+          kind: 'multi',
+          tags: ['gbdt', 'shap'],
+          q: 'Bạn muốn báo cáo đặc trưng nào thực sự quan trọng cho mô hình LightGBM phát hiện xâm nhập. Cách làm nào hợp lệ? (Chọn tất cả)',
+          options: [
+            'Dùng permutation_importance trên tập kiểm tra chưa được dùng để huấn luyện hay chỉnh tham số',
+            'Thêm một cột nhiễu ngẫu nhiên và loại mọi đặc trưng xếp hạng dưới nó',
+            'In thẳng feature_importances_ mặc định và đưa vào slide',
+            'Dùng TreeSHAP để xem cả độ lớn lẫn hướng đóng góp ở mức từng mẫu',
+          ],
+          answers: [0, 1, 3],
+          why: 'Ba cách hợp lệ đều có chung một đặc điểm: chúng đo tác động lên **dữ liệu mô hình chưa thấy**, hoặc đưa ra một mốc so sánh khách quan. Cột nhiễu ngẫu nhiên là mẹo rẻ tiền nhưng cực kỳ hiệu quả để lộ ra bao nhiêu đặc trưng của bạn thực chất là rác. Còn `feature_importances_` mặc định được tính trong lúc xây cây trên chính tập huấn luyện, và thiên lệch về đặc trưng lực lượng cao — nó có thể dùng để dò lỗi nhanh, nhưng không dùng để báo cáo.',
+        },
+        {
+          id: 't3l5-q3',
+          kind: 'mcq',
+          tags: ['gbdt', 'ro-ri-du-lieu'],
+          q: 'Mô hình xếp hạng cảnh báo đạt PR-AUC 0,97 và một đặc trưng chiếm 61% tổng tầm quan trọng. Phản ứng đúng đắn nhất?',
+          options: [
+            'Ăn mừng và triển khai — đó là một đặc trưng rất mạnh',
+            'Coi đặc trưng đó là nghi phạm rò rỉ nhãn và kiểm tra thời điểm nó được ghi so với thời điểm gắn nhãn',
+            'Bỏ đặc trưng đó đi ngay lập tức để mô hình cân bằng hơn',
+            'Tăng cường phạt L2 để giảm ảnh hưởng của đặc trưng đó',
+          ],
+          answer: 1,
+          why: 'Trong bảo mật, một đặc trưng áp đảo thường có nghĩa là nó chứa sẵn câu trả lời. Câu hỏi kiểm tra duy nhất và quan trọng nhất là: **tại thời điểm mô hình cần đưa ra dự đoán trong thực tế, trường này đã có giá trị chưa?** Nếu nó được ghi sau khi analyst kết luận, đó là rò rỉ. Bỏ ngay lập tức là quá vội — có thể đó là một đặc trưng thật sự mạnh và hợp lệ; điều tra trước đã.',
+          distractorWhy: [
+            'Chỉ số quá đẹp trong bảo mật hầu như luôn là dấu hiệu lỗi chứ không phải thành tích.',
+            '',
+            'Bỏ mà chưa hiểu nguyên nhân có thể vứt đi một tín hiệu hợp lệ và không học được gì.',
+            'Phạt không giải quyết vấn đề rò rỉ — mô hình vẫn đọc được câu trả lời, chỉ là nhẹ tay hơn.',
+          ],
+        },
+        {
+          id: 't3l5-q4',
+          kind: 'truefalse',
+          tags: ['gbdt', 'gioi-han'],
+          q: 'Một mô hình gradient boosting huấn luyện với bytes_sent tối đa 8 GB sẽ cho điểm rủi ro cao hơn khi gặp phiên 400 GB.',
+          answer: false,
+          why: 'Sai. Cây phân hoạch không gian thành các hộp và dự đoán bằng giá trị trung bình trong lá. Mọi giá trị lớn hơn ngưỡng chia cuối cùng đều rơi vào cùng một lá, nên 400 GB nhận đúng điểm số như 8 GB. Đây là giới hạn cấu trúc, không phải lỗi cấu hình. Cách xử lý trong thực tế: bổ sung luật ngưỡng cứng cho vùng cực đoan, hoặc thay giá trị tuyệt đối bằng tỉ lệ so với đường cơ sở của chính thực thể đó (ví dụ "gấp 47 lần trung bình 30 ngày của máy này").',
+        },
+      ],
+      terms: ['random-forest', 'gbdt', 'shap', 'qua-khop', 'ro-ri-du-lieu', 'ember'],
+      further: [
+        {
+          title: 'Why do tree-based models still outperform deep learning on tabular data? — Grinsztajn, Oyallon, Varoquaux (NeurIPS 2022)',
+          note: 'Phân tích có hệ thống chứ không phải cảm tính. Ba lý do họ đưa ra giải thích chính xác vì sao dữ liệu bảo mật hợp với cây.',
+        },
+        {
+          title: 'EMBER: An Open Dataset for Training Static PE Malware Machine Learning Models — Anderson & Roth (2018)',
+          note: 'Bộ dữ liệu và mô hình chuẩn LightGBM đi kèm. Đọc phần mô tả đặc trưng để thấy một bộ đặc trưng bảo mật nghiêm túc trông như thế nào.',
+        },
+        {
+          title: 'Tài liệu LightGBM — Parameters Tuning',
+          note: 'Trang duy nhất bạn cần khi chỉnh tham số. Ngắn, thực dụng, giải thích rõ đánh đổi giữa tốc độ và độ chính xác.',
+        },
+      ],
+    },
+    /* ====================================================================== */
+    {
+      id: 't3-l6',
+      trackId: 'ml-cot-loi',
+      title: 'k-NN, SVM và ý tưởng khoảng cách',
+      subtitle: 'Hai họ mô hình dạy bạn cách nghĩ về "giống nhau" — và vì sao chúng hiếm khi sống sót ở quy mô thật',
+      minutes: 18,
+      level: 'trung-cap',
+      prereqs: ['t3-l5', 't1-l6'],
+      why: {
+        short:
+          'k-NN và SVM là cách nhanh nhất để hiểu khái niệm "khoảng cách trong không gian đặc trưng" — nền tảng của phát hiện bất thường, phân cụm hành vi và tìm mẫu tương tự, những thứ bạn sẽ dùng suốt chặng 6.',
+        scenario:
+          'Analyst đưa bạn một mẫu mã độc mới và hỏi: "Trong 40.000 mẫu đã phân tích, cái nào giống nó nhất?" Đó là bài toán k-NN thuần tuý. Nhưng nếu bạn cài đặt ngây thơ, mỗi truy vấn phải so với cả 40.000 mẫu — và khi kho lên 4 triệu thì hệ thống chết.',
+        roles: ['Security Data Scientist', 'Malware Analyst', 'ML Engineer'],
+        costOfNotKnowing:
+          'Bạn hoặc chọn k-NN cho hệ thống phải trả lời 50.000 sự kiện mỗi giây rồi phát hiện độ trễ không thể chấp nhận sau khi đã xây xong, hoặc bỏ qua nó ở đúng bài toán "tìm mẫu giống nhất" mà nó là công cụ tự nhiên nhất.',
+      },
+      objectives: [
+        'Giải thích được k-NN dự đoán bằng cách nào mà không cần giai đoạn huấn luyện',
+        'Chọn được giữa khoảng cách Euclid và cosine cho một loại đặc trưng cụ thể',
+        'Giải thích ý tưởng lề cực đại và kernel trick bằng lời, không dùng công thức',
+        'Ước lượng được chi phí suy luận của k-NN và nêu hai cách làm nó chạy được ở quy mô lớn',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'k-NN được gọi là thuật toán "lười" (lazy learner) vì giai đoạn huấn luyện của nó gần như không làm gì cả. Vậy công việc bị đẩy đi đâu, và điều đó gây ra hậu quả gì khi bạn triển khai nó trong một hệ thống phải trả lời trong 10 mili giây?',
+          reveal:
+            'Công việc bị đẩy hết sang **lúc dự đoán**. Huấn luyện k-NN = lưu lại toàn bộ dữ liệu, hết. Nhưng mỗi lần dự đoán, nó phải tính khoảng cách từ điểm mới tới **mọi** điểm đã lưu rồi sắp xếp. Với 40.000 mẫu và 200 đặc trưng, đó là 8 triệu phép nhân cho **một** dự đoán. Mọi mô hình khác trong chặng này làm ngược lại: huấn luyện tốn hàng giờ, nhưng dự đoán là vài phép cộng. Trong bảo mật, nơi bạn thường phải chấm điểm hàng chục nghìn sự kiện mỗi giây, sự đánh đổi này gần như luôn bất lợi cho k-NN — trừ một trường hợp: khi bản thân câu hỏi là "cái nào giống nhất", chứ không phải "cái này có độc không".',
+        },
+        { t: 'h', text: 'k-NN: hàng xóm quyết định bạn là ai', level: 2 },
+        {
+          t: 'p',
+          md: 'Toàn bộ thuật toán nằm gọn trong một câu: **tìm k điểm gần nhất trong dữ liệu đã biết, rồi lấy nhãn theo đa số.** Không có tham số nào được học, không có hàm mất mát, không có gradient.',
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Vì sao vẫn đáng học một thuật toán ít dùng ở quy mô lớn',
+          md: 'Vì k-NN buộc bạn phải trả lời một câu hỏi mà **mọi** mô hình đều ngầm trả lời: *"hai mẫu thế nào thì gọi là giống nhau?"* Ở k-NN câu trả lời hiện ra lồ lộ trong hàm khoảng cách. Ở rừng ngẫu nhiên nó bị giấu trong cấu trúc cây. Hiểu rõ ở chỗ dễ nhìn giúp bạn đặt đúng câu hỏi ở chỗ khó nhìn.',
+        },
+        { t: 'lab', id: 'lab-knn', intro: 'Kéo k và độ nhiễu, xem ranh giới quyết định biến dạng ra sao.' },
+        { t: 'h', text: 'Chọn thước đo khoảng cách — quyết định quan trọng hơn chọn k', level: 2 },
+        {
+          t: 'table',
+          head: ['Thước đo', 'Đo cái gì', 'Dùng cho đặc trưng bảo mật nào', 'Bẫy'],
+          rows: [
+            [
+              'Euclid (L2)',
+              'Khoảng cách thẳng trong không gian',
+              'Đặc trưng số cùng đơn vị và đã chuẩn hoá: thống kê phiên, tỉ lệ byte',
+              'Bị đặc trưng có thang đo lớn nuốt chửng nếu quên chuẩn hoá',
+            ],
+            [
+              'Cosine',
+              'Góc giữa hai vector, bỏ qua độ dài',
+              'Vector TF-IDF của dòng lệnh, log, nội dung email',
+              'Hai lệnh cùng "hình dạng" nhưng khác quy mô bị coi là giống hệt',
+            ],
+            [
+              'Manhattan (L1)',
+              'Tổng chênh lệch từng chiều',
+              'Đặc trưng đếm rời rạc: số kết nối, số tệp mở',
+              'Ít nhạy với ngoại lai hơn L2 — đôi khi đó lại là điều bạn không muốn',
+            ],
+            [
+              'Jaccard',
+              'Tỉ lệ phần chung giữa hai tập hợp',
+              'Tập hàm API được gọi, tập cổng đã mở, tập tên miền truy vấn',
+              'Bỏ qua hoàn toàn số lần lặp lại',
+            ],
+          ],
+          caption: 'Chọn sai thước đo làm hỏng mô hình nhanh hơn chọn sai thuật toán.',
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Bẫy: quên chuẩn hoá',
+          md: 'Giả sử hai đặc trưng: `so_ket_noi` (0–50) và `byte_gui` (0–2.000.000.000). Khoảng cách Euclid sẽ **hoàn toàn** bị byte chi phối — chênh lệch 40 kết nối đóng góp 1.600 vào tổng bình phương, còn chênh lệch 1 MB đóng góp 10¹². Mô hình của bạn thực chất chỉ đang nhìn một đặc trưng duy nhất. Đây không phải lỗi hiếm; đây là lỗi mặc định khi ai đó quên đưa `StandardScaler` vào pipeline.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Chuẩn hoá phải nằm TRONG pipeline, nếu không bạn đã rò rỉ thống kê của tập kiểm tra vào tập huấn luyện.',
+          code: `from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+
+# Sai: fit scaler trên toàn bộ dữ liệu rồi mới chia -> rò rỉ
+# scaler.fit(X_all); X = scaler.transform(X_all)
+
+# Đúng: gói vào pipeline, mọi bước fit chỉ thấy dữ liệu huấn luyện
+mo_hinh = Pipeline([
+    ("chuan_hoa", StandardScaler()),
+    ("knn", KNeighborsClassifier(n_neighbors=5, metric="euclidean")),
+])
+mo_hinh.fit(X_train, y_train)`,
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't3l6-cp1',
+              kind: 'mcq',
+              tags: ['knn', 'khoang-cach', 'dac-trung'],
+              q: 'Bạn biểu diễn mỗi dòng lệnh PowerShell thành vector TF-IDF để tìm lệnh tương tự. Thước đo khoảng cách nào phù hợp nhất?',
+              options: [
+                'Euclid, vì nó là mặc định của scikit-learn',
+                'Cosine, vì nó so sánh thành phần từ ngữ mà không bị độ dài lệnh chi phối',
+                'Jaccard, vì TF-IDF là tập hợp',
+                'Manhattan, vì nó ổn định với ngoại lai',
+              ],
+              answer: 1,
+              why: 'Vector TF-IDF có độ dài tỉ lệ với độ dài văn bản. Với Euclid, một lệnh dài 300 ký tự và một lệnh dài 30 ký tự nhưng cùng nội dung sẽ bị coi là rất xa nhau. Cosine chỉ nhìn **hướng** của vector, tức là tỉ lệ tương đối giữa các từ, nên nó bỏ qua độ dài — đúng thứ ta muốn. Đây là lý do cosine gần như luôn là lựa chọn mặc định cho dữ liệu văn bản.',
+              distractorWhy: [
+                'Mặc định của thư viện không bao giờ là lý do kỹ thuật. Euclid trên TF-IDF trộn lẫn nội dung với độ dài.',
+                '',
+                'Jaccard làm việc trên tập hợp nhị phân có/không, nó vứt bỏ toàn bộ trọng số TF-IDF mà bạn vừa tính công phu.',
+                'Manhattan vẫn bị độ dài văn bản chi phối giống Euclid, chỉ ở mức độ nhẹ hơn.',
+              ],
+            },
+          ],
+        },
+        { t: 'h', text: 'SVM: tìm đường phân chia có lề rộng nhất', level: 2 },
+        {
+          t: 'p',
+          md: 'Khi hai lớp tách được bằng một đường thẳng, thường có **vô số** đường thẳng làm được điều đó. SVM chọn đường mà khoảng trống hai bên rộng nhất — gọi là **lề cực đại** (maximum margin).',
+        },
+        {
+          t: 'steps',
+          title: 'Ba ý tưởng của SVM, không cần công thức',
+          steps: [
+            {
+              title: 'Lề rộng = tổng quát hoá tốt hơn',
+              md: 'Trực giác: nếu đường phân chia sát rạt vào các điểm dữ liệu, chỉ cần một mẫu mới lệch một chút là rơi sang bên kia. Lề rộng tạo vùng đệm an toàn. Trong bảo mật, "lệch một chút" chính xác là điều kẻ tấn công sẽ làm.',
+            },
+            {
+              title: 'Chỉ vài điểm quyết định tất cả',
+              md: 'Đường phân chia chỉ phụ thuộc vào những điểm nằm sát lề — gọi là **vector hỗ trợ** (support vector). Xoá 90% dữ liệu ở xa, mô hình không đổi. Đây vừa là ưu điểm (gọn) vừa là nhược điểm (rất nhạy với vài mẫu bị gắn nhãn sai nằm gần biên).',
+            },
+            {
+              title: 'Kernel trick: cong hoá đường thẳng',
+              md: 'Khi dữ liệu không tách được bằng đường thẳng, ta có thể chiếu nó lên không gian nhiều chiều hơn nơi nó tách được, rồi cắt bằng mặt phẳng ở đó. Kernel là mẹo tính toán cho phép làm việc này **mà không cần thực sự tạo ra không gian đó** — bạn chỉ cần một hàm đo độ giống nhau giữa hai điểm. Kernel RBF là lựa chọn mặc định hợp lý.',
+            },
+          ],
+        },
+        {
+          t: 'compare',
+          title: 'Khi nào chọn cái nào',
+          left: {
+            title: '👍 SVM còn hợp lý khi…',
+            items: [
+              'Số đặc trưng lớn hơn số mẫu (ví dụ TF-IDF của vài nghìn email)',
+              'Dữ liệu sạch, ít nhãn sai gần biên',
+              'Bạn cần một baseline mạnh trên tập vài nghìn tới vài chục nghìn mẫu',
+              'Bài toán phân loại văn bản có cấu trúc rõ',
+            ],
+          },
+          right: {
+            title: '👎 Chuyển sang cây tăng cường khi…',
+            items: [
+              'Dữ liệu bảng có đặc trưng khác đơn vị, nhiều giá trị thiếu',
+              'Trên 100.000 mẫu — thời gian huấn luyện SVM tăng gần bậc hai',
+              'Bạn cần giải thích dự đoán cho analyst',
+              'Bạn cần điểm số có ý nghĩa xác suất mà không muốn hiệu chuẩn thêm',
+            ],
+          },
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Thực tế năm 2026',
+          md: 'SVM từng thống trị phân loại văn bản và mã độc suốt những năm 2000–2010. Ngày nay, với dữ liệu bảng bạn dùng LightGBM, với văn bản bạn dùng embedding. SVM vẫn đáng biết vì **ý tưởng lề** xuất hiện lại ở khắp nơi — kể cả trong cách người ta đánh giá độ bền đối kháng của mô hình ở chặng 8: "kẻ tấn công phải đẩy mẫu đi bao xa để lật nhãn" chính là câu hỏi về lề.',
+        },
+        { t: 'h', text: 'Làm k-NN chạy được ở quy mô thật', level: 2 },
+        {
+          t: 'checklist',
+          title: 'Hai kỹ thuật bạn sẽ cần khi kho mẫu vượt vài trăm nghìn',
+          items: [
+            'Chỉ mục không gian (KD-tree, Ball-tree): nhanh hơn nhiều ở số chiều thấp, nhưng mất hiệu quả khi vượt khoảng 20 chiều — hệ quả trực tiếp của lời nguyền số chiều.',
+            'Tìm láng giềng gần đúng (ANN: HNSW, FAISS, ScaNN): chấp nhận sai vài phần trăm để đổi lấy tốc độ nhanh hơn hàng trăm lần. Đây là thứ mọi hệ thống "tìm mẫu tương tự" thật đang dùng.',
+            'Giảm chiều trước khi đánh chỉ mục (PCA hoặc embedding học được) để đưa số chiều về vùng mà khoảng cách còn ý nghĩa.',
+            'Nếu câu hỏi thật sự là "có độc không" chứ không phải "giống cái nào", hãy dùng mô hình khác — đừng ép k-NN.',
+          ],
+        },
+      ],
+      keyTakeaways: [
+        'k-NN không huấn luyện gì cả; toàn bộ chi phí dồn vào lúc dự đoán — thường là bất lợi chí mạng trong bảo mật.',
+        'Chọn thước đo khoảng cách quan trọng hơn chọn k: cosine cho văn bản, Euclid cho số đã chuẩn hoá, Jaccard cho tập hợp.',
+        'Quên chuẩn hoá khiến đặc trưng có thang đo lớn nuốt chửng mọi đặc trưng khác — và mô hình vẫn chạy, không báo lỗi.',
+        'SVM tìm đường phân chia có lề rộng nhất; chỉ các vector hỗ trợ quyết định kết quả, nên vài nhãn sai gần biên có thể phá hỏng mô hình.',
+        'Kernel trick cho phép phân chia phi tuyến mà không phải dựng không gian nhiều chiều thật.',
+        'Ở quy mô lớn, "tìm mẫu giống nhất" được giải bằng tìm kiếm gần đúng (HNSW/FAISS), không phải k-NN ngây thơ.',
+      ],
+      cards: [
+        {
+          id: 't3l6-c1',
+          front: 'Vì sao k-NN được gọi là thuật toán "lười", và hậu quả khi triển khai là gì?',
+          back: 'Huấn luyện chỉ là lưu dữ liệu; toàn bộ tính toán dồn sang lúc dự đoán. Hậu quả: độ trễ suy luận tăng theo kích thước kho dữ liệu, gần như không dùng được cho hệ thống thông lượng cao.',
+          tags: ['knn'],
+        },
+        {
+          id: 't3l6-c2',
+          front: 'Khi nào dùng khoảng cách cosine thay vì Euclid?',
+          back: 'Khi độ dài vector không mang thông tin cần thiết — điển hình là vector TF-IDF của văn bản, log, dòng lệnh. Cosine chỉ so hướng, bỏ qua độ lớn.',
+          tags: ['khoang-cach', 'dac-trung'],
+        },
+        {
+          id: 't3l6-c3',
+          front: 'Vector hỗ trợ (support vector) là gì và vì sao SVM nhạy cảm với nhãn sai?',
+          back: 'Là các điểm nằm sát lề, và chỉ chúng quyết định đường phân chia. Một mẫu bị gắn nhãn sai nằm gần biên có thể kéo lệch toàn bộ ranh giới.',
+          tags: ['svm'],
+        },
+        {
+          id: 't3l6-c4',
+          front: 'Kernel trick giải quyết vấn đề gì?',
+          back: 'Cho phép phân chia phi tuyến bằng cách làm việc trong không gian nhiều chiều hơn mà không cần thực sự tạo ra không gian đó — chỉ cần một hàm đo độ giống nhau giữa hai điểm.',
+          tags: ['svm'],
+        },
+        {
+          id: 't3l6-c5',
+          front: 'Ở quy mô hàng triệu mẫu, bài toán "tìm mẫu giống nhất" được giải bằng gì?',
+          back: 'Tìm láng giềng gần đúng (ANN) như HNSW, FAISS hoặc ScaNN — chấp nhận sai vài phần trăm để đổi lấy tốc độ nhanh hơn hàng trăm lần.',
+          tags: ['knn', 'thuc-chien'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't3l6-q1',
+          kind: 'mcq',
+          tags: ['knn', 'thuc-chien'],
+          q: 'Hệ thống của bạn phải chấm điểm 50.000 sự kiện mạng mỗi giây. Vì sao k-NN với kho 2 triệu mẫu là lựa chọn tồi?',
+          options: [
+            'Vì k-NN không xử lý được đặc trưng số',
+            'Vì mỗi dự đoán phải tính khoảng cách tới toàn bộ kho, khiến độ trễ tăng tuyến tính theo kích thước dữ liệu',
+            'Vì k-NN cần quá nhiều thời gian huấn luyện',
+            'Vì k-NN chỉ hoạt động với hai lớp',
+          ],
+          answer: 1,
+          why: 'k-NN đẩy toàn bộ chi phí sang lúc suy luận. 50.000 truy vấn/giây × 2 triệu phép so sánh = 10¹¹ phép tính mỗi giây, chưa kể sắp xếp. Không hạ tầng hợp lý nào chịu nổi. Ngược lại, thời gian huấn luyện của k-NN gần bằng 0 — nên đáp án "cần nhiều thời gian huấn luyện" là hiểu ngược hoàn toàn bản chất thuật toán.',
+          distractorWhy: [
+            'k-NN làm việc chủ yếu với đặc trưng số; đó không phải vấn đề.',
+            '',
+            'Ngược lại: k-NN gần như không có giai đoạn huấn luyện. Đó chính là điểm mấu chốt.',
+            'k-NN xử lý đa lớp một cách tự nhiên bằng bỏ phiếu đa số.',
+          ],
+        },
+        {
+          id: 't3l6-q2',
+          kind: 'truefalse',
+          tags: ['knn', 'qua-khop'],
+          q: 'Đặt k = 1 cho k-NN sẽ cho độ chính xác 100% trên tập huấn luyện, và đó là dấu hiệu mô hình tốt.',
+          answer: false,
+          why: 'Nửa đầu đúng, nửa sau sai hoàn toàn. Với k = 1, hàng xóm gần nhất của mỗi điểm huấn luyện chính là bản thân nó, nên độ chính xác trên tập huấn luyện luôn là 100%. Đó là ví dụ giáo khoa về **quá khớp**: con số đẹp không mang thông tin nào về khả năng tổng quát hoá. Đây cũng là lý do bạn không bao giờ được đánh giá mô hình trên dữ liệu nó đã thấy.',
+        },
+        {
+          id: 't3l6-q3',
+          kind: 'match',
+          tags: ['khoang-cach', 'dac-trung'],
+          q: 'Nối loại đặc trưng với thước đo khoảng cách phù hợp nhất.',
+          pairs: [
+            ['Vector TF-IDF của dòng lệnh', 'Cosine'],
+            ['Tập hàm API mà tệp gọi', 'Jaccard'],
+            ['Thống kê phiên đã chuẩn hoá', 'Euclid'],
+            ['Số lần đếm rời rạc, nhiều ngoại lai', 'Manhattan'],
+          ],
+          why: 'Thước đo khoảng cách mã hoá định nghĩa "giống nhau" của bạn. Văn bản → so tỉ lệ từ, bỏ độ dài (cosine). Tập hợp có/không → tỉ lệ phần chung (Jaccard). Số liên tục cùng thang → khoảng cách hình học (Euclid). Đếm rời rạc có đuôi nặng → tổng chênh lệch, ít bị ngoại lai kéo (Manhattan).',
+        },
+        {
+          id: 't3l6-q4',
+          kind: 'input',
+          tags: ['svm'],
+          q: 'SVM chọn đường phân chia sao cho khoảng trống hai bên rộng nhất. Khoảng trống đó gọi là gì?',
+          accept: ['le', 'lề', 'margin', 'le cuc dai', 'maximum margin', 'lề cực đại'],
+          placeholder: 'Một từ…',
+          hint: 'Tiếng Anh là "margin".',
+          why: '**Lề** (margin). Ý tưởng lề rộng = vùng đệm an toàn sẽ quay lại ở chặng 8: câu hỏi "kẻ tấn công phải sửa mẫu đi bao xa để lật nhãn" chính là câu hỏi về lề của mô hình, và nó là cách đo độ bền đối kháng.',
+        },
+      ],
+      terms: ['knn', 'svm', 'khoang-cach', 'qua-khop', 'dac-trung'],
+      further: [
+        {
+          title: 'Tài liệu scikit-learn — Nearest Neighbors',
+          note: 'Phần so sánh KD-tree, Ball-tree và brute force theo số chiều rất đáng đọc; nó cho thấy lời nguyền số chiều bằng số liệu cụ thể.',
+        },
+        {
+          title: 'Efficient and robust approximate nearest neighbor search using HNSW graphs — Malkov & Yashunin (2018)',
+          note: 'Thuật toán đứng sau hầu hết hệ thống tìm mẫu tương tự hiện đại. Đọc phần trực giác về đồ thị phân tầng là đủ.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't3-l7',
+      trackId: 'ml-cot-loi',
+      title: 'Quá khớp, thiên lệch và phương sai',
+      subtitle: 'Ba bệnh khác nhau trông rất giống nhau — chẩn đoán sai thì chữa sai',
+      minutes: 19,
+      level: 'co-ban',
+      prereqs: ['t3-l5'],
+      why: {
+        short:
+          'Gần như mọi mô hình bảo mật thất bại đều thuộc một trong ba bệnh: quá khớp, dưới khớp, hoặc rò rỉ nhãn — và mỗi bệnh cần một cách chữa hoàn toàn khác nhau.',
+        scenario:
+          'Mô hình phát hiện mã độc của bạn đạt F1 = 0,97 trên tập kiểm tra nhưng chỉ 0,61 trong tháng đầu triển khai. Sếp hỏi: "Thêm dữ liệu có sửa được không?" Câu trả lời đúng phụ thuộc hoàn toàn vào việc bạn chẩn đoán ra bệnh nào — và thêm dữ liệu chỉ chữa được đúng một trong ba.',
+        roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer'],
+        costOfNotKnowing:
+          'Bạn sẽ đi theo đường mòn "thêm dữ liệu, thêm đặc trưng, thử mô hình mạnh hơn" trong nhiều tuần cho một mô hình đang dưới khớp hoặc đang rò rỉ nhãn — nơi cả ba việc đó đều vô ích hoặc phản tác dụng.',
+      },
+      objectives: [
+        'Phân biệt được quá khớp, dưới khớp và rò rỉ nhãn từ hai con số: lỗi huấn luyện và lỗi kiểm định',
+        'Chọn đúng biện pháp can thiệp cho từng chẩn đoán',
+        'Giải thích được vì sao mô hình đạt 100% trên tập huấn luyện là tin xấu',
+        'Nêu được ba kỹ thuật điều chuẩn và tác dụng khác nhau của L1 với L2',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Hai mô hình phát hiện phishing. Mô hình A: lỗi huấn luyện 2%, lỗi kiểm định 3%. Mô hình B: lỗi huấn luyện 0%, lỗi kiểm định 19%. Mô hình nào đáng lo hơn, và nếu bạn chỉ được làm MỘT việc để cải thiện nó thì làm gì?',
+          reveal:
+            'Mô hình B đáng lo. Khoảng cách 19 điểm phần trăm giữa hai con số là chữ ký kinh điển của **quá khớp**: nó đã ghi nhớ tập huấn luyện chứ không học được quy luật. Việc nên làm đầu tiên: **giảm độ phức tạp hoặc thêm điều chuẩn** — không phải thêm đặc trưng, không phải đổi sang mô hình mạnh hơn (cả hai đều làm bệnh nặng thêm). Nhưng có một khả năng nguy hiểm hơn cần loại trừ trước: lỗi huấn luyện đúng bằng 0% cũng là dấu hiệu của **rò rỉ nhãn** — có một đặc trưng nào đó chứa sẵn câu trả lời. Hãy kiểm tra điều đó trước khi làm bất cứ việc gì khác.',
+        },
+        { t: 'figure', id: 'fig-bias-variance', caption: 'Tăng độ phức tạp thì lỗi huấn luyện giảm mãi, nhưng lỗi trên dữ liệu mới chạm đáy rồi bật lên. Điểm ngọt nằm ở đáy đường đỏ, không phải đáy đường xanh.' },
+        { t: 'h', text: 'Ba bệnh, đọc từ hai con số', level: 2 },
+        {
+          t: 'table',
+          head: ['Lỗi huấn luyện', 'Lỗi kiểm định', 'Chẩn đoán', 'Việc cần làm'],
+          rows: [
+            ['Cao (15%)', 'Cao (17%)', '**Dưới khớp** — mô hình quá đơn giản hoặc đặc trưng quá nghèo', 'Thêm đặc trưng, tăng độ phức tạp, giảm điều chuẩn. Thêm dữ liệu KHÔNG giúp gì.'],
+            ['Thấp (2%)', 'Cao (19%)', '**Quá khớp** — mô hình ghi nhớ nhiễu', 'Giảm độ phức tạp, tăng điều chuẩn, thêm dữ liệu, dừng sớm.'],
+            ['≈ 0%', 'Thấp bất thường (1%)', '**Rò rỉ nhãn** — có đặc trưng chứa sẵn đáp án', 'Soi lại từng đặc trưng và cách chia tập. Không phải bài toán mô hình.'],
+            ['Thấp (3%)', 'Thấp (4%)', 'Khoẻ mạnh', 'Kiểm định trên dữ liệu của khoảng thời gian SAU nữa trước khi mừng.'],
+          ],
+          caption: 'Bảng chẩn đoán này nên được dán lên tường. Nó tiết kiệm hàng tuần công sức đi sai hướng.',
+        },
+        {
+          t: 'callout',
+          kind: 'warn',
+          title: 'Trong bảo mật, hãy nghi ngờ rò rỉ TRƯỚC khi ăn mừng',
+          md: 'Ở phần lớn ngành, mô hình đạt 99% nghĩa là bạn giỏi. Trong bảo mật, mô hình đạt 99% gần như luôn nghĩa là bạn có lỗi ở đâu đó: một đặc trưng rò rỉ (trường "đã bị analyst đóng"), một mẫu trùng giữa hai tập, hay một tạo tác của quy trình thu thập dữ liệu. **Kết quả quá đẹp là một triệu chứng, không phải một thành tựu.**',
+        },
+        { t: 'lab', id: 'lab-overfit', intro: 'Tăng bậc đa thức và nhìn hai đường lỗi tách nhau ra.' },
+        { t: 'h', text: 'Thiên lệch và phương sai: hai nguồn sai số', level: 2 },
+        {
+          t: 'compare',
+          title: 'Hai kiểu sai, hai cách chữa ngược nhau',
+          left: {
+            title: '🎯 Thiên lệch cao (bias)',
+            items: [
+              'Mô hình quá đơn giản để nắm được quy luật thật',
+              'Sai một cách **nhất quán** — luôn lệch về cùng một phía',
+              'Huấn luyện lại trên dữ liệu khác cho kết quả gần như y hệt',
+              'Ví dụ: dùng một ngưỡng entropy duy nhất để phát hiện DGA',
+              'Chữa: thêm đặc trưng, mô hình phức tạp hơn, bớt điều chuẩn',
+            ],
+          },
+          right: {
+            title: '🎲 Phương sai cao (variance)',
+            items: [
+              'Mô hình quá nhạy với từng mẫu cụ thể trong tập huấn luyện',
+              'Sai một cách **thất thường** — đổi dữ liệu là đổi kết quả',
+              'Huấn luyện lại trên tập khác cho mô hình rất khác',
+              'Ví dụ: cây quyết định sâu 40 tầng trên 3.000 mẫu',
+              'Chữa: thêm dữ liệu, điều chuẩn, tổ hợp mô hình, dừng sớm',
+            ],
+          },
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Vì sao rừng ngẫu nhiên hiệu quả đến vậy',
+          md: 'Một cây sâu có **thiên lệch thấp, phương sai cao** — nó nắm được quy luật phức tạp nhưng bám quá sát dữ liệu cụ thể. Lấy trung bình hàng trăm cây như vậy, mỗi cây huấn luyện trên mẫu ngẫu nhiên khác nhau, thì các sai số thất thường triệt tiêu lẫn nhau trong khi phần quy luật chung được giữ lại. Đó chính là toàn bộ ý tưởng của bagging, diễn đạt bằng ngôn ngữ thiên lệch–phương sai.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't3l7-cp1',
+              kind: 'mcq',
+              tags: ['qua-khop', 'chan-doan'],
+              q: 'Mô hình của bạn: lỗi huấn luyện 16%, lỗi kiểm định 18%. Đồng nghiệp đề xuất thu thập thêm 500.000 mẫu. Nhận xét đúng nhất?',
+              options: [
+                'Đề xuất tốt, thêm dữ liệu luôn cải thiện mô hình',
+                'Vô ích: hai con số gần nhau và đều cao nghĩa là mô hình đang dưới khớp, không phải thiếu dữ liệu',
+                'Đề xuất tốt vì nó cũng giảm phương sai',
+                'Cần thêm dữ liệu và đồng thời tăng điều chuẩn',
+              ],
+              answer: 1,
+              why: 'Lỗi huấn luyện 16% nghĩa là mô hình **còn chưa học nổi dữ liệu nó đang có trong tay**. Đưa thêm dữ liệu cùng loại chỉ cho nó thêm thứ để học kém. Đây là dưới khớp: cần đặc trưng giàu hơn hoặc mô hình có sức biểu diễn cao hơn. Tăng điều chuẩn còn làm bệnh nặng thêm vì nó ép mô hình đơn giản hơn nữa.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Điều chuẩn: ba công cụ, ba tác dụng', level: 2 },
+        {
+          t: 'steps',
+          steps: [
+            {
+              title: 'L2 (Ridge) — kéo mọi trọng số về gần 0',
+              md: 'Phạt tổng bình phương trọng số. Kết quả: không trọng số nào quá lớn, mô hình ổn định hơn, nhưng **không** đặc trưng nào bị loại hẳn. Dùng khi bạn tin phần lớn đặc trưng đều có đóng góp nhỏ.',
+            },
+            {
+              title: 'L1 (Lasso) — đẩy trọng số về đúng 0',
+              md: 'Phạt tổng trị tuyệt đối. Kết quả: nhiều trọng số bị đưa về **chính xác 0**, tức là mô hình tự chọn đặc trưng. Cực kỳ hữu ích trong bảo mật khi bạn có 5.000 đặc trưng n-gram và muốn biết 40 cái nào thực sự quan trọng.',
+            },
+            {
+              title: 'Dừng sớm (early stopping) — điều chuẩn miễn phí',
+              md: 'Theo dõi lỗi trên tập kiểm định trong lúc huấn luyện và dừng ngay khi nó bắt đầu tăng. Không cần chọn siêu tham số phạt, không tốn thêm tính toán. Đây là biện pháp đầu tiên nên dùng với gradient boosting và mạng nơ-ron.',
+            },
+          ],
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Dừng sớm với LightGBM: rẻ, hiệu quả, và cho bạn biết luôn số vòng lặp tối ưu.',
+          code: `import lightgbm as lgb
+
+mo_hinh = lgb.LGBMClassifier(
+    n_estimators=5000,      # đặt cao, để dừng sớm tự quyết
+    learning_rate=0.03,
+    num_leaves=63,
+    reg_lambda=1.0,         # điều chuẩn L2
+)
+mo_hinh.fit(
+    X_train, y_train,
+    eval_set=[(X_val, y_val)],
+    eval_metric="average_precision",   # PR-AUC, hop voi lop duong hiem
+    callbacks=[lgb.early_stopping(stopping_rounds=100, verbose=True)],
+)
+print("So vong lap toi uu:", mo_hinh.best_iteration_)`,
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Bẫy riêng của bảo mật: quá khớp vào một khoảng thời gian',
+          md: 'Mô hình của bạn có thể không quá khớp vào từng mẫu, mà quá khớp vào **chiến dịch tấn công của quý đó**. Lỗi huấn luyện và lỗi kiểm định đều đẹp vì cả hai tập đều lấy từ cùng vài tháng. Chỉ khi triển khai sang quý sau, khi kẻ tấn công đã đổi hạ tầng, bạn mới thấy sự thật. Cách duy nhất phát hiện sớm: **luôn giữ một tập kiểm tra thuộc khoảng thời gian muộn hơn hẳn**, và đừng bao giờ nhìn vào nó cho tới lúc quyết định cuối cùng.',
+        },
+      ],
+      keyTakeaways: [
+        'Chẩn đoán bằng hai con số: lỗi huấn luyện và lỗi kiểm định. Cả hai cao = dưới khớp; chênh lệch lớn = quá khớp; cả hai gần 0 = nghi rò rỉ.',
+        'Thêm dữ liệu chỉ chữa được quá khớp. Với mô hình dưới khớp, nó hoàn toàn vô ích.',
+        'Trong bảo mật, kết quả quá đẹp là triệu chứng cần điều tra, không phải thành tựu cần ăn mừng.',
+        'Thiên lệch = sai nhất quán do mô hình quá đơn giản; phương sai = sai thất thường do mô hình quá nhạy.',
+        'L1 loại bỏ đặc trưng (đưa trọng số về đúng 0), L2 chỉ thu nhỏ chúng. Dừng sớm là biện pháp rẻ nhất nên thử trước.',
+        'Quá khớp vào một khoảng thời gian là dạng quá khớp đặc thù của bảo mật, chỉ lộ ra khi kiểm tra trên dữ liệu muộn hơn hẳn.',
+      ],
+      cards: [
+        {
+          id: 't3l7-c1',
+          front: 'Lỗi huấn luyện 16%, lỗi kiểm định 18%. Chẩn đoán là gì và nên làm gì?',
+          back: 'Dưới khớp. Mô hình chưa học nổi dữ liệu đang có. Cần thêm đặc trưng hoặc mô hình mạnh hơn — thêm dữ liệu không giúp gì.',
+          tags: ['chan-doan', 'qua-khop'],
+        },
+        {
+          id: 't3l7-c2',
+          front: 'Lỗi huấn luyện 2%, lỗi kiểm định 19%. Chẩn đoán là gì?',
+          back: 'Quá khớp: mô hình ghi nhớ nhiễu của tập huấn luyện. Chữa bằng giảm độ phức tạp, tăng điều chuẩn, thêm dữ liệu, hoặc dừng sớm.',
+          tags: ['chan-doan', 'qua-khop'],
+        },
+        {
+          id: 't3l7-c3',
+          front: 'Vì sao mô hình đạt 100% trên tập huấn luyện là tin xấu?',
+          back: 'Vì nó nghĩa là mô hình đã ghi nhớ dữ liệu (quá khớp) hoặc có đặc trưng chứa sẵn đáp án (rò rỉ nhãn). Cả hai đều không tổng quát hoá được.',
+          tags: ['qua-khop', 'ro-ri-du-lieu'],
+        },
+        {
+          id: 't3l7-c4',
+          front: 'Khác biệt thực dụng giữa điều chuẩn L1 và L2 là gì?',
+          back: 'L1 đưa nhiều trọng số về đúng 0 nên tự chọn đặc trưng; L2 chỉ thu nhỏ mọi trọng số mà không loại bỏ cái nào.',
+          tags: ['regularization'],
+        },
+        {
+          id: 't3l7-c5',
+          front: 'Dạng quá khớp đặc thù của bảo mật là gì?',
+          back: 'Quá khớp vào một khoảng thời gian: mô hình học chiến dịch tấn công của quý đó. Chỉ lộ ra khi kiểm tra trên dữ liệu của giai đoạn muộn hơn hẳn.',
+          tags: ['qua-khop', 'troi-khai-niem'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't3l7-q1',
+          kind: 'mcq',
+          tags: ['ro-ri-du-lieu', 'chan-doan'],
+          q: 'Mô hình phân loại mã độc của bạn đạt lỗi huấn luyện 0,0% và lỗi kiểm định 0,4%. Hành động đầu tiên?',
+          options: [
+            'Triển khai ngay, đây là kết quả xuất sắc',
+            'Kiểm tra từng đặc trưng và cách chia tập để tìm rò rỉ nhãn',
+            'Tăng điều chuẩn để phòng quá khớp',
+            'Thu thập thêm dữ liệu để xác nhận kết quả',
+          ],
+          answer: 1,
+          why: 'Trong ML bảo mật, kết quả gần hoàn hảo hầu như luôn là dấu hiệu của rò rỉ. Các nghi phạm thường gặp: một đặc trưng được tính SAU khi sự cố đã được xử lý (ví dụ "số lần bị analyst xem"), mẫu trùng lặp nằm ở cả hai tập, hoặc một tạo tác của quy trình thu thập (mọi mẫu độc đều tải từ cùng một nguồn nên có chung metadata). Triển khai trước khi loại trừ những khả năng này là cách nhanh nhất để mất uy tín.',
+          distractorWhy: [
+            'Triển khai một mô hình có dấu hiệu rò rỉ rõ ràng sẽ thất bại ngay tuần đầu và làm mất niềm tin vào cả chương trình ML.',
+            '',
+            'Điều chuẩn không sửa được rò rỉ — đặc trưng chứa đáp án vẫn sẽ có trọng số cao dù bị phạt.',
+            'Thêm dữ liệu từ cùng nguồn sẽ tái tạo lại đúng cái rò rỉ đó ở quy mô lớn hơn.',
+          ],
+        },
+        {
+          id: 't3l7-q2',
+          kind: 'multi',
+          tags: ['qua-khop', 'regularization'],
+          q: 'Biện pháp nào giúp giảm quá khớp? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Dừng sớm dựa trên lỗi tập kiểm định',
+            'Tăng độ sâu tối đa của cây',
+            'Thêm dữ liệu huấn luyện đa dạng hơn',
+            'Tăng hệ số phạt L2',
+          ],
+          answers: [0, 2, 3],
+          why: 'Dừng sớm, thêm dữ liệu và tăng điều chuẩn đều làm mô hình bớt bám vào chi tiết cụ thể của tập huấn luyện. Tăng độ sâu cây đi đúng hướng ngược lại: cây càng sâu càng chia nhỏ dữ liệu tới mức mỗi lá chỉ còn vài mẫu, và đó chính là ghi nhớ chứ không phải học.',
+        },
+        {
+          id: 't3l7-q3',
+          kind: 'order',
+          tags: ['chan-doan', 'thuc-chien'],
+          q: 'Mô hình hoạt động kém khi triển khai. Sắp xếp thứ tự chẩn đoán hợp lý nhất.',
+          items: [
+            'So sánh lỗi huấn luyện với lỗi kiểm định để xác định dưới khớp hay quá khớp',
+            'Loại trừ rò rỉ nhãn bằng cách soi từng đặc trưng và cách chia tập',
+            'Kiểm tra phân phối dữ liệu lúc chạy thật có khác lúc huấn luyện không',
+            'Áp dụng biện pháp tương ứng với chẩn đoán và đo lại',
+          ],
+          why: 'Bắt đầu bằng chẩn đoán rẻ nhất và có sức phân biệt cao nhất: hai con số lỗi bạn đã có sẵn. Rò rỉ phải được loại trừ sớm vì nếu có, mọi kết luận sau đó đều vô nghĩa. So sánh phân phối đứng thứ ba vì nó tốn công hơn nhưng lại là nguyên nhân cực kỳ phổ biến trong bảo mật. Chỉ can thiệp sau khi đã biết chữa bệnh gì — thứ tự ngược lại là công thức để mất nhiều tuần.',
+        },
+        {
+          id: 't3l7-q4',
+          kind: 'truefalse',
+          tags: ['regularization'],
+          q: 'Với 5.000 đặc trưng n-gram và mong muốn biết đặc trưng nào thực sự quan trọng, điều chuẩn L1 phù hợp hơn L2.',
+          answer: true,
+          why: 'Đúng. L1 đẩy nhiều trọng số về **đúng 0**, biến mô hình thành một bộ chọn đặc trưng tự động — bạn đọc ra ngay 40 n-gram nào còn trọng số khác 0. L2 chỉ thu nhỏ mọi trọng số nên cả 5.000 đặc trưng vẫn còn đó với giá trị nhỏ, không giúp bạn rút gọn gì. Lưu ý thực tế: khi các đặc trưng tương quan mạnh với nhau, L1 chọn khá tuỳ tiện một cái trong nhóm — nên đừng diễn giải kết quả như một bảng xếp hạng tầm quan trọng tuyệt đối.',
+        },
+      ],
+      terms: ['qua-khop', 'regularization', 'ro-ri-du-lieu', 'cross-validation'],
+      further: [
+        {
+          title: 'Leakage in Data Mining: Formulation, Detection, and Avoidance — Kaufman, Rosset, Perlich (2011)',
+          note: 'Bài báo hệ thống hoá rò rỉ dữ liệu thành các dạng có tên gọi. Đọc xong bạn sẽ nhận ra rò rỉ nhanh hơn nhiều.',
+        },
+      ],
+    },
+
+    /* ====================================================================== */
+    {
+      id: 't3-l8',
+      trackId: 'ml-cot-loi',
+      title: 'Kiểm định và tinh chỉnh siêu tham số',
+      subtitle: 'Làm sao biết mô hình thật sự tốt, chứ không phải bạn đã may mắn',
+      minutes: 18,
+      level: 'trung-cap',
+      prereqs: ['t3-l7', 't2-l6'],
+      why: {
+        short:
+          'Quy trình kiểm định là thứ duy nhất đứng giữa bạn và việc tự lừa dối bản thân — và trong bảo mật, quy trình chuẩn của giáo trình ML sẽ cho bạn con số sai.',
+        scenario:
+          'Bạn thử 200 tổ hợp siêu tham số, chọn cái tốt nhất trên tập kiểm định, rồi báo cáo chính con số đó với lãnh đạo. Ba tháng sau hiệu năng thật thấp hơn 8 điểm. Không ai gian lận cả — nhưng con số bạn báo cáo đã bị thổi phồng một cách có hệ thống, và có một cái tên cho hiện tượng đó.',
+        roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer'],
+        costOfNotKnowing:
+          'Bạn sẽ công bố những con số không tái lập được, và mất uy tín ngay lần đầu hệ thống chạy thật — thiệt hại lớn hơn nhiều so với việc báo cáo một con số khiêm tốn nhưng đúng.',
+      },
+      objectives: [
+        'Giải thích vai trò khác nhau của tập huấn luyện, kiểm định và kiểm tra',
+        'Chỉ ra vì sao k-fold ngẫu nhiên cho kết quả sai trên dữ liệu bảo mật và dùng biến thể nào thay thế',
+        'Chọn được giữa tìm kiếm lưới, ngẫu nhiên và Bayes theo ngân sách tính toán',
+        'Nhận ra và tránh hiện tượng quá khớp vào tập kiểm định',
+      ],
+      blocks: [
+        { t: 'figure', id: 'fig-split-temporal', caption: 'Cùng một tập dữ liệu, hai cách chia, hai kết luận trái ngược. Trong bảo mật chỉ cách chia dưới là trung thực.' },
+        { t: 'h', text: 'Ba tập, ba vai trò không được lẫn lộn', level: 2 },
+        {
+          t: 'table',
+          head: ['Tập', 'Dùng để', 'Được xem bao nhiêu lần'],
+          rows: [
+            ['Huấn luyện', 'Mô hình học tham số', 'Vô số'],
+            ['Kiểm định (validation)', 'Bạn chọn siêu tham số, đặc trưng, ngưỡng', 'Nhiều lần — và đó chính là vấn đề'],
+            ['Kiểm tra (test)', 'Ước lượng hiệu năng thật, MỘT lần duy nhất', 'Đúng một lần, ở cuối cùng'],
+          ],
+          caption: 'Mỗi lần bạn nhìn vào tập kiểm tra rồi thay đổi điều gì đó, nó thầm lặng biến thành tập kiểm định.',
+        },
+        {
+          t: 'predict',
+          question:
+            'Bạn thử 200 tổ hợp siêu tham số và chọn cái cho PR-AUC cao nhất trên tập kiểm định, được 0,84. Vì sao con số 0,84 này gần như chắc chắn cao hơn hiệu năng thật, ngay cả khi bạn không làm gì sai?',
+          reveal:
+            'Vì tập kiểm định của bạn là một mẫu hữu hạn, nên điểm số trên nó = hiệu năng thật + một chút nhiễu ngẫu nhiên. Khi bạn thử 200 tổ hợp và **chọn cái cao nhất**, bạn không chỉ chọn mô hình tốt nhất — bạn còn chọn tổ hợp **may mắn nhất** trên đúng mẫu nhiễu đó. Càng thử nhiều tổ hợp, phần "may mắn" trong con số chiến thắng càng lớn. Đây gọi là **quá khớp vào tập kiểm định**, và nó là lý do bạn bắt buộc phải giữ một tập kiểm tra riêng chưa từng được dùng để ra bất kỳ quyết định nào.',
+        },
+        { t: 'h', text: 'Vì sao k-fold ngẫu nhiên nói dối trong bảo mật', level: 2 },
+        {
+          t: 'p',
+          md: 'Kiểm định chéo k-fold tiêu chuẩn xáo trộn dữ liệu rồi chia đều thành k phần. Trong hầu hết ngành đó là cách làm đúng. Trong bảo mật nó vi phạm hai điều cùng lúc.',
+        },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Vi phạm thời gian.** Mẫu tháng 12 lọt vào tập huấn luyện trong khi mẫu tháng 3 nằm ở tập kiểm tra. Mô hình được "nhìn thấy tương lai" — thứ nó sẽ không bao giờ có khi chạy thật.',
+            '**Vi phạm nhóm.** Một họ mã độc có 400 biến thể gần giống hệt nhau. Chia ngẫu nhiên khiến biến thể 1–200 vào tập huấn luyện, 201–400 vào tập kiểm tra. Mô hình chỉ cần nhận ra họ đó là ghi điểm — chứ chưa hề chứng minh nó bắt được họ **mới**.',
+          ],
+        },
+        {
+          t: 'compare',
+          title: 'Chọn kiểu chia theo câu hỏi bạn đang trả lời',
+          left: {
+            title: '⏱️ TimeSeriesSplit',
+            items: [
+              'Huấn luyện trên quá khứ, kiểm tra trên tương lai',
+              'Trả lời: "mô hình còn dùng được sau bao lâu?"',
+              'Bắt buộc trước khi triển khai',
+              'Cho con số thấp hơn nhưng trung thực',
+            ],
+          },
+          right: {
+            title: '👥 GroupKFold theo họ / theo người dùng',
+            items: [
+              'Mọi biến thể của một họ nằm trọn trong một phần',
+              'Trả lời: "mô hình bắt được cái CHƯA từng thấy không?"',
+              'Bắt buộc với dữ liệu mã độc và dữ liệu theo người dùng',
+              'Thường làm điểm số tụt mạnh — đó là sự thật, không phải lỗi',
+            ],
+          },
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Kiểm định theo thời gian: mỗi lần huấn luyện chỉ thấy quá khứ so với phần kiểm tra của nó.',
+          code: `from sklearn.model_selection import TimeSeriesSplit, cross_val_score
+import numpy as np
+
+# Du lieu PHAI duoc sap xep theo thoi gian truoc
+X, y = X[np.argsort(timestamps)], y[np.argsort(timestamps)]
+
+tscv = TimeSeriesSplit(n_splits=5, gap=7)   # gap: bo 7 ngay giua train va test
+diem = cross_val_score(mo_hinh, X, y, cv=tscv, scoring="average_precision")
+
+print("PR-AUC tung lan:", np.round(diem, 3))
+print("Trung binh:", diem.mean().round(3), "| do lech:", diem.std().round(3))
+# Diem giam dan qua cac lan chia la dau hieu troi khai niem, khong phai loi.`,
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Đọc xu hướng, không chỉ đọc trung bình',
+          md: 'Với `TimeSeriesSplit`, đừng chỉ nhìn điểm trung bình. Hãy nhìn **dãy điểm theo thứ tự**. Nếu nó giảm dần đều qua các lần chia, bạn vừa đo được tốc độ trôi khái niệm của chính bài toán mình — thông tin quý hơn nhiều so với một con số trung bình, và nó cho bạn biết luôn cần huấn luyện lại bao lâu một lần. Chúng ta sẽ quay lại đúng phép đo này ở chặng 10.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't3l8-cp1',
+              kind: 'mcq',
+              tags: ['kiem-dinh', 'ro-ri-du-lieu'],
+              q: 'Bạn có 50.000 mẫu mã độc thuộc 300 họ. Cách chia tập nào cho ước lượng trung thực nhất về khả năng bắt mã độc MỚI?',
+              options: [
+                'k-fold ngẫu nhiên với k = 5',
+                'Chia ngẫu nhiên 80/20 nhưng lặp lại 10 lần rồi lấy trung bình',
+                'GroupKFold theo họ mã độc, để mọi biến thể của một họ nằm trọn trong một phần',
+                'Chia theo kích thước tệp để hai tập có phân phối giống nhau',
+              ],
+              answer: 2,
+              why: 'Câu hỏi bạn cần trả lời là "mô hình có bắt được họ **chưa từng thấy** không". Chỉ GroupKFold theo họ mới mô phỏng đúng tình huống đó. Mọi cách chia ngẫu nhiên đều để biến thể cùng họ nằm ở cả hai bên, biến bài toán thành "nhận ra họ đã biết" — dễ hơn nhiều và không phản ánh thực tế. Lặp lại 10 lần chỉ làm con số sai trở nên ổn định hơn, không làm nó đúng hơn.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Tinh chỉnh siêu tham số: chọn chiến lược theo ngân sách', level: 2 },
+        {
+          t: 'table',
+          head: ['Chiến lược', 'Cách hoạt động', 'Khi nào dùng'],
+          rows: [
+            ['Tìm kiếm lưới (grid)', 'Thử mọi tổ hợp trong lưới định sẵn', 'Chỉ khi có ≤ 3 tham số và mỗi tham số ít giá trị. Chi phí bùng nổ theo cấp số nhân.'],
+            ['Tìm kiếm ngẫu nhiên (random)', 'Lấy mẫu ngẫu nhiên trong khoảng cho trước', 'Mặc định hợp lý. Với cùng ngân sách, thường tìm được tổ hợp tốt hơn lưới vì nó khám phá nhiều giá trị hơn cho từng tham số quan trọng.'],
+            ['Tối ưu Bayes (Optuna, Hyperopt)', 'Dùng kết quả đã thử để đoán vùng đáng thử tiếp', 'Khi mỗi lần huấn luyện tốn hàng chục phút trở lên và bạn có trên ~50 lượt thử.'],
+            ['Chỉnh tay có hiểu biết', 'Điều chỉnh vài tham số quan trọng nhất theo đường cong học', 'Luôn nên làm TRƯỚC khi tự động hoá. Nó cho bạn trực giác mà tìm kiếm tự động không cho.'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Bẫy: chuẩn hoá ngoài vòng kiểm định chéo',
+          md: 'Nếu bạn gọi `scaler.fit()` hay `SelectKBest.fit()` trên **toàn bộ** dữ liệu rồi mới chạy kiểm định chéo, thống kê của các phần kiểm tra đã rò rỉ vào bước tiền xử lý. Điểm số sẽ đẹp lên một cách giả tạo. Cách chữa đơn giản và tuyệt đối: gói **mọi** bước biến đổi vào một `Pipeline` rồi truyền pipeline đó cho `cross_val_score`. Không có ngoại lệ nào cho quy tắc này.',
+        },
+        {
+          t: 'checklist',
+          title: 'Danh sách kiểm tra trước khi báo cáo bất kỳ con số nào',
+          items: [
+            'Tập kiểm tra đã được tách theo thời gian và chưa từng dùng để ra quyết định nào chưa?',
+            'Nếu dữ liệu có nhóm tự nhiên (họ mã độc, người dùng, máy chủ), đã chia theo nhóm chưa?',
+            'Mọi bước tiền xử lý đã nằm trong Pipeline chưa?',
+            'Đã kiểm tra mẫu trùng lặp giữa các tập chưa?',
+            'Con số báo cáo có kèm khoảng dao động qua các lần chia, hay chỉ có một giá trị đơn lẻ?',
+            'Đã quy đổi chỉ số ra con số vận hành (cảnh báo/ngày, giờ analyst) chưa?',
+          ],
+        },
+      ],
+      keyTakeaways: [
+        'Ba tập có ba vai trò: huấn luyện để học, kiểm định để chọn, kiểm tra để báo cáo — và tập kiểm tra chỉ được xem đúng một lần.',
+        'Thử càng nhiều tổ hợp siêu tham số, điểm số trên tập kiểm định càng bị thổi phồng: đó là quá khớp vào tập kiểm định.',
+        'k-fold ngẫu nhiên vi phạm cả trật tự thời gian lẫn cấu trúc nhóm — hai điều luôn tồn tại trong dữ liệu bảo mật.',
+        'Dùng TimeSeriesSplit để trả lời "dùng được bao lâu", GroupKFold để trả lời "bắt được cái mới không".',
+        'Tìm kiếm ngẫu nhiên thường thắng tìm kiếm lưới ở cùng ngân sách; tối ưu Bayes chỉ đáng khi mỗi lượt huấn luyện rất đắt.',
+        'Mọi bước tiền xử lý phải nằm trong Pipeline, nếu không kiểm định chéo sẽ bị rò rỉ.',
+      ],
+      cards: [
+        {
+          id: 't3l8-c1',
+          front: 'Vai trò khác nhau của tập kiểm định và tập kiểm tra là gì?',
+          back: 'Kiểm định dùng để CHỌN (siêu tham số, đặc trưng, ngưỡng) và được xem nhiều lần. Kiểm tra dùng để BÁO CÁO hiệu năng thật và chỉ được xem đúng một lần ở cuối.',
+          tags: ['kiem-dinh'],
+        },
+        {
+          id: 't3l8-c2',
+          front: 'Vì sao điểm số của tổ hợp siêu tham số tốt nhất luôn bị thổi phồng?',
+          back: 'Vì điểm trên tập kiểm định = hiệu năng thật + nhiễu. Chọn giá trị cao nhất trong nhiều lượt thử là chọn cả phần may mắn. Càng thử nhiều, thổi phồng càng lớn.',
+          tags: ['kiem-dinh', 'qua-khop'],
+        },
+        {
+          id: 't3l8-c3',
+          front: 'Hai lý do khiến k-fold ngẫu nhiên sai trong dữ liệu bảo mật?',
+          back: '1) Vi phạm thời gian: mô hình nhìn thấy tương lai. 2) Vi phạm nhóm: biến thể cùng một họ mã độc nằm ở cả tập huấn luyện lẫn tập kiểm tra.',
+          tags: ['kiem-dinh', 'ro-ri-du-lieu'],
+        },
+        {
+          id: 't3l8-c4',
+          front: 'Vì sao mọi bước tiền xử lý phải nằm trong Pipeline?',
+          back: 'Vì nếu fit scaler hay bộ chọn đặc trưng trên toàn bộ dữ liệu, thống kê của tập kiểm tra rò rỉ vào bước tiền xử lý và điểm số đẹp lên một cách giả tạo.',
+          tags: ['ro-ri-du-lieu', 'thuc-chien'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't3l8-q1',
+          kind: 'mcq',
+          tags: ['kiem-dinh'],
+          q: 'Bạn thử 300 tổ hợp siêu tham số, chọn cái tốt nhất trên tập kiểm định (PR-AUC 0,86) và báo cáo con số đó. Vấn đề là gì?',
+          options: [
+            'Không có vấn đề gì nếu tập kiểm định đủ lớn',
+            '0,86 là ước lượng bị thổi phồng vì nó đã được chọn để tối đa hoá trên chính tập đó; cần đo lại trên tập kiểm tra chưa từng dùng',
+            'Nên thử nhiều tổ hợp hơn nữa để chắc chắn',
+            'Nên báo cáo trung bình của cả 300 tổ hợp thay vì tổ hợp tốt nhất',
+          ],
+          answer: 1,
+          why: 'Chọn cực đại trên một mẫu hữu hạn luôn kèm theo phần may mắn, và phần đó lớn dần theo số lượt thử. Con số trung thực duy nhất là điểm trên một tập chưa hề tham gia vào bất kỳ quyết định nào. Báo cáo trung bình của 300 tổ hợp cũng sai, chỉ theo hướng ngược lại: nó bao gồm cả những cấu hình tệ mà bạn sẽ không bao giờ triển khai.',
+          distractorWhy: [
+            'Tập kiểm định lớn làm giảm nhiễu nhưng không xoá bỏ hiệu ứng chọn cực đại.',
+            '',
+            'Thử thêm chỉ làm vấn đề nặng hơn: càng nhiều lượt, phần may mắn trong tổ hợp thắng cuộc càng lớn.',
+            'Trung bình toàn bộ không phải là ước lượng cho mô hình bạn định triển khai.',
+          ],
+        },
+        {
+          id: 't3l8-q2',
+          kind: 'mcq',
+          tags: ['kiem-dinh', 'troi-khai-niem'],
+          q: 'Chạy TimeSeriesSplit 5 phần, bạn thu được PR-AUC lần lượt: 0,81 · 0,78 · 0,74 · 0,69 · 0,63. Điều này nói lên gì?',
+          options: [
+            'Mô hình không ổn định, cần tăng số lần chia',
+            'Có trôi khái niệm: hiệu năng suy giảm theo thời gian, cần lên kế hoạch huấn luyện lại định kỳ',
+            'Tập dữ liệu quá nhỏ nên kết quả ngẫu nhiên',
+            'Có rò rỉ nhãn ở các phần đầu',
+          ],
+          answer: 1,
+          why: 'Dãy giảm **đơn điệu** theo thứ tự thời gian là chữ ký của trôi khái niệm, không phải nhiễu ngẫu nhiên — nhiễu sẽ dao động lên xuống chứ không giảm đều. Đây là thông tin vận hành cực kỳ giá trị: nó cho bạn ước lượng trực tiếp về tốc độ lỗi thời của mô hình, và từ đó suy ra chu kỳ huấn luyện lại. Báo cáo dãy số này thuyết phục hơn nhiều so với một con số trung bình 0,73.',
+        },
+        {
+          id: 't3l8-q3',
+          kind: 'truefalse',
+          tags: ['kiem-dinh'],
+          q: 'Với cùng một ngân sách tính toán, tìm kiếm ngẫu nhiên thường tìm được cấu hình tốt hơn tìm kiếm lưới.',
+          answer: true,
+          why: 'Đúng, và lý do khá phản trực giác: trong hầu hết bài toán chỉ vài siêu tham số thực sự quan trọng, phần còn lại gần như không ảnh hưởng. Tìm kiếm lưới lãng phí ngân sách để thử đi thử lại cùng vài giá trị của tham số quan trọng trong khi biến đổi các tham số vô nghĩa. Tìm kiếm ngẫu nhiên thử được nhiều giá trị khác nhau hơn cho mọi tham số, nên nó lấy mẫu tốt hơn ở đúng chiều có ảnh hưởng.',
+        },
+        {
+          id: 't3l8-q4',
+          kind: 'multi',
+          tags: ['ro-ri-du-lieu', 'kiem-dinh'],
+          q: 'Việc nào gây rò rỉ dữ liệu vào quy trình kiểm định? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Gọi StandardScaler.fit() trên toàn bộ dữ liệu trước khi chạy cross_val_score',
+            'Chọn 100 đặc trưng tốt nhất bằng SelectKBest trên toàn bộ dữ liệu rồi mới chia tập',
+            'Gói toàn bộ bước tiền xử lý và mô hình vào một Pipeline rồi truyền cho cross_val_score',
+            'Loại bỏ mẫu trùng lặp sau khi đã chia tập huấn luyện và kiểm tra',
+          ],
+          answers: [0, 1, 3],
+          why: 'Hai phương án đầu để thống kê của phần kiểm tra ảnh hưởng tới bước tiền xử lý — dạng rò rỉ phổ biến nhất và khó thấy nhất. Phương án cuối tinh vi hơn: nếu bạn khử trùng lặp **sau** khi chia, các bản sao của cùng một mẫu vẫn nằm ở cả hai tập, và mô hình chỉ cần ghi nhớ là ghi điểm. Khử trùng lặp phải làm trước khi chia. Chỉ Pipeline là cách làm đúng.',
+        },
+      ],
+      terms: ['cross-validation', 'sieu-tham-so', 'ro-ri-du-lieu', 'chia-theo-thoi-gian', 'troi-khai-niem'],
+      further: [
+        {
+          title: 'Random Search for Hyper-Parameter Optimization — Bergstra & Bengio (2012)',
+          note: 'Bài báo chứng minh vì sao tìm kiếm ngẫu nhiên thắng tìm kiếm lưới. Lập luận đơn giản đến bất ngờ và thay đổi thực hành của cả ngành.',
+        },
+        {
+          title: 'Tài liệu scikit-learn — Cross-validation for time series data',
+          note: 'Phần ngắn nhưng đủ để cài đặt đúng TimeSeriesSplit kèm khoảng trống (gap) giữa train và test.',
+        },
+      ],
+    }
   ],
 };
