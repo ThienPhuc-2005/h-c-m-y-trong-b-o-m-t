@@ -231,6 +231,7 @@ export function SettingsPage() {
         <h2 style={{ fontSize: 'var(--fs-lg)', marginBottom: 'var(--s-4)' }}>Phím tắt</h2>
         <div className="grid grid-2" style={{ fontSize: 'var(--fs-sm)' }}>
           {[
+            ['/  hoặc Ctrl+K', 'Tìm kiếm nhanh'],
             ['H', 'Trang chủ'],
             ['R', 'Ôn tập'],
             ['L', 'Lộ trình'],

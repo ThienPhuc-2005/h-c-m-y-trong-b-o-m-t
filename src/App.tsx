@@ -13,6 +13,7 @@ import { GlossaryPage } from './pages/Glossary';
 import { ProgressPage } from './pages/Progress';
 import { SettingsPage } from './pages/Settings';
 import { Onboarding } from './pages/Onboarding';
+import { SearchPalette, openSearch } from './components/Search';
 
 const NAV = [
   { path: '/', label: 'Hôm nay', icon: '🏠' },
@@ -141,6 +142,15 @@ export default function App() {
           </div>
 
           <span className="spacer" />
+          <button
+            className="nav-link"
+            onClick={openSearch}
+            aria-label="Tìm kiếm nhanh"
+            title="Tìm kiếm (Ctrl+K hoặc /)"
+          >
+            <span aria-hidden>🔎</span>
+            <kbd style={{ fontSize: '0.7em' }}>/</kbd>
+          </button>
           <a
             className="nav-link"
             href={href('/cai-dat')}
@@ -157,6 +167,8 @@ export default function App() {
         {page}
       </main>
 
+      <SearchPalette />
+
       {!isLesson && (
         <footer className="container no-print" style={{ paddingBottom: 'var(--s-8)' }}>
           <hr />
@@ -166,7 +178,7 @@ export default function App() {
               <a href={href('/cai-dat')}>Sao lưu tiến độ</a>
               <span aria-hidden>·</span>
               <span>
-                <kbd>H</kbd> trang chủ <kbd>R</kbd> ôn tập <kbd>L</kbd> lộ trình
+                <kbd>/</kbd> tìm kiếm <kbd>H</kbd> trang chủ <kbd>R</kbd> ôn tập <kbd>L</kbd> lộ trình
               </span>
             </span>
           </div>

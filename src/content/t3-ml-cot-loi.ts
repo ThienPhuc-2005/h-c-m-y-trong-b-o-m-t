@@ -2098,7 +2098,7 @@ print("So vong lap toi uu:", mo_hinh.best_iteration_)`,
       trackId: 'ml-cot-loi',
       title: 'Kiểm định và tinh chỉnh siêu tham số',
       subtitle: 'Làm sao biết mô hình thật sự tốt, chứ không phải bạn đã may mắn',
-      minutes: 18,
+      minutes: 20,
       level: 'trung-cap',
       prereqs: ['t3-l7', 't2-l6'],
       why: {
@@ -2224,6 +2224,43 @@ print("Trung binh:", diem.mean().round(3), "| do lech:", diem.std().round(3))
             ['Chỉnh tay có hiểu biết', 'Điều chỉnh vài tham số quan trọng nhất theo đường cong học', 'Luôn nên làm TRƯỚC khi tự động hoá. Nó cho bạn trực giác mà tìm kiếm tự động không cho.'],
           ],
         },
+        { t: 'h', text: 'Kiểm định chéo lồng nhau (nested CV)', level: 2 },
+        {
+          t: 'p',
+          md: 'Vấn đề còn sót lại: nếu bạn dùng **cùng một** vòng kiểm định chéo để vừa chọn siêu tham số vừa báo cáo kết quả, con số báo cáo đã bị nhiễm. Bạn đã chọn cấu hình thắng dựa trên chính những phần dữ liệu mà bạn đang dùng để chấm điểm nó.',
+        },
+        {
+          t: 'p',
+          md: '**Nested CV** tách hai việc đó bằng hai vòng lặp. Vòng **ngoài** chia dữ liệu để đo hiệu năng. Bên trong mỗi khối huấn luyện của vòng ngoài, một vòng **trong** chạy riêng để chọn siêu tham số. Kết quả báo cáo là trung bình của vòng ngoài — và không khối nào của vòng ngoài từng tham gia việc chọn tham số cho chính nó. Cái giá: bạn phải huấn luyện `k_ngoài × k_trong × số_cấu_hình` lần. Với 5 × 5 × 50 thì đó là 1.250 lần huấn luyện.',
+        },
+        {
+          t: 'compare',
+          title: 'Nested CV có xứng với cái giá của nó không?',
+          left: {
+            title: '✅ Đáng dùng khi',
+            items: [
+              'Dữ liệu nhỏ (dưới vài chục nghìn mẫu) nên một tập giữ riêng quá nhiễu',
+              'Số ca dương ít, khiến PR-AUC dao động mạnh giữa các lần chia',
+              'Bạn công bố kết quả hoặc so sánh nhiều phương pháp một cách nghiêm túc',
+              'Mỗi lần huấn luyện chỉ vài giây nên tổng chi phí vẫn chấp nhận được',
+            ],
+          },
+          right: {
+            title: '❌ Không đáng khi',
+            items: [
+              'Dữ liệu hàng triệu hàng — một tập giữ riêng theo thời gian đã đủ ổn định',
+              'Dữ liệu có tính thời gian mạnh: nested CV ngẫu nhiên còn che mất chính vấn đề trôi',
+              'Mỗi lần huấn luyện mất hàng chục phút — 1.250 lần là không tưởng',
+              'Bạn cần câu trả lời trong tuần này, không phải một bài báo',
+            ],
+          },
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Thứ bảo mật cần hơn nested CV',
+          md: 'Với dữ liệu bảo mật quy mô lớn, **đánh giá tiến nhiều khối** cho bạn nhiều thông tin hơn: huấn luyện tháng 1–6 rồi chấm tháng 7, huấn luyện tháng 1–7 rồi chấm tháng 8, và cứ thế. Bạn nhận được không phải một con số mà một **dãy** con số theo thời gian, và độ dốc của dãy đó nói cho bạn biết mô hình xuống cấp nhanh thế nào — dữ kiện quyết định lịch huấn luyện lại. Nested CV không bao giờ cho bạn điều đó, vì nó xoá mất trục thời gian.',
+        },
         {
           t: 'callout',
           kind: 'pitfall',
@@ -2250,6 +2287,7 @@ print("Trung binh:", diem.mean().round(3), "| do lech:", diem.std().round(3))
         'Dùng TimeSeriesSplit để trả lời "dùng được bao lâu", GroupKFold để trả lời "bắt được cái mới không".',
         'Tìm kiếm ngẫu nhiên thường thắng tìm kiếm lưới ở cùng ngân sách; tối ưu Bayes chỉ đáng khi mỗi lượt huấn luyện rất đắt.',
         'Mọi bước tiền xử lý phải nằm trong Pipeline, nếu không kiểm định chéo sẽ bị rò rỉ.',
+        'Nested CV tách việc chọn siêu tham số khỏi việc đo hiệu năng, nhưng chỉ đáng dùng khi dữ liệu nhỏ và huấn luyện rẻ.',
       ],
       cards: [
         {
@@ -2275,6 +2313,12 @@ print("Trung binh:", diem.mean().round(3), "| do lech:", diem.std().round(3))
           front: 'Vì sao mọi bước tiền xử lý phải nằm trong Pipeline?',
           back: 'Vì nếu fit scaler hay bộ chọn đặc trưng trên toàn bộ dữ liệu, thống kê của tập kiểm tra rò rỉ vào bước tiền xử lý và điểm số đẹp lên một cách giả tạo.',
           tags: ['ro-ri-du-lieu', 'thuc-chien'],
+        },
+        {
+          id: 't3l8-c5',
+          front: 'Nested CV hoạt động thế nào và nó giải quyết vấn đề gì?',
+          back: 'Vòng ngoài đo hiệu năng, vòng trong chọn siêu tham số bên trong từng khối huấn luyện của vòng ngoài. Nhờ đó con số báo cáo không bị nhiễm bởi chính quá trình chọn tham số.',
+          tags: ['kiem-dinh', 'sieu-tham-so'],
         },
       ],
       quiz: [
@@ -2333,6 +2377,26 @@ print("Trung binh:", diem.mean().round(3), "| do lech:", diem.std().round(3))
           ],
           answers: [0, 1, 3],
           why: 'Hai phương án đầu để thống kê của phần kiểm tra ảnh hưởng tới bước tiền xử lý — dạng rò rỉ phổ biến nhất và khó thấy nhất. Phương án cuối tinh vi hơn: nếu bạn khử trùng lặp **sau** khi chia, các bản sao của cùng một mẫu vẫn nằm ở cả hai tập, và mô hình chỉ cần ghi nhớ là ghi điểm. Khử trùng lặp phải làm trước khi chia. Chỉ Pipeline là cách làm đúng.',
+        },
+        {
+          id: 't3l8-q5',
+          kind: 'mcq',
+          tags: ['kiem-dinh', 'sieu-tham-so'],
+          q: 'Kiểm định chéo lồng nhau (nested CV) giải quyết vấn đề gì?',
+          options: [
+            'Làm mô hình chính xác hơn nhờ được huấn luyện nhiều lần hơn',
+            'Cho ước lượng hiệu năng không bị nhiễm bởi chính quá trình chọn siêu tham số',
+            'Xử lý trật tự thời gian trong dữ liệu chuỗi',
+            'Giảm tổng thời gian tinh chỉnh siêu tham số',
+          ],
+          answer: 1,
+          why: 'Nested CV tách hẳn hai việc: vòng trong chọn tham số, vòng ngoài đo hiệu năng, và không khối nào của vòng ngoài từng tham gia chọn tham số cho chính nó. Nó **không** làm mô hình tốt hơn — nó chỉ đo trung thực hơn. Nó cũng **không** xử lý tính thời gian: bạn vẫn phải dùng bộ chia theo thời gian ở cả hai vòng, nếu không thì lồng hai vòng ngẫu nhiên chỉ nhân đôi cùng một sai lầm. Và chi phí thì tăng lên `k_ngoài` lần chứ không giảm.',
+          distractorWhy: [
+            'Nested CV là công cụ đo lường, không phải công cụ cải thiện mô hình.',
+            '',
+            'Trật tự thời gian phải xử lý bằng bộ chia phù hợp; lồng hai vòng CV ngẫu nhiên không sửa được điều đó.',
+            'Ngược lại — nó đắt hơn hẳn vì vòng trong chạy bên trong mỗi khối của vòng ngoài.',
+          ],
         },
       ],
       terms: ['cross-validation', 'sieu-tham-so', 'ro-ri-du-lieu', 'chia-theo-thoi-gian', 'troi-khai-niem'],
