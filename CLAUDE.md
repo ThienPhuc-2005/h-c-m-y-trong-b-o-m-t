@@ -95,6 +95,23 @@ nhưng sống trong `t2-du-lieu.ts`. Id giữ nguyên vì id là khoá tiến đ
 đứng đổi vì chặng 3 cần từ vựng đo lường mà chặng 4 mới dạy. **Đừng suy tệp từ
 tiền tố id** — tra theo chặng đang chứa bài.
 
+## Cỡ chữ và bố cục co giãn
+
+**Hệ số cỡ chữ nhân đúng MỘT lần, ở `html`.** `--user-scale` được nhân vào
+`font-size` của `html` trong `base.css`; mọi token `--fs-*` là `rem` nên tự đi
+theo. Đừng nhân nó lần nữa ở `body`, ở `.prose` hay ở bất kỳ đâu — nhân hai lần
+là bình phương hệ số. Trước đây hệ số nằm ở `body` và `.prose`, nên kéo thanh
+trượt lên hết cỡ vẫn để tiêu đề đứng nguyên 36px và chip đứng nguyên 12,5px.
+
+**Đừng khai báo `grid-template-columns` bằng style nội tuyến.** Style nội tuyến
+thắng mọi media query, nên một grid hai cột viết inline sẽ không bao giờ gộp lại
+trên màn hẹp. Dùng lớp `.grid-split` (có sẵn biến `--split-a` / `--split-b` để
+đổi tỉ lệ) hoặc thêm lớp mới trong `components.css`.
+
+Sau khi động vào cỡ chữ hay bố cục, kiểm tràn ngang ở bề rộng 375px với
+`--user-scale` đặt lần lượt 0,85 và 1,4 — không trang nào được có
+`documentElement.scrollWidth > clientWidth`.
+
 ## Dữ liệu người học
 
 Toàn bộ nằm ở `localStorage['aegis.progress.v1']`, ngôn ngữ nằm riêng ở

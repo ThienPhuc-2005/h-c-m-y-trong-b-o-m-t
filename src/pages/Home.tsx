@@ -51,7 +51,7 @@ export function HomePage() {
       </header>
 
       {/* ---- Việc cần làm hôm nay --------------------------------------- */}
-      <section className="grid" style={{ gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr)', gap: 'var(--s-5)' }}>
+      <section className="grid grid-split">
         <div className="stack">
           {plan.due.length > 0 && (
             <a className="card card-hover" href={href('/on-tap')} style={{ textDecoration: 'none', color: 'inherit', borderColor: 'var(--brand-border)', background: 'var(--brand-soft)' }}>

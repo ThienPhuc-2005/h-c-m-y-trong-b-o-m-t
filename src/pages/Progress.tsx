@@ -103,7 +103,7 @@ export function ProgressPage() {
 
       {/* ---- Sức khoẻ trí nhớ --------------------------------------------- */}
       {health.tracked > 0 && (
-        <section className="grid" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.2fr)', gap: 'var(--s-5)' }}>
+        <section className="grid grid-split" style={{ '--split-a': '1fr', '--split-b': '1.2fr' } as React.CSSProperties}>
           <div className="card">
             <SectionHead title={t('progress.memoryHealth')} />
             <div className="row" style={{ marginBottom: 'var(--s-4)' }}>

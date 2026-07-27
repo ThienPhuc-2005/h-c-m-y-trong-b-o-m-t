@@ -310,6 +310,26 @@
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
+/* Bố cục hai cột lệch tỉ lệ (trang chủ, trang tiến độ).
+ *
+ * Phải nằm trong tệp kiểu, KHÔNG được khai báo bằng style nội tuyến: style nội
+ * tuyến thắng mọi media query, nên một grid hai cột viết inline sẽ không bao
+ * giờ gộp lại trên màn hẹp. Trước đây trang chủ giữ nguyên hai cột ở bề rộng
+ * 375px, ép cột phải còn 123px, và thẻ mục tiêu trong đó tràn ra ngoài màn
+ * hình 27px — cả trang cuộn ngang được, ở mọi điện thoại.
+ *
+ * Tỉ lệ hai cột truyền qua biến để hai trang dùng chung một luật gộp cột.
+ */
+.grid-split {
+  grid-template-columns: minmax(0, var(--split-a, 1.6fr)) minmax(0, var(--split-b, 1fr));
+  gap: var(--s-5);
+}
+@media (max-width: 860px) {
+  .grid-split {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* --------------------------------------------------------------------------
    Nhãn / chip
    -------------------------------------------------------------------------- */
@@ -325,6 +345,16 @@
   color: var(--text-muted);
   border: 1px solid var(--border-subtle);
   white-space: nowrap;
+  /* Không cho một chip đơn lẻ đẩy cả trang cuộn ngang. */
+  max-width: 100%;
+}
+
+/* Chip chữ đơn cách chứa tên tiếng Anh, tên API, tên import — những chuỗi dài
+ * hơn màn hình hẹp là chuyện bình thường. Với chúng, xuống dòng tốt hơn tràn:
+ * `nowrap` ở trên khiến trang từ điển cuộn ngang được trên điện thoại. */
+.chip.mono {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .chip-brand {
   background: var(--brand-soft);
@@ -439,7 +469,8 @@
    -------------------------------------------------------------------------- */
 .prose {
   max-width: var(--measure);
-  font-size: calc(var(--fs-md) * var(--user-scale));
+  /* Hệ số của người học được nhân một lần duy nhất ở html (xem base.css). */
+  font-size: var(--fs-md);
 }
 .prose > * + * {
   margin-top: var(--s-5);
