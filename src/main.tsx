@@ -4,6 +4,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/components.css';
 import App from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 /**
  * Đặt chủ đề sáng/tối TRƯỚC khi React dựng cây component để tránh "nháy trắng"
@@ -47,6 +48,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

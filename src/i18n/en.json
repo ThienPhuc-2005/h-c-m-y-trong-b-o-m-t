@@ -398,7 +398,20 @@
     "auditWarns": "{n} warnings",
     "importWrongFormat": "That file is not an AEGIS progress file.",
     "importOk": "Progress restored.",
-    "importBadJson": "Could not read the JSON file."
+    "importBadJson": "Could not read the JSON file.",
+    "importEmpty": "The file is valid but contains no progress. You may have picked the wrong file.",
+    "importConfirmTitle": "Importing will replace all of your current progress",
+    "importIncoming": "Incoming file",
+    "importCurrent": "Currently on this device",
+    "importStatLessons": "{n} lessons done",
+    "importStatCards": "{n} cards",
+    "importStatMinutes": "{n} minutes studied",
+    "importExported": "exported {date}",
+    "importExportedNever": "export date unknown",
+    "importConfirm": "Import and replace",
+    "importUndo": "Undo import",
+    "importUndone": "Restored the progress you had before importing.",
+    "lastBackup": "Last backup: {when}"
   },
   "onboarding": {
     "title": "Machine Learning for Security",
@@ -536,5 +549,17 @@
   },
   "lab": {
     "regionLabel": "Lab: {title}"
+  },
+  "backup": {
+    "nudgeNever": "You have {n} cards in your schedule and have never backed up. Clearing browsing data wipes all of it.",
+    "nudgeStale": "Your last backup was {when}. You have learned a fair bit since then.",
+    "nudgeAction": "Download backup",
+    "nudgeDismiss": "Later",
+    "done": "Backup downloaded.",
+    "writeFailed": "Could not save your progress to this browser — most likely out of storage space. Export a backup now so you do not lose this session.",
+    "recoverTitle": "Could not read your learning data",
+    "recoverBody": "The original ({kb} KB) was preserved instead of being overwritten. Download it — if only a few characters are damaged it can still be repaired by hand.",
+    "recoverDownload": "Download the original",
+    "recoverDiscard": "I have it, discard this copy"
   }
 }

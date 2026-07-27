@@ -12,11 +12,16 @@ import {
   setSettings,
   exportJSON,
   importJSON,
+  inspectJSON,
+  describe,
+  canUndoImport,
+  undoImport,
   resetAll,
   resetLearningOnly,
   DEFAULT_SETTINGS,
+  type Snapshot,
 } from '../lib/storage';
-import { downloadText } from '../lib/utils';
+import { downloadText, fmtRelative, fmtDate } from '../lib/utils';
 import { auditCourse, COURSE_STATS } from '../content';
 import { Slider, Toggle } from '../labs/kit';
 import { Icon } from '../components/Icon';
@@ -33,15 +38,32 @@ export function SettingsPage() {
   const [msg, setMsg] = useState<{ ok: boolean; key: string } | null>(null);
   const [confirm, setConfirm] = useState<'none' | 'learning' | 'all'>('none');
   const [showAudit, setShowAudit] = useState(false);
+  // Tệp đã đọc xong và đã kiểm, đang chờ người học xác nhận. Giữ cả nội dung
+  // thô để không phải đọc lại tệp lần thứ hai.
+  const [pending, setPending] = useState<{ text: string; incoming: Snapshot } | null>(null);
+  const [undoable, setUndoable] = useState(canUndoImport());
 
+  /**
+   * Đọc và KIỂM tệp, nhưng chưa ghi gì. Nhập tệp có sức phá hoại đúng bằng nút
+   * "Xoá tất cả" ngay bên dưới — mà nút đó có hai bước xác nhận, còn trước đây
+   * nhập tệp thì không có bước nào.
+   */
   const doImport = (file: File) => {
     const r = new FileReader();
     r.onload = () => {
-      const res = importJSON(String(r.result));
-      setMsg({ ok: res.ok, key: res.messageKey });
+      const text = String(r.result);
+      const res = inspectJSON(text);
+      if (!res.ok) {
+        setMsg({ ok: false, key: res.messageKey });
+        return;
+      }
+      setMsg(null);
+      setPending({ text, incoming: res.snapshot });
     };
     r.readAsText(file);
   };
+
+  const current = describe(p);
 
   const issues = showAudit ? auditCourse() : [];
 
@@ -169,6 +191,12 @@ export function SettingsPage() {
           {t('settings.dataIntro')} <b>{t('settings.dataIntroBold')}</b>
         </p>
 
+        <div className="faint">
+          {t('settings.lastBackup', {
+            when: p.lastExportAt ? fmtRelative(p.lastExportAt) : t('duration.never'),
+          })}
+        </div>
+
         <div className="row-wrap">
           <button
             className="btn btn-primary"
@@ -193,7 +221,72 @@ export function SettingsPage() {
               e.target.value = '';
             }}
           />
+          {undoable && !pending && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                if (undoImport()) {
+                  setMsg({ ok: true, key: 'settings.importUndone' });
+                  setUndoable(false);
+                }
+              }}
+            >
+              <Icon name="rotate-ccw" size={15} /> {t('settings.importUndo')}
+            </button>
+          )}
         </div>
+
+        {/* ---- Đối chiếu trước khi ghi đè ---------------------------------- */}
+        {pending && (
+          <div className="callout co-warn">
+            <Icon className="callout-icon" name="alert-triangle" size={18} />
+            <div style={{ flex: 1 }}>
+              <div className="callout-title">{t('settings.importConfirmTitle')}</div>
+              <div className="callout-body">
+                <div className="grid grid-2" style={{ gap: 'var(--s-3)', marginTop: 'var(--s-2)' }}>
+                  {(
+                    [
+                      ['settings.importIncoming', pending.incoming],
+                      ['settings.importCurrent', current],
+                    ] as const
+                  ).map(([label, snap]) => (
+                    <div className="panel" key={label}>
+                      <div className="stat-k" style={{ marginBottom: 4 }}>{t(label)}</div>
+                      <div style={{ fontSize: 'var(--fs-sm)' }}>
+                        {t('settings.importStatLessons', { n: snap.lessonsDone })}
+                        <br />
+                        {t('settings.importStatCards', { n: snap.cards })}
+                        <br />
+                        {t('settings.importStatMinutes', { n: snap.minutes })}
+                      </div>
+                      <div className="faint" style={{ marginTop: 4 }}>
+                        {snap.exportedAt
+                          ? t('settings.importExported', { date: fmtDate(snap.exportedAt) })
+                          : t('settings.importExportedNever')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="row-wrap" style={{ marginTop: 'var(--s-3)' }}>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => {
+                      const res = importJSON(pending.text);
+                      setMsg({ ok: res.ok, key: res.messageKey });
+                      setPending(null);
+                      setUndoable(canUndoImport());
+                    }}
+                  >
+                    {t('settings.importConfirm')}
+                  </button>
+                  <button className="btn btn-sm" onClick={() => setPending(null)}>
+                    {t('settings.cancel')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <hr />
 

@@ -15,6 +15,7 @@ import { SettingsPage } from './pages/Settings';
 import { Onboarding } from './pages/Onboarding';
 import { SearchPalette, openSearch } from './components/Search';
 import { Icon, BrandIcon } from './components/Icon';
+import { DataGuard } from './components/DataGuard';
 import type { IconName } from './components/Icon';
 import { useT, useLang, setLang, LANGS } from './i18n';
 
@@ -92,7 +93,17 @@ export default function App() {
 
   const dueCount = useMemo(() => buildPlan(progress).due.length, [progress]);
 
-  if (!settings.onboarded) return <Onboarding />;
+  // Dải cứu hộ phải hiện CẢ ở màn hình khởi động. Dữ liệu hỏng làm `onboarded`
+  // trở lại false, nên đây chính là màn hình mà một người học lâu năm sẽ đâm
+  // vào — và nếu không có lời giải thích nào, họ sẽ tưởng mình mất sạch.
+  if (!settings.onboarded) {
+    return (
+      <>
+        <DataGuard />
+        <Onboarding />
+      </>
+    );
+  }
 
   const page = (() => {
     switch (seg[0]) {
@@ -191,6 +202,9 @@ export default function App() {
       </nav>
 
       <main id="main" className="main">
+        {/* Đặt trên mọi trang, không riêng trang chủ: người học có thể sống
+            hàng tuần trong trang Ôn tập mà không ghé trang chủ lần nào. */}
+        <DataGuard />
         {page}
       </main>
 

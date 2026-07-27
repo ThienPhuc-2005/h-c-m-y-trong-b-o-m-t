@@ -398,7 +398,20 @@
     "auditWarns": "{n} cảnh báo",
     "importWrongFormat": "Tệp không đúng định dạng tiến độ AEGIS.",
     "importOk": "Đã khôi phục tiến độ.",
-    "importBadJson": "Không đọc được tệp JSON."
+    "importBadJson": "Không đọc được tệp JSON.",
+    "importEmpty": "Tệp đúng định dạng nhưng không chứa tiến độ nào. Có thể bạn chọn nhầm tệp.",
+    "importConfirmTitle": "Nhập tệp này sẽ thay thế toàn bộ tiến độ hiện tại",
+    "importIncoming": "Tệp sắp nhập",
+    "importCurrent": "Đang có trên máy",
+    "importStatLessons": "{n} bài đã xong",
+    "importStatCards": "{n} thẻ",
+    "importStatMinutes": "{n} phút đã học",
+    "importExported": "xuất ngày {date}",
+    "importExportedNever": "không rõ ngày xuất",
+    "importConfirm": "Nhập và thay thế",
+    "importUndo": "Hoàn tác lần nhập",
+    "importUndone": "Đã khôi phục lại tiến độ trước khi nhập.",
+    "lastBackup": "Sao lưu gần nhất: {when}"
   },
   "onboarding": {
     "title": "Học máy cho An ninh mạng",
@@ -536,5 +549,17 @@
   },
   "lab": {
     "regionLabel": "Phòng thí nghiệm: {title}"
+  },
+  "backup": {
+    "nudgeNever": "Bạn có {n} thẻ trong lịch ôn và chưa sao lưu lần nào. Xoá dữ liệu duyệt web là mất sạch.",
+    "nudgeStale": "Bản sao lưu gần nhất của bạn từ {when}. Từ đó tới nay bạn đã học thêm khá nhiều.",
+    "nudgeAction": "Tải tệp sao lưu",
+    "nudgeDismiss": "Để sau",
+    "done": "Đã tải bản sao lưu về máy.",
+    "writeFailed": "Không lưu được tiến độ vào trình duyệt — nhiều khả năng đã hết dung lượng. Hãy xuất tệp sao lưu ngay để khỏi mất phiên học này.",
+    "recoverTitle": "Không đọc được dữ liệu học của bạn",
+    "recoverBody": "Bản gốc ({kb} KB) đã được giữ lại nguyên vẹn thay vì bị ghi đè. Hãy tải nó về máy — nếu chỉ hỏng vài ký tự thì vẫn khôi phục được bằng tay.",
+    "recoverDownload": "Tải bản gốc về máy",
+    "recoverDiscard": "Tôi đã tải về, bỏ bản này đi"
   }
 }

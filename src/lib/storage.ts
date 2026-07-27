@@ -19,6 +19,8 @@ import type { CardMemory } from './srs';
 import { newCardMemory } from './srs';
 
 const KEY = 'aegis.progress.v1';
+/** Trỏ tới bản sao dữ liệu hỏng đang chờ người học tải về. */
+const KEY_RECOVERY = `${KEY}.recovery`;
 const SCHEMA_VERSION = 1;
 
 /* -------------------------------------------------------------------------- */
@@ -126,6 +128,13 @@ export interface Progress {
   lastLesson: string;
   /** Thẻ người học tự đánh dấu để xem lại. */
   flagged: string[];
+  /**
+   * Lần xuất tệp sao lưu gần nhất (epoch ms). 0 = chưa bao giờ.
+   *
+   * Không có trường này thì app không thể biết người học đã sao lưu chưa, nên
+   * chỉ nhắc được một lần lúc onboarding — đúng lúc chưa có gì để mất.
+   */
+  lastExportAt: number;
 }
 
 export function emptyProgress(): Progress {
@@ -143,6 +152,7 @@ export function emptyProgress(): Progress {
     calibration: [],
     lastLesson: '',
     flagged: [],
+    lastExportAt: 0,
   };
 }
 
@@ -150,57 +160,363 @@ export function emptyProgress(): Progress {
 /*  Store                                                                      */
 /* -------------------------------------------------------------------------- */
 
-let state: Progress = load();
+/**
+ * Bản gốc không đọc được, đã được cất sang một khoá riêng. Giao diện dùng thông
+ * tin này để mời người học tải nó về trước khi học tiếp.
+ */
+export interface Recovery {
+  key: string;
+  bytes: number;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  THỨ TỰ KHAI BÁO Ở ĐÂY LÀ CÓ CHỦ ĐÍCH — đừng sắp xếp lại.                   */
+/*                                                                             */
+/*  `load()` được gọi ngay lúc nạp mô-đun và nhánh catch của nó GHI vào         */
+/*  `recovery` cùng `writeFailed`. `let` không được hoisted như `var`: nếu hai  */
+/*  biến này khai báo sau `let state = load()`, chúng còn nằm trong vùng chết   */
+/*  tạm thời khi catch chạy, và phép gán ném ReferenceError ngay giữa lúc nạp   */
+/*  mô-đun — app trắng màn hình trước cả khi React kịp gắn ErrorBoundary.       */
+/*  Đúng loại lỗi mà cả cụm mã này sinh ra để ngăn.                            */
+/* -------------------------------------------------------------------------- */
+
+let recovery: Recovery | null = null;
+
+/** Ghi thất bại (thường là hết dung lượng). Giao diện phải nói ra, không nuốt. */
+let writeFailed = false;
+
 const listeners = new Set<() => void>();
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
+/**
+ * Khởi tạo ở CUỐI khối này, sau khi mọi hàm ép kiểu đã tồn tại — xem chú thích
+ * "THỨ TỰ KHAI BÁO" ở trên. `migrate()` gọi `isObj`, `num`, `record`… vốn là
+ * `const`, nên nạp sớm sẽ ném ReferenceError và bị chính nhánh catch của
+ * `load()` hiểu nhầm thành "dữ liệu hỏng" — cách ly luôn dữ liệu hoàn toàn lành.
+ */
+let state: Progress;
+
+/* -------------------------------------------------------------------------- */
+/*  Ép kiểu phòng thủ                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * VÌ SAO PHẢI KIỂM TỪNG TRƯỜNG thay vì tin vào `as Partial<Progress>`:
+ *
+ * Khẳng định kiểu của TypeScript biến mất lúc chạy. Dữ liệu tới đây từ hai
+ * nguồn không đáng tin — localStorage (người dùng sửa được, tiện ích mở rộng
+ * sửa được) và tệp người học tự chọn để nhập. Chỉ cần `days` là một con số thay
+ * vì một mảng, `buildPlan` gọi `p.days.find(...)` và ném lỗi. Mà `buildPlan`
+ * chạy TRƯỚC bộ định tuyến, nên hậu quả không phải một trang hỏng — là màn hình
+ * trắng, và người học không vào nổi trang Cài đặt để tự cứu.
+ *
+ * Nguyên tắc: thà bỏ đi một trường lạ còn hơn để nó lan thành lỗi thời gian chạy.
+ */
+
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+const num = (v: unknown, fallback = 0): number =>
+  typeof v === 'number' && Number.isFinite(v) ? v : fallback;
+
+const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback);
+
+const bool = (v: unknown, fallback: boolean): boolean => (typeof v === 'boolean' ? v : fallback);
+
+/** Lọc một object thành `Record<string, T>`, bỏ mọi mục không ép được. */
+function record<T>(v: unknown, item: (x: unknown) => T | null): Record<string, T> {
+  if (!isObj(v)) return {};
+  const out: Record<string, T> = {};
+  for (const [k, raw] of Object.entries(v)) {
+    // Bỏ qua khoá nguyên mẫu: `JSON.parse` tạo chúng như thuộc tính thường,
+    // nhưng gán lại bằng `out[k] =` thì kích hoạt setter trên Object.prototype.
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+    const ok = item(raw);
+    if (ok !== null) out[k] = ok;
+  }
+  return out;
+}
+
+/** Lọc một mảng, bỏ mọi phần tử không ép được. */
+function list<T>(v: unknown, item: (x: unknown) => T | null): T[] {
+  if (!Array.isArray(v)) return [];
+  const out: T[] = [];
+  for (const raw of v) {
+    const ok = item(raw);
+    if (ok !== null) out.push(ok);
+  }
+  return out;
+}
+
+const CARD_STATES = new Set(['new', 'learning', 'review', 'relearning']);
+
+function coerceCard(v: unknown): CardMemory | null {
+  if (!isObj(v)) return null;
+  const st = str(v.state, 'new');
+  return {
+    s: Math.max(0, num(v.s)),
+    d: Math.min(10, Math.max(0, num(v.d))),
+    state: (CARD_STATES.has(st) ? st : 'new') as CardMemory['state'],
+    due: num(v.due),
+    last: num(v.last),
+    reps: Math.max(0, Math.floor(num(v.reps))),
+    lapses: Math.max(0, Math.floor(num(v.lapses))),
+    step: Math.max(0, Math.floor(num(v.step))),
+  };
+}
+
+function coerceLesson(v: unknown): LessonProgress | null {
+  if (!isObj(v)) return null;
+  return {
+    startedAt: num(v.startedAt),
+    completedAt: num(v.completedAt),
+    readPct: Math.min(100, Math.max(0, num(v.readPct))),
+    bestScore: Math.min(1, Math.max(0, num(v.bestScore))),
+    attempts: Math.max(0, Math.floor(num(v.attempts))),
+    minutes: Math.max(0, num(v.minutes)),
+  };
+}
+
+function coerceConcept(v: unknown): ConceptStat | null {
+  if (!isObj(v)) return null;
+  return {
+    seen: Math.max(0, Math.floor(num(v.seen))),
+    correct: Math.max(0, Math.floor(num(v.correct))),
+    lastAt: num(v.lastAt),
+    streak: Math.max(0, Math.floor(num(v.streak))),
+  };
+}
+
+function coerceDay(v: unknown): DayLog | null {
+  if (!isObj(v)) return null;
+  // Không có ngày hợp lệ thì bản ghi vô nghĩa — mọi phép tính chuỗi ngày và
+  // biểu đồ đều khoá theo trường này.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(str(v.date))) return null;
+  return {
+    date: str(v.date),
+    minutes: Math.max(0, num(v.minutes)),
+    reviews: Math.max(0, Math.floor(num(v.reviews))),
+    newCards: Math.max(0, Math.floor(num(v.newCards))),
+    lessonsDone: Math.max(0, Math.floor(num(v.lessonsDone))),
+    quizAnswered: Math.max(0, Math.floor(num(v.quizAnswered))),
+    quizCorrect: Math.max(0, Math.floor(num(v.quizCorrect))),
+  };
+}
+
+function coerceCalibration(v: unknown): CalibrationPoint | null {
+  if (!isObj(v)) return null;
+  const conf = num(v.conf, -1);
+  if (conf < 0 || conf > 1) return null;
+  return { conf, correct: bool(v.correct, false), at: num(v.at) };
+}
+
+function coerceSettings(v: unknown): Settings {
+  const d = DEFAULT_SETTINGS;
+  if (!isObj(v)) return { ...d };
+  const theme = str(v.theme, d.theme);
+  return {
+    theme: (theme === 'light' || theme === 'dark' || theme === 'auto' ? theme : d.theme) as Settings['theme'],
+    // Kẹp đúng khoảng mà giao diện cho phép. Không kẹp thì `fontScale: 900`
+    // trong một tệp nhập làm chữ phồng tới mức không mở nổi trang Cài đặt để sửa.
+    fontScale: Math.min(1.4, Math.max(0.85, num(v.fontScale, d.fontScale))),
+    reduceMotion: bool(v.reduceMotion, d.reduceMotion),
+    focusMode: bool(v.focusMode, d.focusMode),
+    dailyGoalMinutes: Math.min(600, Math.max(1, num(v.dailyGoalMinutes, d.dailyGoalMinutes))),
+    targetRetention: Math.min(0.99, Math.max(0.7, num(v.targetRetention, d.targetRetention))),
+    newCardsPerDay: Math.min(999, Math.max(0, Math.floor(num(v.newCardsPerDay, d.newCardsPerDay)))),
+    maxReviewsPerDay: Math.min(9999, Math.max(1, Math.floor(num(v.maxReviewsPerDay, d.maxReviewsPerDay)))),
+    showIntervals: bool(v.showIntervals, d.showIntervals),
+    askConfidence: bool(v.askConfidence, d.askConfidence),
+    onboarded: bool(v.onboarded, d.onboarded),
+    name: str(v.name, d.name).slice(0, 80),
+  };
+}
+
+/**
+ * Nâng cấp lược đồ VÀ ép kiểu. Luôn hợp nhất với mặc định để thêm trường mới
+ * không làm vỡ dữ liệu cũ, và luôn kiểm kiểu để dữ liệu lạ không làm vỡ app.
+ */
+function migrate(p: unknown): Progress {
+  const base = emptyProgress();
+  if (!isObj(p)) return base;
+  return {
+    v: SCHEMA_VERSION,
+    createdAt: num(p.createdAt, base.createdAt),
+    settings: coerceSettings(p.settings),
+    lessons: record(p.lessons, coerceLesson),
+    cards: record(p.cards, coerceCard),
+    concepts: record(p.concepts, coerceConcept),
+    days: list(p.days, coerceDay).slice(-400),
+    badges: list(p.badges, (x) => (typeof x === 'string' ? x : null)),
+    notes: record(p.notes, (x) => (typeof x === 'string' ? x : null)),
+    checks: record(p.checks, (x) => (typeof x === 'boolean' ? x : null)),
+    calibration: list(p.calibration, coerceCalibration).slice(-500),
+    lastLesson: str(p.lastLesson),
+    flagged: list(p.flagged, (x) => (typeof x === 'string' ? x : null)),
+    lastExportAt: num(p.lastExportAt),
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Nạp, cách ly dữ liệu hỏng                                                  */
+/* -------------------------------------------------------------------------- */
+
+export const getRecovery = (): Recovery | null => recovery;
+
+export function readRecovery(): string {
+  if (!recovery) return '';
+  try {
+    return localStorage.getItem(recovery.key) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Người học đã tải bản hỏng về (hoặc chủ động bỏ qua) — thôi nhắc. */
+export function dismissRecovery(remove: boolean): void {
+  try {
+    if (remove && recovery) localStorage.removeItem(recovery.key);
+    localStorage.removeItem(KEY_RECOVERY);
+  } catch {
+    /* không xoá được cũng không sao, nó chỉ chiếm chỗ */
+  }
+  recovery = null;
+  emit();
+}
+
 function load(): Progress {
   if (typeof localStorage === 'undefined') return emptyProgress();
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (!raw) return emptyProgress();
-    const parsed = JSON.parse(raw) as Partial<Progress>;
-    return migrate(parsed);
+    return migrate(JSON.parse(raw));
   } catch {
-    // Dữ liệu hỏng thì bắt đầu lại còn hơn là app trắng màn hình.
+    /**
+     * KHÔNG được lặng lẽ bắt đầu lại. Bản cũ có thể chỉ hỏng vài ký tự cuối do
+     * hết dung lượng giữa lúc ghi — vẫn cứu được bằng tay. Nếu ta trả về
+     * `emptyProgress()` thì `onboarded` thành false, người học thấy màn hình
+     * chào mừng, bấm "Bắt đầu", và lần ghi kế tiếp XOÁ SẠCH bản gốc.
+     *
+     * Vì vậy: cất bản gốc sang một khoá riêng trước, rồi mới bắt đầu lại.
+     */
+    if (raw) {
+      const key = `${KEY}.corrupt.${Date.now()}`;
+      try {
+        localStorage.setItem(key, raw);
+        // Ghi một CÁI MỐC bền vững, không chỉ giữ cờ trong bộ nhớ: người học
+        // rất dễ tải lại trang trước khi kịp đọc, và nếu cờ mất theo thì họ
+        // không bao giờ biết bản cũ còn nằm đâu đó.
+        localStorage.setItem(KEY_RECOVERY, key);
+        // Dọn khoá chính. Bản gốc đã an toàn ở chỗ khác, nên để lại một chuỗi
+        // hỏng ở đây chỉ khiến mỗi lần mở app lại đẻ thêm một bản sao nữa.
+        localStorage.removeItem(KEY);
+        recovery = { key, bytes: raw.length };
+      } catch {
+        // Không còn chỗ để cất bản sao. Giữ nguyên bản gốc tại khoá cũ và để
+        // app chạy với trạng thái rỗng trong bộ nhớ — mất mát vẫn tránh được
+        // vì `writeNow()` từ chối ghi đè khi đang ở chế độ này.
+        recovery = { key: KEY, bytes: raw.length };
+      }
+    }
     return emptyProgress();
   }
 }
 
-/** Nâng cấp lược đồ. Luôn hợp nhất với mặc định để thêm trường mới không vỡ. */
-function migrate(p: Partial<Progress>): Progress {
-  const base = emptyProgress();
-  return {
-    ...base,
-    ...p,
-    v: SCHEMA_VERSION,
-    settings: { ...base.settings, ...(p.settings ?? {}) },
-    lessons: p.lessons ?? {},
-    cards: p.cards ?? {},
-    concepts: p.concepts ?? {},
-    days: p.days ?? [],
-    badges: p.badges ?? [],
-    notes: p.notes ?? {},
-    checks: p.checks ?? {},
-    calibration: p.calibration ?? [],
-    flagged: p.flagged ?? [],
-  };
+/**
+ * Khôi phục lại cái mốc sau khi tải lại trang. Gọi một lần lúc nạp mô-đun, sau
+ * `load()` — nếu lần nạp này thành công nhưng lần trước đã cất một bản hỏng thì
+ * lời mời tải bản đó về vẫn phải còn đó.
+ */
+function restoreRecoveryMarker(): void {
+  if (recovery || typeof localStorage === 'undefined') return;
+  try {
+    const key = localStorage.getItem(KEY_RECOVERY);
+    if (!key) return;
+    const raw = localStorage.getItem(key);
+    if (raw === null) {
+      localStorage.removeItem(KEY_RECOVERY);
+      return;
+    }
+    recovery = { key, bytes: raw.length };
+  } catch {
+    /* không đọc được thì thôi, không đáng để chặn cả app */
+  }
+}
+restoreRecoveryMarker();
+state = load();
+
+/* -------------------------------------------------------------------------- */
+/*  Ghi                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export const hasWriteFailed = (): boolean => writeFailed;
+
+function writeNow(): void {
+  // Bản gốc hỏng chưa được cứu và cũng chưa cất được sang chỗ khác: ghi đè lúc
+  // này là phá luôn thứ duy nhất còn cứu được.
+  if (recovery && recovery.key === KEY) return;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    if (writeFailed) {
+      writeFailed = false;
+      emit();
+    }
+  } catch {
+    if (!writeFailed) {
+      writeFailed = true;
+      emit();
+    }
+  }
 }
 
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
   // Gộp ghi để không đụng localStorage mỗi lần gõ phím.
-  saveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {
-      /* hết dung lượng — im lặng, không làm hỏng phiên học */
-    }
-  }, 220);
+  saveTimer = setTimeout(writeNow, 220);
+}
+
+/**
+ * Ghi ngay lập tức bản đang chờ. Việc gộp ghi 220ms nghĩa là lượt chấm điểm
+ * cuối cùng trước khi đóng tab có thể chưa kịp lưu.
+ */
+export function flush(): void {
+  if (!saveTimer) return;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  writeNow();
 }
 
 function emit() {
   for (const l of listeners) l();
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Đồng bộ giữa nhiều tab                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `state` là biến cấp mô-đun, nên mỗi tab giữ một bản riêng và `persist()` ghi
+ * cả object. Không có đoạn này thì kịch bản rất đời thường sau làm mất dữ liệu:
+ * mở tab A đọc bài, mở tab B ôn 30 thẻ, quay lại tab A bấm xong bài kiểm tra —
+ * tab A ghi đè bằng ảnh chụp cũ và 30 lượt ôn bốc hơi, không một tín hiệu nào.
+ *
+ * Sự kiện `storage` chỉ bắn ở các tab KHÁC tab vừa ghi, đúng thứ ta cần.
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY || e.newValue === null) return;
+    try {
+      state = migrate(JSON.parse(e.newValue));
+      emit();
+    } catch {
+      /* tab kia ghi thứ không đọc được — giữ nguyên bản của mình còn hơn */
+    }
+  });
+
+  // `pagehide` bắn cả khi đóng tab lẫn khi trình duyệt đưa trang vào bộ nhớ
+  // đệm quay lui, và đáng tin hơn `beforeunload` trên di động.
+  window.addEventListener('pagehide', flush);
 }
 
 export function subscribe(fn: () => void): () => void {
@@ -405,22 +721,93 @@ export function computeStreak(p: Progress = state): StreakInfo {
 /*  Xuất / nhập                                                                */
 /* -------------------------------------------------------------------------- */
 
+/** Ảnh chụp gọn để đối chiếu trước khi nhập — "cái sắp vào" so với "cái đang có". */
+export interface Snapshot {
+  lessonsDone: number;
+  cards: number;
+  minutes: number;
+  exportedAt: number;
+}
+
+export function describe(p: Progress): Snapshot {
+  return {
+    lessonsDone: Object.values(p.lessons).filter((l) => l.completedAt > 0).length,
+    cards: Object.keys(p.cards).length,
+    minutes: Math.round(p.days.reduce((s, d) => s + d.minutes, 0)),
+    exportedAt: p.lastExportAt,
+  };
+}
+
 export function exportJSON(): string {
-  return JSON.stringify({ ...state, exportedAt: new Date().toISOString() }, null, 2);
+  // Ghi lại thời điểm xuất NGAY TRONG dữ liệu được xuất, để bản sao lưu tự nói
+  // được nó cũ tới đâu khi người học mở lại sau nhiều tháng.
+  const at = Date.now();
+  update((p) => ({ ...p, lastExportAt: at }));
+  return JSON.stringify({ ...state, exportedAt: new Date(at).toISOString() }, null, 2);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Nhập: xem trước, sao lưu bản đang có, cho phép hoàn tác                     */
+/* -------------------------------------------------------------------------- */
+
+const KEY_PREV = `${KEY}.prev`;
+
+/** Đọc thử tệp mà KHÔNG ghi gì — dùng để dựng bảng đối chiếu cho người học. */
+export function inspectJSON(text: string): { ok: true; snapshot: Snapshot } | { ok: false; messageKey: string } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { ok: false, messageKey: 'settings.importBadJson' };
+  }
+  if (!isObj(parsed) || !('lessons' in parsed || 'cards' in parsed)) {
+    return { ok: false, messageKey: 'settings.importWrongFormat' };
+  }
+  const p = migrate(parsed);
+  // Một tệp đúng định dạng nhưng rỗng trơn gần như chắc chắn là chọn nhầm tệp.
+  if (!Object.keys(p.lessons).length && !Object.keys(p.cards).length) {
+    return { ok: false, messageKey: 'settings.importEmpty' };
+  }
+  return { ok: true, snapshot: describe(p) };
 }
 
 export function importJSON(text: string): { ok: boolean; messageKey: string } {
+  const check = inspectJSON(text);
+  if (!check.ok) return { ok: false, messageKey: check.messageKey };
+
+  // Cất bản đang có TRƯỚC khi ghi đè. Nhập nhầm tệp có sức phá hoại đúng bằng
+  // nút "Xoá tất cả" — mà nút đó có tới hai bước xác nhận.
   try {
-    const parsed = JSON.parse(text) as Partial<Progress>;
-    if (typeof parsed !== 'object' || parsed === null || !('lessons' in parsed || 'cards' in parsed)) {
-      return { ok: false, messageKey: 'settings.importWrongFormat' };
-    }
-    state = migrate(parsed);
-    persist();
-    emit();
-    return { ok: true, messageKey: 'settings.importOk' };
+    localStorage.setItem(KEY_PREV, JSON.stringify(state));
   } catch {
-    return { ok: false, messageKey: 'settings.importBadJson' };
+    /* không cất được thì vẫn cho nhập, nhưng sẽ không có nút hoàn tác */
+  }
+
+  state = migrate(JSON.parse(text));
+  writeNow();
+  emit();
+  return { ok: true, messageKey: 'settings.importOk' };
+}
+
+export const canUndoImport = (): boolean => {
+  try {
+    return localStorage.getItem(KEY_PREV) !== null;
+  } catch {
+    return false;
+  }
+};
+
+export function undoImport(): boolean {
+  try {
+    const raw = localStorage.getItem(KEY_PREV);
+    if (!raw) return false;
+    state = migrate(JSON.parse(raw));
+    localStorage.removeItem(KEY_PREV);
+    writeNow();
+    emit();
+    return true;
+  } catch {
+    return false;
   }
 }
 
