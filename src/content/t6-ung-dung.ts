@@ -2897,6 +2897,377 @@ export const track6: Track = {
       ],
     },
 
-    /* __CHEN_BAI_TIEP__ */
+    /* ====================================================================== */
+    {
+      id: 't6-l9',
+      trackId: 'ung-dung',
+      title: 'Gian lận và chiếm đoạt tài khoản',
+      subtitle: 'Mất cân bằng 1 trên 20.000, quyết định trong 80 mili-giây, và nhãn tới sau ba tháng',
+      minutes: 20,
+      level: 'trung-cap',
+      prereqs: ['t4-l4', 't6-l1'],
+      why: {
+        short:
+          'Đây là bài toán ML bảo mật có vòng phản hồi tiền bạc rõ ràng nhất — mọi quyết định quy được ra đồng, nên nó là nơi tốt nhất để học cách gắn mô hình với chi phí thật thay vì với chỉ số đẹp.',
+        scenario:
+          'Nền tảng thương mại điện tử của bạn xử lý 900.000 lần đăng nhập và 140.000 giao dịch mỗi ngày. Tuần trước một đợt credential stuffing chiếm được 340 tài khoản; tuần này bộ phận chăm sóc khách hàng phàn nàn vì hệ thống chặn nhầm khách quen. Bạn phải thiết kế lại điểm chặn, và ngân sách trễ là 80 mili-giây.',
+        roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer', 'SOC Analyst'],
+        costOfNotKnowing:
+          'Bạn xây một mô hình nhị phân chặn hoặc cho qua ở ngưỡng 0,5, chặn nhầm 2% khách hàng giá trị cao trong ngày cao điểm, và mất nhiều tiền hơn toàn bộ số gian lận mà nó ngăn được.',
+      },
+      objectives: [
+        'Xây được đặc trưng vận tốc (velocity) đúng về mặt thời gian, không rò rỉ thông tin tương lai',
+        'Thiết kế ma trận chi phí phụ thuộc số tiền và suy ra ngưỡng theo giá trị kỳ vọng',
+        'Giải thích được vì sao phản hồi ba mức thắng phản hồi nhị phân trong gian lận',
+        'Nêu được hai vấn đề về nhãn đặc thù: nhãn đến muộn và thiên lệch do chính hệ thống chặn',
+      ],
+      blocks: [
+        {
+          t: 'predict',
+          question:
+            'Mô hình chấm một giao dịch 4,2 triệu đồng với điểm rủi ro 0,62. Ngưỡng chặn của bạn đang là 0,80. Bạn cho qua hay chặn — và liệu đó có phải là hai lựa chọn duy nhất không?',
+          reveal:
+            'Cả hai lựa chọn đều tệ, và câu hỏi thứ hai mới là chỗ có tiền.\n\nCho qua: bạn chấp nhận rủi ro mất 4,2 triệu cộng phí bồi hoàn. Chặn: bạn có thể vừa đuổi một khách hàng thật, và giá trị vòng đời của một khách hàng thường lớn hơn nhiều so với một giao dịch.\n\nLựa chọn thứ ba tồn tại và nó là chuẩn mực của ngành: **tăng cường xác thực** (step-up authentication). Gửi mã một lần, yêu cầu sinh trắc học, kích hoạt 3-D Secure, hỏi một chi tiết chỉ chủ tài khoản biết. Chi phí: vài giây phiền toái cho khách thật, gần như bất khả thi cho kẻ tấn công đang dùng thông tin đăng nhập đánh cắp.\n\nĐiều này thay đổi hoàn toàn bài toán tối ưu. Thay vì một ngưỡng, bạn có **hai** ngưỡng và ba vùng: dưới 0,35 cho qua, từ 0,35 tới 0,85 tăng cường xác thực, trên 0,85 chặn. Vùng giữa — vùng mà mô hình phân vân nhất và cũng là vùng đông nhất — được xử lý bằng cách **mua thêm thông tin** thay vì đoán.\n\nBài học tổng quát vượt xa bài toán gian lận: **khi bạn thiết kế được một hành động có chi phí thấp cho người dùng thật và chi phí cao cho kẻ tấn công, hành động đó đáng giá hơn nhiều so với một mô hình chính xác hơn 2%.**',
+        },
+        { t: 'h', text: 'Bước 1 — Hình dạng của bài toán', level: 2 },
+        { t: 'figure', id: 'fig-imbalance', caption: 'Gian lận nằm ở vùng mất cân bằng cực đoan. Ở tỉ lệ 1 trên 20.000, một thay đổi nhỏ ở tỉ lệ báo động giả tạo ra thay đổi lớn ở khối lượng ma sát mà khách hàng thật phải chịu.' },
+        {
+          t: 'table',
+          head: ['Bài toán con', 'Tỉ lệ dương điển hình', 'Tín hiệu mạnh nhất', 'Ràng buộc trễ'],
+          rows: [
+            ['Chiếm đoạt tài khoản (ATO)', '1 trên 5.000 tới 1 trên 50.000 lần đăng nhập', 'Thiết bị lạ, ASN lạ, hành vi phiên khác hẳn', 'Dưới 100 ms'],
+            ['Credential stuffing', 'Có thể chiếm phần lớn lưu lượng đăng nhập trong đợt tấn công', 'Vận tốc theo IP, ASN và dấu vân tay thiết bị', 'Dưới 50 ms, thường xử lý ở tầng biên'],
+            ['Gian lận thanh toán', '0,1% tới 0,5% giao dịch', 'Vận tốc theo thẻ, không khớp địa chỉ, đồ thị chia sẻ thiết bị', 'Dưới 200 ms'],
+            ['Tài khoản giả hàng loạt', 'Rất biến động, theo đợt', 'Đồ thị chia sẻ thiết bị, IP, số điện thoại; tốc độ điền form', 'Có thể xử lý lệch pha vài phút'],
+            ['Lạm dụng khuyến mãi', 'Vài phần trăm', 'Quan hệ tài khoản, mẫu hành vi lặp lại', 'Có thể xử lý theo lô'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Một bộ dữ liệu để thực hành',
+          md: 'Bộ **Credit Card Fraud Detection** của nhóm nghiên cứu ULB (Bruxelles), phát hành trên Kaggle, chứa 284.807 giao dịch trong hai ngày với 492 giao dịch gian lận — tỉ lệ **0,172%**. Các đặc trưng V1 tới V28 đã qua PCA để bảo mật, chỉ còn `Time` và `Amount` ở dạng gốc.\n\nDùng nó để luyện phần **đo lường và chọn ngưỡng**: PR-AUC, precision@k, ngưỡng theo chi phí phụ thuộc `Amount`. Đừng dùng nó để luyện phần kỹ thuật đặc trưng — vì PCA đã xoá sạch ý nghĩa của từng cột, và trong công việc thật thì kỹ thuật đặc trưng chiếm phần lớn giá trị.',
+        },
+        { t: 'h', text: 'Bước 2 — Đặc trưng: bốn nhóm, xếp theo giá trị', level: 2 },
+        {
+          t: 'steps',
+          title: 'Bốn nhóm đặc trưng cốt lõi',
+          steps: [
+            {
+              title: 'Vận tốc (velocity) — nhóm mạnh nhất, gần như luôn đứng đầu bảng quan trọng',
+              md: 'Đếm sự kiện trên một thực thể trong nhiều cửa sổ thời gian: số lần thử đăng nhập của cùng IP trong 1 phút / 1 giờ / 24 giờ; số tài khoản khác nhau mà một thiết bị chạm tới trong 24 giờ; số giao dịch của cùng thẻ trong 10 phút; số thẻ khác nhau dùng trên cùng thiết bị trong 7 ngày.\n\nVì sao mạnh: gian lận có lợi nhuận theo quy mô. Một kẻ tấn công thử một tài khoản thì không đáng công; họ thử hàng chục nghìn. **Quy mô là thứ họ cần và cũng là thứ để lại dấu vết.**',
+            },
+            {
+              title: 'Thiết bị và mạng',
+              md: 'Dấu vân tay thiết bị (tổ hợp phiên bản trình duyệt, độ phân giải, phông chữ, múi giờ, ngôn ngữ), vân tay TLS, ASN của địa chỉ IP và loại ASN đó (nhà mạng dân dụng, trung tâm dữ liệu, mạng riêng ảo, Tor), độ lệch giữa múi giờ trình duyệt và vị trí địa lý của IP, thiết bị này đã từng dùng tài khoản này chưa.\n\nBẫy: đừng dùng địa chỉ IP thô làm đặc trưng phân loại. Nó thay đổi liên tục và tạo ra quá khớp nghiêm trọng. Dùng ASN, dùng loại mạng, dùng độ hiếm — không dùng chuỗi IP.',
+            },
+            {
+              title: 'Hành vi phiên',
+              md: 'Thời gian điền form (bot điền trong 0,3 giây, người mất 12 giây), có dán mật khẩu từ bộ nhớ tạm không, quỹ đạo di chuyển chuột, thứ tự trường được điền, có sửa lại trường nào không, thời gian giữa lúc đăng nhập và lúc đổi email hoặc số điện thoại.\n\nĐặc trưng cuối rất mạnh trong ATO: kẻ chiếm tài khoản gần như luôn đổi thông tin liên lạc ngay sau khi vào được, để chủ tài khoản không nhận được cảnh báo.',
+            },
+            {
+              title: 'Quan hệ đồ thị',
+              md: 'Dựng đồ thị hai phía giữa tài khoản và các định danh chung: thiết bị, IP, số điện thoại, địa chỉ giao hàng, phương thức thanh toán. Đặc trưng: số tài khoản trong cùng thành phần liên thông, số tài khoản trong đó đã bị đánh dấu gian lận, bậc của nút.\n\nĐây là cách hiệu quả nhất để bắt **gian lận theo băng nhóm**: 200 tài khoản trông hoàn hảo khi xét riêng lẻ, nhưng cùng chia sẻ 6 thiết bị và 3 địa chỉ giao hàng.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'warn',
+          title: 'Rò rỉ thời gian: cách phổ biến nhất để tự lừa mình trong bài toán gian lận',
+          md: 'Đặc trưng vận tốc phải được tính **đúng tại thời điểm ra quyết định**, chỉ dùng dữ liệu đã tồn tại trước đó. Nghe hiển nhiên, nhưng đây là lỗi hay gặp nhất:\n\n**Sai:** tính "số giao dịch của thẻ này trong ngày" bằng một phép `groupby` trên toàn bộ bảng. Với giao dịch lúc 9 giờ sáng, con số đó đã bao gồm cả các giao dịch lúc 3 giờ chiều — thông tin từ tương lai. Mô hình đạt AUC 0,99 trong thí nghiệm và sụp hoàn toàn khi triển khai.\n\n**Đúng:** cửa sổ trượt có chặn phải, chỉ đếm các sự kiện **nghiêm ngặt trước** thời điểm hiện tại.\n\nTrong hệ thống sản xuất, đây là lý do tồn tại của **feature store**: cùng một định nghĩa đặc trưng được dùng cho cả huấn luyện ngoại tuyến (đọc lại lịch sử theo đúng mốc thời gian) và cho suy luận trực tuyến (đọc từ bộ đệm). Hai đường tính đặc trưng khác nhau là nguồn gốc của **lệch huấn luyện–phục vụ** (training-serving skew), và nó âm thầm hơn rất nhiều so với một lỗi rõ ràng.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Đặc trưng vận tốc đúng về mặt thời gian',
+          code:
+            "import pandas as pd\n" +
+            "\n" +
+            "df = df.sort_values('thoi_gian')\n" +
+            "\n" +
+            "def dem_truoc_do(nhom, cua_so):\n" +
+            "    # closed='left' loai bo CHINH giao dich hien tai khoi cua so\n" +
+            "    # -> khong bao gio dung thong tin cua tuong lai hay cua chinh no\n" +
+            "    s = nhom.set_index('thoi_gian')['so_tien']\n" +
+            "    return s.rolling(cua_so, closed='left').count()\n" +
+            "\n" +
+            "for cua_so in ('10min', '1h', '24h'):\n" +
+            "    df['vel_the_' + cua_so] = (\n" +
+            "        df.groupby('the_id', group_keys=False)\n" +
+            "          .apply(lambda g: dem_truoc_do(g, cua_so))\n" +
+            "          .values)\n" +
+            "\n" +
+            "# Kiem tra bat buoc: voi giao dich dau tien cua moi the, moi cot velocity\n" +
+            "# phai bang 0. Neu khong, ban dang ro ri thong tin tuong lai.\n" +
+            "dau_tien = df.groupby('the_id').head(1)\n" +
+            "assert (dau_tien[['vel_the_10min', 'vel_the_1h', 'vel_the_24h']] == 0).all().all()\n",
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't6l9-cp1',
+              kind: 'mcq',
+              tags: ['gian-lan', 'ro-ri-du-lieu'],
+              q: 'Bạn tính đặc trưng "số giao dịch của thẻ này trong ngày" bằng groupby trên toàn bảng rồi ghép vào từng dòng. Vấn đề gì?',
+              options: [
+                'Không có vấn đề gì nếu dữ liệu đã sắp xếp theo thời gian',
+                'Đặc trưng chứa thông tin từ các giao dịch xảy ra SAU thời điểm ra quyết định',
+                'Phép tính quá chậm với dữ liệu lớn',
+                'Cần chuẩn hoá lại đặc trưng sau khi đếm',
+              ],
+              answer: 1,
+              why: 'Đây là **rò rỉ thời gian**, và nó tinh vi vì mã trông hoàn toàn bình thường. Với giao dịch lúc 9 giờ sáng, con số "trong ngày" đã bao gồm giao dịch lúc 3 giờ chiều — thứ chưa tồn tại khi bạn phải quyết định. Hậu quả đặc biệt nghiêm trọng trong gian lận, vì các giao dịch gian lận thường đi thành cụm: một thẻ bị đánh cắp sẽ có nhiều giao dịch trong cùng ngày. Mô hình học được luật "thẻ có nhiều giao dịch trong ngày là gian lận" và đạt kết quả tuyệt vời trong phòng lab, nhưng lúc chạy thật thì giao dịch đầu tiên của cụm — cái duy nhất bạn còn cơ hội chặn — lại có velocity bằng 0.',
+              distractorWhy: [
+                'Sắp xếp không giải quyết gì; vấn đề nằm ở phạm vi của phép gộp, không ở thứ tự.',
+                '',
+                'Tốc độ không phải vấn đề chính ở đây, dù cửa sổ trượt đúng cách cũng tốn hơn.',
+                'Chuẩn hoá không liên quan tới việc đặc trưng chứa thông tin tương lai.',
+              ],
+            },
+            {
+              id: 't6l9-cp2',
+              kind: 'truefalse',
+              tags: ['gian-lan', 'nhan'],
+              q: 'Có thể đánh giá mô hình gian lận trên dữ liệu của tháng vừa rồi ngay khi tháng đó kết thúc.',
+              answer: false,
+              why: 'Nhãn gian lận thanh toán đến từ **bồi hoàn** (chargeback), và quy trình đó thường kéo dài từ vài tuần tới vài tháng kể từ ngày giao dịch. Dữ liệu tháng vừa rồi mới chỉ có một phần nhỏ nhãn dương thực sự xuất hiện, nên mọi con số recall bạn tính đều bị thổi phồng một cách giả tạo — bạn đang chia cho một mẫu số chưa đầy đủ. Khái niệm cần nhớ là **độ chín của nhãn** (label maturity): chỉ đánh giá trên các kỳ đã đủ thời gian để nhãn ổn định, và luôn ghi rõ ngày chốt nhãn kèm mọi con số bạn báo cáo.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Bước 3 — Chi phí lệch và ngưỡng theo giá trị kỳ vọng', level: 2 },
+        {
+          t: 'p',
+          md: 'Trong gian lận, chi phí không cố định mà **phụ thuộc vào từng giao dịch**. Chặn nhầm một giao dịch 200 nghìn đồng khác hẳn chặn nhầm một giao dịch 40 triệu của khách hàng lâu năm. Vì vậy ngưỡng cố định là sai về nguyên tắc, và cách đúng là so sánh giá trị kỳ vọng của từng hành động.',
+        },
+        {
+          t: 'table',
+          head: ['Hành động', 'Nếu giao dịch là gian lận', 'Nếu giao dịch là hợp lệ'],
+          rows: [
+            ['Cho qua', 'Mất số tiền + phí bồi hoàn + rủi ro vượt ngưỡng chương trình giám sát của tổ chức thẻ', 'Doanh thu bình thường, không ma sát'],
+            ['Tăng cường xác thực', 'Gần như luôn chặn được, chi phí gửi mã rất nhỏ', 'Khách chịu vài giây phiền toái, một tỉ lệ nhỏ bỏ giỏ hàng'],
+            ['Chặn', 'Ngăn được thiệt hại', 'Mất giao dịch, mất một phần giá trị vòng đời khách hàng, tăng cuộc gọi hỗ trợ'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'math',
+          title: 'Công thức quyết định',
+          md: 'Với xác suất gian lận `p`, số tiền `A`, phí bồi hoàn `F`, biên lợi nhuận `m`, xác suất khách bỏ giỏ khi bị yêu cầu xác thực thêm `q`, và chi phí gửi mã `c`:\n\n**Cho qua:** thiệt hại kỳ vọng = `p × (A + F) − (1 − p) × m × A`\n**Tăng cường:** thiệt hại kỳ vọng ≈ `c + (1 − p) × q × m × A`\n**Chặn:** thiệt hại kỳ vọng = `(1 − p) × (m × A + L)`, với `L` là phần giá trị vòng đời bị mất.\n\nChọn hành động có thiệt hại kỳ vọng nhỏ nhất. Hai điểm giao nhau giữa ba đường này chính là hai ngưỡng của bạn — và chú ý rằng chúng **dịch chuyển theo `A`**. Giao dịch càng lớn thì vùng tăng cường xác thực càng rộng, vì thiệt hại của cả hai sai lầm đều lớn hơn và việc mua thêm thông tin càng đáng giá.',
+        },
+        {
+          t: 'lab',
+          id: 'lab-cost-threshold',
+          intro: 'Vặn chi phí bỏ sót, chi phí chặn nhầm và tỉ lệ nền, xem ngưỡng tối ưu chạy đi đâu. Chú ý điều xảy ra khi bạn tăng chi phí chặn nhầm lên gấp mười.',
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Tỉ lệ bồi hoàn là một ràng buộc cứng, không phải một chỉ số',
+          md: 'Các tổ chức thẻ vận hành chương trình giám sát người bán: nếu tỉ lệ bồi hoàn vượt ngưỡng quy định trong nhiều tháng liên tiếp, người bán bị phạt và trong trường hợp xấu có thể mất khả năng chấp nhận thanh toán.\n\nHệ quả với thiết kế mô hình: đây không phải một số hạng trong hàm mục tiêu mà là một **ràng buộc**. Bài toán của bạn trở thành "tối đa hoá doanh thu được duyệt **với điều kiện** tỉ lệ bồi hoàn dưới ngưỡng", chứ không phải "tối thiểu hoá tổng thiệt hại". Hai cách phát biểu cho ra hai ngưỡng khác nhau, và nhiều đội dữ liệu chỉ phát hiện ra khác biệt này sau khi bộ phận rủi ro gõ cửa.',
+        },
+        { t: 'h', text: 'Bước 4 — Vấn đề nhãn: muộn và thiên lệch', level: 2 },
+        {
+          t: 'list',
+          ordered: true,
+          items: [
+            '**Nhãn đến muộn.** Bồi hoàn xuất hiện sau vài tuần tới vài tháng. Đối sách: dùng nhãn thay thế đến sớm hơn cho việc theo dõi hằng ngày — khách hàng báo cáo, đội rủi ro xác nhận thủ công, tài khoản bị đổi thông tin liên lạc rồi rút tiền — và chỉ dùng nhãn bồi hoàn cho đánh giá chính thức trên các kỳ đã chín.',
+            '**Thiên lệch do chính hệ thống.** Giao dịch bạn đã chặn không bao giờ có kết quả thật. Bạn chỉ quan sát được hậu quả của những giao dịch mình cho qua, nên dữ liệu huấn luyện của kỳ sau bị cắt xén một cách có hệ thống ở đúng vùng mô hình tự tin nhất. Đây là **thiên lệch chọn mẫu** (selection bias), và trong ngành tín dụng người ta gọi bài toán ước lượng phần bị cắt là **reject inference**.',
+            '**Đối sách chuẩn: cho qua một tỉ lệ nhỏ có kiểm soát.** Cố ý cho qua khoảng 1–2% các giao dịch mà mô hình muốn chặn, có giới hạn số tiền, để thu về nhãn thật ở vùng điểm cao. Chi phí là một khoản thiệt hại nhỏ có kiểm soát; lợi ích là mô hình của bạn không bị mù dần ở chính vùng quan trọng nhất. Đây là cùng ý tưởng với khai phá và khai thác trong bài toán bandit.',
+            '**Vòng lặp tự xác nhận.** Nếu bạn gắn nhãn dựa trên việc hệ thống hiện tại có chặn hay không, mô hình mới sẽ học cách bắt chước hệ thống cũ, kể cả các điểm mù của nó. Nhãn phải đến từ kết quả thật ngoài đời, không từ quyết định của chính hệ thống.',
+          ],
+        },
+        { t: 'h', text: 'Bước 5 — Triển khai trong 80 mili-giây', level: 2 },
+        {
+          t: 'checklist',
+          title: 'Những gì phải có trong đường suy luận trực tuyến',
+          items: [
+            'Kho đặc trưng trực tuyến trong bộ nhớ (thường là Redis) chứa các bộ đếm vận tốc, cập nhật theo luồng — không truy vấn cơ sở dữ liệu giao dịch trong đường xử lý chính.',
+            'Cùng một đoạn mã định nghĩa đặc trưng dùng cho cả huấn luyện và phục vụ; mọi bản sao chép định nghĩa là một nguồn lệch huấn luyện–phục vụ.',
+            'Mô hình cây tăng cường đủ nhỏ để suy luận dưới 10 ms; phần lớn ngân sách trễ nằm ở khâu lấy đặc trưng, không ở mô hình.',
+            'Đường dự phòng: nếu kho đặc trưng không phản hồi trong 30 ms, dùng bộ luật đơn giản thay vì để giao dịch treo.',
+            'Ghi lại toàn bộ vector đặc trưng đã dùng cho mỗi quyết định — nếu không, bạn sẽ không bao giờ tái hiện được vì sao một giao dịch bị chặn.',
+            'Luật cứng chạy song song mô hình cho các trường hợp rõ ràng, để không phụ thuộc hoàn toàn vào một mô hình có thể xuống cấp.',
+          ],
+        },
+        { t: 'h', text: 'Bước 6 — Kẻ tấn công né thế nào', level: 2 },
+        {
+          t: 'table',
+          head: ['Kỹ thuật', 'Vô hiệu hoá đặc trưng nào', 'Đối sách'],
+          rows: [
+            [
+              'Proxy dân dụng phân tán: một yêu cầu trên mỗi địa chỉ IP',
+              'Toàn bộ vận tốc theo IP',
+              'Chuyển vận tốc lên cấp ASN, cấp dải mạng, cấp vân tay thiết bị và cấp hành vi phiên',
+            ],
+            [
+              'Trình duyệt chống nhận dạng: mỗi phiên một vân tay khác',
+              'Vân tay thiết bị',
+              'Chính sự bất thường của vân tay là tín hiệu; tổ hợp phông chữ và múi giờ hiếm gặp thì tự nó đã hiếm',
+            ],
+            [
+              'Chậm và ít: 3 lần thử mỗi giờ trên mỗi tài khoản',
+              'Ngưỡng vận tốc cửa sổ ngắn',
+              'Mở rộng cửa sổ lên 7 ngày và 30 ngày; dùng đồ thị quan hệ để nối các phiên rời rạc',
+            ],
+            [
+              'Thử thẻ bằng giao dịch nhỏ (card testing) trước khi tiêu thật',
+              'Ngưỡng theo số tiền',
+              'Đặc trưng riêng cho giao dịch giá trị rất nhỏ và cho mẫu nhiều lần thử liên tiếp trên nhiều thẻ',
+            ],
+            [
+              'Tài khoản trung gian nuôi trước hàng tháng',
+              'Đặc trưng tuổi tài khoản và lịch sử',
+              'Đồ thị dòng tiền và quan hệ nhận hàng; hành vi bất thường tại thời điểm kích hoạt',
+            ],
+            [
+              'Tấn công AiTM lấy cookie phiên, vượt qua cả MFA',
+              'Tăng cường xác thực dựa trên mã một lần',
+              'Ràng buộc token vào thiết bị, khoá truy cập chống lừa đảo theo chuẩn FIDO2, và phát hiện token dùng lại từ hai địa điểm',
+            ],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Điều làm bài toán gian lận khác mọi bài khác trong chặng này',
+          md: 'Vòng phản hồi ngắn và tính bằng tiền. Bạn biết chính xác mình mất bao nhiêu khi sai, và biết trong vài tuần chứ không phải vài năm. Đó là điều kiện lý tưởng cho ML, và cũng là lý do các đội gian lận thường là đội trưởng thành nhất về mặt vận hành mô hình trong một công ty.\n\nĐổi lại, đối thủ ở đây thích nghi nhanh nhất trong tất cả các bài toán bạn đã học: họ đo hiệu quả bằng tiền, thử nghiệm liên tục, và biết ngay khi một cách làm không còn ăn. Thời gian nửa đời của một đặc trưng gian lận tốt thường tính bằng **tháng**.\n\nHệ quả kiến trúc rất cụ thể: đừng tối ưu để có mô hình tốt nhất hôm nay. Hãy tối ưu để **rút ngắn thời gian từ khi phát hiện một mẫu tấn công mới tới khi đặc trưng chống lại nó chạy trong sản xuất**. Một đội đưa được đặc trưng mới lên trong hai ngày sẽ thắng một đội có mô hình tốt hơn nhưng mất sáu tuần cho mỗi lần thay đổi.',
+        },
+        { t: 'terms', ids: ['mat-can-bang', 'nguong', 'ro-ri-du-lieu', 'training-serving-skew', 'hieu-chuan'] },
+      ],
+      keyTakeaways: [
+        'Phản hồi ba mức — cho qua, tăng cường xác thực, chặn — thắng phản hồi nhị phân, vì vùng phân vân được xử lý bằng cách mua thêm thông tin thay vì đoán.',
+        'Đặc trưng vận tốc là nhóm mạnh nhất vì gian lận cần quy mô mới có lợi nhuận, và quy mô luôn để lại dấu vết.',
+        'Đặc trưng vận tốc phải tính bằng cửa sổ trượt loại trừ chính sự kiện hiện tại; groupby trên toàn bảng là rò rỉ thời gian kinh điển.',
+        'Chi phí phụ thuộc số tiền, nên ngưỡng phải suy từ giá trị kỳ vọng của từng hành động và dịch chuyển theo giá trị giao dịch.',
+        'Tỉ lệ bồi hoàn là ràng buộc cứng của bài toán tối ưu, không phải một số hạng trong hàm mục tiêu.',
+        'Nhãn đến muộn hàng tháng và bị cắt xén bởi chính quyết định chặn của bạn — cần nhãn thay thế và một tỉ lệ nhỏ cho qua có kiểm soát.',
+        'Phần lớn ngân sách trễ nằm ở khâu lấy đặc trưng chứ không ở mô hình; kho đặc trưng trực tuyến quyết định kiến trúc.',
+        'Đối thủ ở đây thích nghi nhanh nhất — hãy tối ưu tốc độ đưa đặc trưng mới lên sản xuất, không tối ưu mô hình của hôm nay.',
+      ],
+      cards: [
+        {
+          id: 't6l9-c1',
+          front: 'Vì sao phản hồi ba mức thắng phản hồi nhị phân trong phát hiện gian lận?',
+          back: 'Vì vùng điểm giữa là vùng đông nhất và mô hình phân vân nhất. Tăng cường xác thực có chi phí thấp cho khách thật và gần như bất khả thi cho kẻ dùng thông tin đánh cắp — tức là mua thêm thông tin thay vì đoán.',
+          tags: ['gian-lan', 'nguong'],
+        },
+        {
+          id: 't6l9-c2',
+          front: 'Vì sao đặc trưng vận tốc (velocity) là nhóm mạnh nhất trong gian lận?',
+          back: 'Vì gian lận chỉ có lợi nhuận theo quy mô: kẻ tấn công phải thử hàng chục nghìn lần. Quy mô là thứ họ cần và cũng chính là thứ để lại dấu vết đếm được.',
+          tags: ['gian-lan', 'dac-trung'],
+        },
+        {
+          id: 't6l9-c3',
+          front: 'Cách tính đặc trưng vận tốc nào gây rò rỉ thời gian, và cách đúng là gì?',
+          back: 'Sai: groupby đếm toàn bộ giao dịch trong ngày, gồm cả giao dịch xảy ra sau. Đúng: cửa sổ trượt theo thời gian có chặn phải, loại trừ chính sự kiện hiện tại (rolling với closed left).',
+          tags: ['gian-lan', 'ro-ri-du-lieu'],
+        },
+        {
+          id: 't6l9-c4',
+          front: 'Độ chín của nhãn (label maturity) trong gian lận nghĩa là gì?',
+          back: 'Nhãn gian lận đến từ bồi hoàn, xuất hiện sau vài tuần tới vài tháng. Chỉ được đánh giá trên các kỳ đã đủ thời gian để nhãn ổn định, và luôn ghi rõ ngày chốt nhãn kèm con số báo cáo.',
+          tags: ['gian-lan', 'nhan'],
+        },
+        {
+          id: 't6l9-c5',
+          front: 'Vì sao phải cố ý cho qua 1–2% giao dịch mà mô hình muốn chặn?',
+          back: 'Vì giao dịch bị chặn không bao giờ có nhãn thật, nên dữ liệu bị cắt xén đúng ở vùng mô hình tự tin nhất. Cho qua có kiểm soát thu về nhãn ở vùng điểm cao, tránh cho mô hình mù dần.',
+          tags: ['gian-lan', 'nhan'],
+        },
+        {
+          id: 't6l9-c6',
+          front: 'Kẻ tấn công dùng proxy dân dụng một yêu cầu mỗi IP. Đặc trưng nào còn dùng được?',
+          back: 'Vận tốc ở cấp cao hơn: ASN, dải mạng, vân tay thiết bị, hành vi phiên (tốc độ điền form), và đồ thị quan hệ giữa các tài khoản qua thiết bị hoặc địa chỉ giao hàng chung.',
+          tags: ['gian-lan', 'ne-tranh'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't6l9-q1',
+          kind: 'mcq',
+          tags: ['gian-lan', 'nguong'],
+          q: 'Mô hình chấm 0,62 cho một giao dịch lớn, ngưỡng chặn là 0,80. Thiết kế hệ thống tốt nhất làm gì?',
+          options: [
+            'Cho qua vì dưới ngưỡng',
+            'Chặn vì điểm khá cao và số tiền lớn',
+            'Kích hoạt tăng cường xác thực, vì nó rẻ cho khách thật và rất đắt cho kẻ tấn công',
+            'Hạ ngưỡng chặn xuống 0,60 cho mọi giao dịch',
+          ],
+          answer: 2,
+          why: 'Cả cho qua lẫn chặn đều là quyết định dứt khoát trên một điểm số thể hiện sự phân vân. Tăng cường xác thực thay đổi bản chất bài toán: thay vì đoán dựa trên thông tin hiện có, bạn **mua thêm thông tin** với chi phí vài giây cho khách thật. Đây cũng là lý do bảng chi phí phải có ba hàng chứ không phải hai. Hạ ngưỡng cho mọi giao dịch thì làm tăng mạnh số lần chặn nhầm ở phân khúc giao dịch nhỏ, nơi giá trị kỳ vọng không biện minh được cho ma sát đó — chi phí phụ thuộc số tiền nên ngưỡng cũng phải phụ thuộc số tiền.',
+          distractorWhy: [
+            'Cho qua bỏ mất cơ hội xác minh với chi phí rất thấp.',
+            'Chặn khách thật gây thiệt hại lớn hơn nhiều so với một giao dịch, vì mất cả giá trị vòng đời.',
+            '',
+            'Ngưỡng cố định cho mọi số tiền là sai nguyên tắc khi chi phí sai phụ thuộc vào số tiền.',
+          ],
+        },
+        {
+          id: 't6l9-q2',
+          kind: 'multi',
+          tags: ['gian-lan', 'nhan'],
+          q: 'Vấn đề nào đặc thù cho nhãn trong bài toán gian lận? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Nhãn bồi hoàn đến sau vài tuần tới vài tháng nên kỳ gần nhất chưa đủ chín để đánh giá',
+            'Giao dịch bị chặn không bao giờ có kết quả thật nên dữ liệu bị cắt xén ở vùng điểm cao',
+            'Gắn nhãn theo quyết định của hệ thống hiện tại khiến mô hình mới học lại chính điểm mù của hệ thống cũ',
+            'Nhãn gian lận luôn chính xác tuyệt đối vì có bằng chứng tài chính',
+          ],
+          answers: [0, 1, 2],
+          why: 'Ba vấn đề đầu tạo thành bộ ba kinh điển của bài toán gian lận và cần ba đối sách khác nhau: nhãn thay thế đến sớm cho theo dõi hằng ngày, cho qua có kiểm soát để lấp vùng bị cắt, và nguyên tắc nhãn phải đến từ kết quả ngoài đời chứ không từ quyết định của hệ thống. Ý cuối sai: nhãn bồi hoàn cũng có nhiễu đáng kể — có những vụ khách hàng khiếu nại giao dịch hợp lệ (friendly fraud), có gian lận thật không bao giờ bị khiếu nại, và có tranh chấp vì lý do dịch vụ chứ không phải vì gian lận.',
+        },
+        {
+          id: 't6l9-q3',
+          kind: 'order',
+          tags: ['gian-lan', 'quy-trinh'],
+          q: 'Sắp xếp các bước xây hệ thống chống chiếm đoạt tài khoản theo thứ tự nên làm.',
+          items: [
+            'Xác định ba hành động có thể thực hiện và chi phí của từng hành động',
+            'Xây đặc trưng vận tốc và thiết bị với cửa sổ trượt đúng về mặt thời gian',
+            'Huấn luyện mô hình và đo bằng PR-AUC trên tập chia theo thời gian',
+            'Suy hai ngưỡng từ giá trị kỳ vọng, phụ thuộc vào số tiền giao dịch',
+            'Chạy chế độ bóng để đo khối lượng ma sát thật trên khách hàng',
+            'Bật dần theo phân khúc và giữ một tỉ lệ nhỏ cho qua có kiểm soát để thu nhãn',
+          ],
+          why: 'Bước đầu quyết định toàn bộ phần còn lại: nếu bạn chỉ có hai hành động thì mọi thiết kế sau đó bị ép vào một ngưỡng duy nhất, và bạn mất luôn cách giải quyết vùng phân vân. Ngưỡng đứng sau mô hình vì nó cần phân phối điểm số thật. Chế độ bóng đứng trước khi bật vì ma sát tác động lên khách hàng thật, thứ mà bạn không thể thử sai. Bước cuối gắn liền với vấn đề nhãn bị cắt xén: nếu bỏ nó, mô hình của bạn sẽ mù dần ở đúng vùng điểm cao trong vài kỳ huấn luyện lại.',
+        },
+        {
+          id: 't6l9-q4',
+          kind: 'truefalse',
+          tags: ['gian-lan', 'trien-khai'],
+          q: 'Trong hệ thống chấm điểm gian lận thời gian thực, phần lớn ngân sách trễ bị tiêu bởi việc chạy mô hình.',
+          answer: false,
+          why: 'Một mô hình cây tăng cường với vài trăm cây chạy trong khoảng 1–10 mili-giây trên CPU. Thứ tiêu hết ngân sách là khâu **lấy đặc trưng**: đọc bộ đếm vận tốc, tra dấu vân tay thiết bị, truy vấn đồ thị quan hệ, gọi dịch vụ tra cứu ASN. Đó là lý do kiến trúc gian lận thời gian thực xoay quanh kho đặc trưng trực tuyến trong bộ nhớ chứ không xoay quanh việc tối ưu mô hình. Hệ quả thực dụng: nếu bạn cần giảm trễ, hãy cắt số lần gọi ra ngoài và gộp truy vấn, đừng cắt số cây trong mô hình — cắt cây làm giảm chất lượng mà gần như không cải thiện trễ.',
+        },
+        {
+          id: 't6l9-q5',
+          kind: 'input',
+          tags: ['gian-lan', 'training-serving-skew'],
+          q: 'Đặc trưng được tính bằng một đoạn mã pandas khi huấn luyện và bằng một đoạn mã Java khác khi phục vụ trực tuyến. Hiện tượng sai lệch giữa hai đường tính này gọi là gì?',
+          accept: ['training serving skew', 'training-serving skew', 'lech huan luyen phuc vu', 'lệch huấn luyện phục vụ', 'lech huan luyen - phuc vu'],
+          placeholder: 'Tên hiện tượng…',
+          hint: 'Ba từ tiếng Anh, nói về khác biệt giữa lúc huấn luyện và lúc phục vụ.',
+          why: 'Lệch huấn luyện–phục vụ (training-serving skew). Nó nguy hiểm vì âm thầm: mô hình vẫn chạy, vẫn trả về điểm số, không có lỗi nào trong nhật ký, chỉ là hiệu năng thấp hơn kỳ vọng mà không ai giải thích được. Nguyên nhân thường rất nhỏ: múi giờ khác nhau, cách xử lý giá trị thiếu khác nhau, làm tròn khác nhau, hoặc một cửa sổ tính là 24 giờ ở một bên và 1 ngày lịch ở bên kia. Hai đối sách chuẩn: dùng chung một định nghĩa đặc trưng cho cả hai đường (đó chính là lý do feature store tồn tại), và ghi lại vector đặc trưng đã dùng lúc phục vụ rồi định kỳ so với vector tính lại ngoại tuyến trên cùng sự kiện.',
+        },
+      ],
+      terms: ['mat-can-bang', 'nguong', 'ro-ri-du-lieu', 'training-serving-skew', 'hieu-chuan'],
+      further: [
+        {
+          title: 'Credit Card Fraud Detection Dataset — Nhóm Machine Learning Group, ULB',
+          note: '284.807 giao dịch với 492 gian lận (0,172%). Dùng để luyện đo lường và chọn ngưỡng theo chi phí; không dùng để luyện kỹ thuật đặc trưng vì các cột đã qua PCA.',
+        },
+        {
+          title: 'Calibrating Probability with Undersampling for Unbalanced Classification — Dal Pozzolo và cộng sự (2015)',
+          note: 'Viết trong đúng bối cảnh gian lận thẻ. Nguồn của công thức hiệu chỉnh xác suất sau khi hạ mẫu, cần thiết nếu bạn muốn dùng ngưỡng theo giá trị kỳ vọng.',
+        },
+        {
+          title: 'Reproducible Machine Learning for Credit Card Fraud Detection — Le Borgne và cộng sự',
+          note: 'Sách thực hành trực tuyến với mã nguồn đầy đủ, bao gồm cách xây đặc trưng vận tốc đúng về mặt thời gian và cách đánh giá khi nhãn đến muộn.',
+        },
+      ],
+    },
   ],
 };
