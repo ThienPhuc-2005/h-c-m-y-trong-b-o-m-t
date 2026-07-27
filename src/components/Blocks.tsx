@@ -12,16 +12,19 @@ import { Lab } from '../labs';
 import { getTerm } from '../content/glossary';
 import { useProgressSlice, toggleCheck } from '../lib/storage';
 import { highlight } from '../lib/highlight';
+import { Icon } from './Icon';
+import { useT } from '../i18n';
+import type { IconName } from './Icon';
 
-const CALLOUT_META: Record<CalloutKind, { icon: string; label: string }> = {
-  why: { icon: '🎯', label: 'Vì sao quan trọng' },
-  insight: { icon: '💡', label: 'Trực giác cốt lõi' },
-  pitfall: { icon: '⚠️', label: 'Bẫy thường gặp' },
-  warn: { icon: '🛑', label: 'Cảnh báo' },
-  story: { icon: '📖', label: 'Chuyện có thật' },
-  pro: { icon: '🛠️', label: 'Mẹo thực chiến' },
-  math: { icon: '∑', label: 'Phần toán' },
-  ethics: { icon: '⚖️', label: 'Đạo đức & pháp lý' },
+const CALLOUT_ICON: Record<CalloutKind, IconName> = {
+  why: 'target',
+  insight: 'lightbulb',
+  pitfall: 'alert-triangle',
+  warn: 'alert-octagon',
+  story: 'book',
+  pro: 'wrench',
+  math: 'calculator',
+  ethics: 'scale',
 };
 
 export function BlockView({ block, lessonId, index }: { block: Block; lessonId: string; index: number }) {
@@ -51,21 +54,8 @@ export function BlockView({ block, lessonId, index }: { block: Block; lessonId: 
         </ul>
       );
 
-    case 'callout': {
-      const meta = CALLOUT_META[block.kind];
-      return (
-        <aside className={`callout co-${block.kind}`}>
-          <span className="callout-icon" aria-hidden>{meta.icon}</span>
-          <div style={{ minWidth: 0 }}>
-            <div className="callout-title">{block.title ?? meta.label}</div>
-            <div className="callout-body">
-              <Markdown>{block.md}</Markdown>
-            </div>
-          </div>
-        </aside>
-      );
-    }
-
+    case 'callout':
+      return <Callout kind={block.kind} title={block.title} md={block.md} />;
     case 'code':
       return <CodeBlock lang={block.lang} code={block.code} caption={block.caption} collapsed={block.collapsed} />;
 
@@ -173,7 +163,23 @@ export function BlockView({ block, lessonId, index }: { block: Block; lessonId: 
 
 /* -------------------------------------------------------------------------- */
 
+function Callout({ kind, title, md }: { kind: CalloutKind; title?: string; md: string }) {
+  const t = useT();
+  return (
+    <aside className={`callout co-${kind}`}>
+      <Icon className="callout-icon" name={CALLOUT_ICON[kind]} size={18} />
+      <div style={{ minWidth: 0 }}>
+        <div className="callout-title">{title ?? t(`callout.${kind}`)}</div>
+        <div className="callout-body">
+          <Markdown>{md}</Markdown>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 function CodeBlock({ lang, code, caption, collapsed }: { lang: string; code: string; caption?: string; collapsed?: boolean }) {
+  const t = useT();
   const [open, setOpen] = useState(!collapsed);
   const [copied, setCopied] = useState(false);
 
@@ -184,7 +190,7 @@ function CodeBlock({ lang, code, caption, collapsed }: { lang: string; code: str
         <span style={{ flex: 1 }} />
         {collapsed && (
           <button className="btn btn-sm btn-ghost" onClick={() => setOpen((o) => !o)}>
-            {open ? 'Thu gọn' : 'Mở ra'}
+            {t(open ? 'blocks.collapse' : 'blocks.expand')}
           </button>
         )}
         <button
@@ -195,7 +201,8 @@ function CodeBlock({ lang, code, caption, collapsed }: { lang: string; code: str
             setTimeout(() => setCopied(false), 1600);
           }}
         >
-          {copied ? '✓ Đã chép' : 'Chép'}
+          <Icon name={copied ? 'check' : 'copy'} size={14} />
+          {t(copied ? 'blocks.copied' : 'blocks.copy')}
         </button>
       </div>
       {open && (
@@ -214,23 +221,24 @@ function CodeBlock({ lang, code, caption, collapsed }: { lang: string; code: str
  * năng ghi nhớ lời giải thích sau đó, mạnh hơn hẳn việc đọc thẳng.
  */
 function Predict({ question, reveal }: { question: string; reveal: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <div className="reveal">
       <div className="reveal-q">
-        <span aria-hidden>🤔</span>
+        <Icon name="help-circle" size={18} />
         <span>
-          <b>Thử đoán xem: </b>
+          <b>{t('blocks.predictPrompt')} </b>
           <Markdown>{question}</Markdown>
         </span>
       </div>
       {!open ? (
         <div className="stack" style={{ '--gap': 'var(--s-2)' } as React.CSSProperties}>
           <button className="btn btn-sm" onClick={() => setOpen(true)}>
-            Tôi đã nghĩ xong — xem lời giải
+            {t('blocks.reveal')}
           </button>
           <span className="faint">
-            Nghĩ thật, dù chỉ 10 giây. Đoán sai rồi được giải thích giúp bạn nhớ lâu hơn đọc thẳng đáp án.
+            {t('blocks.predictHint')}
           </span>
         </div>
       ) : (
@@ -243,11 +251,14 @@ function Predict({ question, reveal }: { question: string; reveal: string }) {
 }
 
 function Checkpoint({ questions }: { questions: Quiz[] }) {
+  const t = useT();
   return (
     <div className="stack">
       <div className="row" style={{ gap: 'var(--s-2)' }}>
-        <span className="chip chip-brand">⏸ Điểm dừng</span>
-        <span className="faint">Trả lời trước khi đọc tiếp — đây là lúc kiến thức được neo lại.</span>
+        <span className="chip chip-brand">
+          <Icon name="pause" size={12} filled /> {t('blocks.checkpoint')}
+        </span>
+        <span className="faint">{t('blocks.checkpointHint')}</span>
       </div>
       {questions.map((q) => (
         <QuizItem key={q.id} quiz={q} askConfidence={false} />
@@ -257,20 +268,25 @@ function Checkpoint({ questions }: { questions: Quiz[] }) {
 }
 
 function TermStrip({ ids }: { ids: string[] }) {
+  const t = useT();
   const terms = ids.map(getTerm).filter(Boolean);
   if (!terms.length) return null;
   return (
     <details className="acc">
-      <summary>📚 Thuật ngữ trong phần này ({terms.length})</summary>
+      <summary>
+        <Icon name="book-a" size={15} /> {t('blocks.termsHere', { n: terms.length })}
+      </summary>
       <div className="acc-body stack" style={{ '--gap': 'var(--s-3)' } as React.CSSProperties}>
-        {terms.map((t) => (
-          <div key={t!.id}>
+        {terms.map((term) => (
+          <div key={term!.id}>
             <div className="row" style={{ gap: 'var(--s-2)', flexWrap: 'wrap' }}>
-              <b>{t!.vi}</b>
-              <span className="chip mono">{t!.en}</span>
+              <b>{term!.vi}</b>
+              <span className="chip mono">{term!.en}</span>
             </div>
-            <div style={{ fontSize: 'var(--fs-sm)', marginTop: 2 }}>{t!.def}</div>
-            {t!.example && <div className="faint" style={{ marginTop: 2 }}>Ví dụ: {t!.example}</div>}
+            <div style={{ fontSize: 'var(--fs-sm)', marginTop: 2 }}>{term!.def}</div>
+            {term!.example && (
+              <div className="faint" style={{ marginTop: 2 }}>{t('blocks.example')}: {term!.example}</div>
+            )}
           </div>
         ))}
       </div>
@@ -289,7 +305,7 @@ function Checklist({ title, items, lessonId, index }: { title?: string; items: s
           const on = !!checks[key];
           return (
             <button key={i} className="checklist-item" aria-pressed={on} onClick={() => toggleCheck(key)}>
-              <span className="checklist-box" aria-hidden>✓</span>
+              <span className="checklist-box"><Icon name="check" size={13} stroke={3} /></span>
               <span className="checklist-text"><Markdown>{it}</Markdown></span>
             </button>
           );

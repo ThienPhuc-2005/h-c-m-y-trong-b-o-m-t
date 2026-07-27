@@ -30,6 +30,27 @@
 }
 
 /* --------------------------------------------------------------------------
+   Biểu tượng
+
+   Mọi icon là SVG một màu thừa hưởng `currentColor`, nên nó tự đúng màu trong
+   mọi ngữ cảnh: nút primary nền đậm, chip cảnh báo, hay chữ mờ trong footer.
+   Đó là thứ emoji không làm được — emoji mang màu cố định của hệ điều hành.
+   -------------------------------------------------------------------------- */
+.ico {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: -0.18em;
+}
+/* Icon nằm một mình trong ô căn giữa (chấm lộ trình, ô đáp án) thì bỏ phần
+   bù trục cơ sở đi, nếu không nó sẽ lệch xuống dưới tâm ô. */
+.rm-dot .ico,
+.opt-key .ico,
+.empty-ico .ico,
+.badge-ico .ico {
+  vertical-align: 0;
+}
+
+/* --------------------------------------------------------------------------
    Thanh điều hướng
    -------------------------------------------------------------------------- */
 .nav {
@@ -99,6 +120,33 @@
   background: var(--bg-hover);
   color: var(--text);
 }
+/* Bộ chuyển ngôn ngữ: hai lựa chọn luôn hiển thị cạnh nhau thay vì một nút
+   bật/tắt. Người dùng thấy ngay app có ngôn ngữ nào và mình đang ở đâu, không
+   phải bấm thử để biết. */
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.lang-opt {
+  padding: 5px var(--s-2);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  background: transparent;
+}
+.lang-opt:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.lang-opt[aria-pressed='true'] {
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+
 .nav-link[aria-current='page'] {
   background: var(--brand-soft);
   color: var(--brand-text);
@@ -459,9 +507,10 @@
   gap: var(--s-3);
 }
 .callout-icon {
-  font-size: 1.05rem;
-  line-height: 1.5;
   flex-shrink: 0;
+  color: var(--co, var(--brand));
+  /* Kéo icon xuống ngang tầm chữ hoa của dòng tiêu đề bên cạnh. */
+  margin-top: 2px;
 }
 .callout-title {
   font-weight: 700;
@@ -1191,7 +1240,7 @@ details.acc > summary:hover {
   border: 1.5px solid color-mix(in srgb, var(--hue) 40%, transparent);
   display: grid;
   place-items: center;
-  font-size: 1.2rem;
+  color: var(--hue-text);
   flex-shrink: 0;
   transition: transform var(--t-base) var(--ease);
 }
@@ -1207,7 +1256,7 @@ details.acc > summary:hover {
   min-height: 12px;
 }
 .rm-locked .rm-dot {
-  filter: grayscale(1);
+  color: var(--text-faint);
   opacity: 0.55;
 }
 
@@ -1286,18 +1335,20 @@ details.acc > summary:hover {
   background: var(--bg-elev);
 }
 .badge-ico {
-  font-size: 1.9rem;
-  line-height: 1;
+  display: flex;
+  justify-content: center;
   margin-bottom: var(--s-2);
-  filter: grayscale(1);
-  opacity: 0.35;
+  /* Huy hiệu chưa đạt: mờ đi bằng MÀU chứ không bằng `grayscale()`. Icon một
+     màu vốn đã không có màu để khử, nên bộ lọc cũ không có tác dụng nào. */
+  color: var(--text-faint);
+  opacity: 0.5;
 }
 .badge.earned {
   border-color: var(--ok-border);
   background: var(--ok-soft);
 }
 .badge.earned .badge-ico {
-  filter: none;
+  color: var(--ok-text);
   opacity: 1;
   animation: popIn var(--t-slow) var(--ease-out);
 }
@@ -1410,9 +1461,10 @@ details.acc > summary:hover {
   color: var(--text-muted);
 }
 .empty-ico {
-  font-size: 2.4rem;
+  display: flex;
+  justify-content: center;
   margin-bottom: var(--s-3);
-  opacity: 0.6;
+  color: var(--text-faint);
 }
 
 /* --------------------------------------------------------------------------

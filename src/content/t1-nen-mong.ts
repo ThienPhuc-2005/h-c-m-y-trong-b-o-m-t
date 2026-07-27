@@ -14,7 +14,7 @@ export const track1: Track = {
   order: 1,
   title: 'Nền móng: toán và dữ liệu vừa đủ',
   tagline: 'Chỉ học phần toán bạn thật sự sẽ dùng',
-  icon: '📐',
+  icon: 'ruler',
   hue: 'cyan',
   blurb:
     'Bảy bài toán nền tảng, mỗi bài bắt đầu từ một dòng log thật chứ không từ định nghĩa. Bạn sẽ học đúng lượng xác suất, thống kê, entropy, đại số tuyến tính và giải tích cần để đọc hiểu mọi mô hình về sau. Không cần biết toán cao cấp trước khi vào.',

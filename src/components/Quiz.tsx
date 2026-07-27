@@ -28,16 +28,18 @@
 import { useMemo, useState } from 'react';
 import type { Quiz } from '../content/types';
 import { Markdown } from './Markdown';
+import { Icon } from './Icon';
+import { useT } from '../i18n';
 import { acceptsAnswer, shuffle, hashCode, mulberry32, cx } from '../lib/utils';
 import { logQuiz } from '../lib/storage';
 
 const KEYS = 'ABCDEFGH';
 
 const CONFIDENCE = [
-  { v: 0.25, label: 'Đoán mò' },
-  { v: 0.5, label: 'Không chắc' },
-  { v: 0.75, label: 'Khá chắc' },
-  { v: 0.95, label: 'Chắc chắn' },
+  { v: 0.25, labelKey: 'confidence.guess' },
+  { v: 0.5, labelKey: 'confidence.unsure' },
+  { v: 0.75, labelKey: 'confidence.fairly' },
+  { v: 0.95, labelKey: 'confidence.certain' },
 ];
 
 interface Props {
@@ -49,6 +51,7 @@ interface Props {
 }
 
 export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Props) {
+  const t = useT();
   const [conf, setConf] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
@@ -138,12 +141,12 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
       {askConfidence && !submitted && (
         <div style={{ marginBottom: 'var(--s-4)' }}>
           <div className="faint" style={{ marginBottom: 6 }}>
-            Trước khi trả lời: bạn chắc đến mức nào?
+            {t('quiz.confidencePrompt')}
           </div>
           <div className="confidence">
             {CONFIDENCE.map((c) => (
               <button key={c.v} aria-pressed={conf === c.v} onClick={() => setConf(c.v)}>
-                {c.label}
+                {t(c.labelKey)}
               </button>
             ))}
           </div>
@@ -178,7 +181,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
       {/* ---- Nhiều lựa chọn ---- */}
       {quiz.kind === 'multi' && (
         <>
-          <div className="faint" style={{ marginBottom: 8 }}>Có thể có nhiều đáp án đúng.</div>
+          <div className="faint" style={{ marginBottom: 8 }}>{t('quiz.multiHint')}</div>
           <div className="quiz-opts">
             {quiz.options.map((o, i) => (
               <button
@@ -188,7 +191,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
                 disabled={submitted || needConfidence}
                 onClick={() => toggle(i, false)}
               >
-                <span className="opt-key" style={{ borderRadius: 4 }}>{picked.includes(i) ? '✓' : ''}</span>
+                <span className="opt-key" style={{ borderRadius: 4 }}>{picked.includes(i) && <Icon name="check" size={13} stroke={3} />}</span>
                 <span><Markdown>{o}</Markdown></span>
               </button>
             ))}
@@ -199,7 +202,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
       {/* ---- Đúng / Sai ---- */}
       {quiz.kind === 'truefalse' && (
         <div className="quiz-opts">
-          {['Sai', 'Đúng'].map((o, i) => (
+          {[t('quiz.false'), t('quiz.true')].map((o, i) => (
             <button
               key={i}
               className="opt"
@@ -207,7 +210,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
               disabled={submitted || needConfidence}
               onClick={() => toggle(i, true)}
             >
-              <span className="opt-key">{i === 1 ? '✓' : '✕'}</span>
+              <span className="opt-key"><Icon name={i === 1 ? 'check' : 'x'} size={13} stroke={3} /></span>
               <span>{o}</span>
             </button>
           ))}
@@ -219,7 +222,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
         <input
           type="text"
           value={text}
-          placeholder={quiz.placeholder ?? 'Nhập câu trả lời của bạn…'}
+          placeholder={quiz.placeholder ?? t('quiz.inputPlaceholder')}
           disabled={submitted || needConfidence}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -236,7 +239,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
       {quiz.kind === 'order' && (
         <div className="grid grid-2">
           <div>
-            <div className="faint" style={{ marginBottom: 6 }}>Bấm theo đúng thứ tự</div>
+            <div className="faint" style={{ marginBottom: 6 }}>{t('quiz.orderPrompt')}</div>
             <div className="quiz-opts">
               {shuffledOrder.map((it) => (
                 <button
@@ -253,8 +256,9 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
           </div>
           <div>
             <div className="faint" style={{ marginBottom: 6 }}>
-              Thứ tự bạn chọn {!submitted && orderList.length > 0 && (
-                <button className="btn btn-sm btn-ghost" onClick={() => setOrderList([])}>xoá</button>
+              {t('quiz.yourOrder')}{' '}
+              {!submitted && orderList.length > 0 && (
+                <button className="btn btn-sm btn-ghost" onClick={() => setOrderList([])}>{t('quiz.clear')}</button>
               )}
             </div>
             <div className="quiz-opts">
@@ -268,7 +272,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
                   <span>{it}</span>
                 </div>
               ))}
-              {orderList.length === 0 && <div className="faint">Chưa chọn gì</div>}
+              {orderList.length === 0 && <div className="faint">{t('quiz.nothingPicked')}</div>}
             </div>
           </div>
         </div>
@@ -291,7 +295,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
                 disabled={submitted || needConfidence}
                 onChange={(e) => setMatched((m) => ({ ...m, [l]: e.target.value }))}
               >
-                <option value="">— chọn —</option>
+                <option value="">{t('quiz.selectOption')}</option>
                 {rightOptions.map((o) => (
                   <option key={o} value={o}>{o}</option>
                 ))}
@@ -300,7 +304,7 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
           ))}
           {submitted && (
             <div className="faint">
-              Đáp án đúng: {quiz.pairs.map(([l, r]) => `${l} → ${r}`).join(' · ')}
+              {t('quiz.correctPairs', { pairs: quiz.pairs.map(([l, r]) => `${l} → ${r}`).join(' · ') })}
             </div>
           )}
         </div>
@@ -310,19 +314,19 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
       {!submitted && (
         <div className="row-wrap" style={{ marginTop: 'var(--s-4)' }}>
           <button className="btn btn-primary" disabled={!canSubmit} onClick={() => submit(grade())}>
-            Kiểm tra
+            {t('quiz.check')}
           </button>
           {quiz.hint && !showHint && (
             <button className="btn btn-ghost btn-sm" onClick={() => setShowHint(true)}>
-              💡 Gợi ý
+              <Icon name="lightbulb" size={14} /> {t('common.hint')}
             </button>
           )}
-          {needConfidence && <span className="faint">Chọn mức tự tin trước đã</span>}
+          {needConfidence && <span className="faint">{t('quiz.pickConfidenceFirst')}</span>}
         </div>
       )}
       {showHint && !submitted && (
         <div className="callout co-insight" style={{ marginTop: 'var(--s-3)' }}>
-          <span className="callout-icon" aria-hidden>💡</span>
+          <Icon className="callout-icon" name="lightbulb" size={18} />
           <div className="callout-body">{quiz.hint}</div>
         </div>
       )}
@@ -331,26 +335,25 @@ export function QuizItem({ quiz, onAnswered, askConfidence = true, compact }: Pr
       {submitted && (
         <div className={cx('feedback', correct ? 'feedback-ok' : 'feedback-bad')}>
           <div className="feedback-head">
-            <span aria-hidden>{correct ? '✓' : '✕'}</span>
-            <span>{correct ? 'Chính xác' : 'Chưa đúng'}</span>
+            <Icon name={correct ? 'check' : 'x'} size={18} stroke={2.5} />
+            <span>{t(correct ? 'quiz.correct' : 'quiz.incorrect')}</span>
             {conf !== null && (
               <span className="chip" style={{ marginLeft: 'auto' }}>
-                bạn chọn: {CONFIDENCE.find((c) => c.v === conf)?.label}
+                {t('quiz.youPicked', { label: t(CONFIDENCE.find((c) => c.v === conf)?.labelKey ?? '') })}
               </span>
             )}
           </div>
           {conf !== null && conf >= 0.75 && !correct && (
             <div className="callout co-pitfall" style={{ marginBottom: 'var(--s-3)' }}>
-              <span className="callout-icon" aria-hidden>🎯</span>
+              <Icon className="callout-icon" name="target" size={18} />
               <div className="callout-body">
-                Bạn <b>chắc chắn</b> nhưng lại sai — đây là loại lỗ hổng nguy hiểm nhất, vì bạn sẽ không bao
-                giờ chủ động ôn lại nó. Hãy đọc kỹ phần giải thích dưới đây.
+                {t('quiz.sureButWrong')}
               </div>
             </div>
           )}
           {conf !== null && conf <= 0.5 && correct && !compact && (
             <div className="faint" style={{ marginBottom: 'var(--s-2)' }}>
-              Bạn biết nhiều hơn bạn tưởng — lần sau hãy tin vào suy luận của mình hơn một chút.
+              {t('quiz.knewMore')}
             </div>
           )}
           <div style={{ fontSize: 'var(--fs-base)' }}>
@@ -377,6 +380,7 @@ export function QuizSet({
   askConfidence?: boolean;
   title?: string;
 }) {
+  const t = useT();
   const [idx, setIdx] = useState(0);
   const [results, setResults] = useState<boolean[]>([]);
   const done = idx >= items.length;
@@ -389,18 +393,14 @@ export function QuizSet({
     const good = score >= 0.8;
     return (
       <div className="card card-pad-lg center anim-in">
-        <div style={{ fontSize: '2.4rem', marginBottom: 'var(--s-2)' }} aria-hidden>
-          {good ? '🎉' : score >= 0.5 ? '💪' : '📖'}
+        <div className="empty-ico" style={{ color: good ? 'var(--ok-text)' : 'var(--text-muted)' }}>
+          <Icon name={good ? 'party' : score >= 0.5 ? 'trending-up' : 'book'} size={38} stroke={1.5} />
         </div>
         <h3 style={{ marginBottom: 'var(--s-2)' }}>
-          {n}/{items.length} câu đúng
+          {t('quiz.scoreLine', { n, total: items.length })}
         </h3>
         <p className="muted" style={{ maxWidth: '48ch', margin: '0 auto var(--s-5)' }}>
-          {good
-            ? 'Bạn nắm chắc bài này. Các thẻ ghi nhớ sẽ đưa nó vào trí nhớ dài hạn trong vài tuần tới.'
-            : score >= 0.5
-              ? 'Nền tảng đã có nhưng còn lỗ hổng. Đừng học lại cả bài — hãy để hệ thống ôn tập đưa đúng phần bạn sai quay lại.'
-              : 'Phần này cần đọc lại. Không sao cả: nhận ra sớm rẻ hơn nhiều so với phát hiện lúc phỏng vấn hay lúc có sự cố thật.'}
+          {t(good ? 'quiz.resultGood' : score >= 0.5 ? 'quiz.resultMid' : 'quiz.resultLow')}
         </p>
         <div className="row" style={{ justifyContent: 'center' }}>
           <button
@@ -410,7 +410,7 @@ export function QuizSet({
               setResults([]);
             }}
           >
-            ↻ Làm lại
+            <Icon name="rotate-ccw" size={15} /> {t('common.retry')}
           </button>
         </div>
       </div>
@@ -420,10 +420,8 @@ export function QuizSet({
   return (
     <div className="stack">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <b style={{ fontSize: 'var(--fs-sm)' }}>{title ?? 'Kiểm tra'}</b>
-        <span className="faint">
-          Câu {idx + 1}/{items.length}
-        </span>
+        <b style={{ fontSize: 'var(--fs-sm)' }}>{title ?? t('quiz.defaultTitle')}</b>
+        <span className="faint">{t('quiz.questionN', { n: idx + 1, total: items.length })}</span>
       </div>
       <div className="bar">
         <div className="bar-fill" style={{ width: `${(idx / items.length) * 100}%` }} />
@@ -440,7 +438,8 @@ export function QuizSet({
       />
       {results.length > idx && (
         <button className="btn btn-primary btn-block" onClick={() => setIdx((i) => i + 1)}>
-          {idx + 1 >= items.length ? 'Xem kết quả →' : 'Câu tiếp theo →'}
+          {idx + 1 >= items.length ? t('common.result') : t('common.next')}
+          <Icon name="arrow-right" size={15} />
         </button>
       )}
     </div>

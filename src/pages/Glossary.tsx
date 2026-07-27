@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { ALL_TERMS } from '../content/glossary';
 import { normalize } from '../lib/utils';
 import { Empty } from '../components/Shared';
+import { Icon } from '../components/Icon';
+import { useT } from '../i18n';
 
 /**
  * Từ điển thuật ngữ.
@@ -9,6 +11,7 @@ import { Empty } from '../components/Shared';
  * Chi tiết nhỏ này quyết định người ta có dùng từ điển hay bỏ qua nó.
  */
 export function GlossaryPage() {
+  const t = useT();
   const [q, setQ] = useState('');
   const [tag, setTag] = useState<string | null>(null);
 
@@ -35,11 +38,9 @@ export function GlossaryPage() {
   return (
     <div className="container stack" style={{ '--gap': 'var(--s-5)' } as React.CSSProperties}>
       <header>
-        <h1 style={{ fontSize: 'var(--fs-2xl)' }}>Thuật ngữ</h1>
+        <h1 style={{ fontSize: 'var(--fs-2xl)' }}>{t('glossary.title')}</h1>
         <p className="muted" style={{ maxWidth: '64ch', marginTop: 'var(--s-2)' }}>
-          {ALL_TERMS.length} thuật ngữ, song ngữ Việt–Anh. Tên tiếng Anh không phải để làm màu: mọi công cụ, tài
-          liệu và buổi phỏng vấn trong ngành đều dùng nó. Chú ý các mục "Đừng nhầm với" — phần lớn lỗi hiểu
-          sai không đến từ việc không biết, mà từ việc lẫn lộn hai khái niệm gần nhau.
+          {t('glossary.countTerms', { n: ALL_TERMS.length })} — {t('glossary.intro')}
         </p>
       </header>
 
@@ -48,44 +49,49 @@ export function GlossaryPage() {
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Tìm theo tiếng Việt, tiếng Anh, hoặc mô tả… (không cần gõ dấu)"
+          placeholder={t('glossary.searchPlaceholder')}
+          aria-label={t('glossary.searchPlaceholder')}
         />
         <div className="row-wrap" style={{ gap: 'var(--s-2)' }}>
           <button className={`chip ${tag === null ? 'chip-brand' : ''}`} onClick={() => setTag(null)}>
-            Tất cả ({ALL_TERMS.length})
+            {t('glossary.allTags')} ({ALL_TERMS.length})
           </button>
-          {tags.map(([t, n]) => (
-            <button key={t} className={`chip ${tag === t ? 'chip-brand' : ''}`} onClick={() => setTag(tag === t ? null : t)}>
-              {t} ({n})
+          {tags.map(([name, n]) => (
+            <button
+              key={name}
+              className={`chip ${tag === name ? 'chip-brand' : ''}`}
+              onClick={() => setTag(tag === name ? null : name)}
+            >
+              {name} ({n})
             </button>
           ))}
         </div>
       </div>
 
       {list.length === 0 ? (
-        <Empty icon="🔍" title="Không tìm thấy thuật ngữ nào" sub="Thử từ khoá ngắn hơn, hoặc bỏ bộ lọc nhãn." />
+        <Empty icon="search-x" title={t('glossary.emptyTitle')} sub={t('glossary.emptySub')} />
       ) : (
         <div className="grid grid-2">
-          {list.map((t) => (
-            <div className="card" key={t.id} id={`term-${t.id}`}>
+          {list.map((term) => (
+            <div className="card" key={term.id} id={`term-${term.id}`}>
               <div className="row-wrap" style={{ gap: 'var(--s-2)', marginBottom: 'var(--s-2)' }}>
-                <b style={{ fontSize: 'var(--fs-md)' }}>{t.vi}</b>
-                <span className="chip mono">{t.en}</span>
+                <b style={{ fontSize: 'var(--fs-md)' }}>{term.vi}</b>
+                <span className="chip mono">{term.en}</span>
               </div>
-              <p style={{ fontSize: 'var(--fs-sm)' }}>{t.def}</p>
-              {t.example && (
+              <p style={{ fontSize: 'var(--fs-sm)' }}>{term.def}</p>
+              {term.example && (
                 <p className="muted" style={{ fontSize: 'var(--fs-sm)', marginTop: 'var(--s-2)' }}>
-                  <b>Ví dụ:</b> {t.example}
+                  <b>{t('glossary.example')}:</b> {term.example}
                 </p>
               )}
-              {t.notToConfuseWith && (
+              {term.notToConfuseWith && (
                 <div
                   className="callout co-pitfall"
                   style={{ marginTop: 'var(--s-3)', padding: 'var(--s-3)', fontSize: 'var(--fs-sm)' }}
                 >
-                  <span className="callout-icon" aria-hidden>⚠️</span>
+                  <Icon className="callout-icon" name="alert-triangle" size={16} />
                   <div className="callout-body">
-                    <b>Đừng nhầm với:</b> {t.notToConfuseWith}
+                    <b>{t('glossary.notToConfuse')}:</b> {term.notToConfuseWith}
                   </div>
                 </div>
               )}

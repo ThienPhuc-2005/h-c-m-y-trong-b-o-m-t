@@ -12,7 +12,7 @@ export const track0: Track = {
   order: 0,
   title: 'Khởi động: bức tranh lớn',
   tagline: 'Hiểu địa hình trước khi bước vào rừng',
-  icon: '🧭',
+  icon: 'compass',
   hue: 'indigo',
   blurb:
     'Bốn bài mở đường. Bạn sẽ thấy rõ học máy giải được gì trong bảo mật, thất bại ở đâu, và vì sao đây là một trong những sân chơi khó nhất của ML. Không cần biết lập trình hay toán để bắt đầu.',

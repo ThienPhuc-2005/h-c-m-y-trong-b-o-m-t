@@ -19,9 +19,12 @@ import { GRADE_META, formatInterval, previewIntervals, schedule, type Grade, new
 import type { CardRef } from '../content';
 import { getTrack } from '../content';
 import { href } from '../lib/router';
+import { Icon } from '../components/Icon';
 import { Empty } from '../components/Shared';
+import { useT } from '../i18n';
 
 export function ReviewPage() {
+  const tr = useT();
   const p = useProgress();
   const plan = useMemo(() => buildPlan(p), [p]);
 
@@ -110,17 +113,13 @@ export function ReviewPage() {
     return (
       <div className="container container-narrow">
         <Empty
-          icon="🌤️"
-          title="Không còn thẻ nào đến hạn"
-          sub={
-            Object.keys(p.cards).length === 0
-              ? 'Thẻ ghi nhớ xuất hiện sau khi bạn hoàn thành bài học đầu tiên. Hệ thống sẽ tự đưa chúng quay lại đúng lúc bạn sắp quên.'
-              : 'Trí nhớ của bạn đang khoẻ. Ôn thêm lúc này chỉ tốn thời gian mà không thêm được gì — đó là kết luận của mô hình, không phải lời an ủi.'
-          }
+          icon="sun"
+          title={tr('review.emptyTitle')}
+          sub={Object.keys(p.cards).length === 0 ? tr('review.emptyFresh') : tr('review.emptyHealthy')}
           action={
             <div className="row" style={{ justifyContent: 'center' }}>
-              <a className="btn btn-primary" href={href('/')}>Về trang chủ</a>
-              <a className="btn" href={href('/luyen-tap')}>Luyện tập xen kẽ</a>
+              <a className="btn btn-primary" href={href('/')}>{tr('common.backHome')}</a>
+              <a className="btn" href={href('/luyen-tap')}>{tr('review.interleave')}</a>
             </div>
           }
         />
@@ -136,19 +135,23 @@ export function ReviewPage() {
     return (
       <div className="container container-narrow">
         <div className="card card-pad-lg center anim-in">
-          <div style={{ fontSize: '2.6rem', marginBottom: 'var(--s-3)' }} aria-hidden>✅</div>
-          <h1 style={{ fontSize: 'var(--fs-xl)', marginBottom: 'var(--s-2)' }}>Xong phiên ôn</h1>
+          <div className="empty-ico" style={{ color: 'var(--ok-text)' }}>
+            <Icon name="check-circle" size={42} stroke={1.6} />
+          </div>
+          <h1 style={{ fontSize: 'var(--fs-xl)', marginBottom: 'var(--s-2)' }}>{tr('review.doneTitle')}</h1>
           <p className="muted" style={{ marginBottom: 'var(--s-5)' }}>
-            {total} lượt ôn trong {mins < 1 ? 'chưa tới một phút' : `${Math.round(mins)} phút`}. Những gì bạn
-            vừa làm sẽ giữ số kiến thức này thêm nhiều tuần nữa.
+            {tr('review.doneSub', {
+              n: total,
+              time: mins < 1 ? tr('review.underMinute') : tr('review.minutesN', { n: Math.round(mins) }),
+            })}
           </p>
 
           <div className="grid grid-4" style={{ marginBottom: 'var(--s-5)' }}>
             {[
-              { k: 'Quên rồi', v: stats.again, c: 'var(--bad-text)' },
-              { k: 'Khó', v: stats.hard, c: 'var(--warn-text)' },
-              { k: 'Được', v: stats.good, c: 'var(--ok-text)' },
-              { k: 'Dễ', v: stats.easy, c: 'var(--info-text)' },
+              { k: tr('review.statAgain'), v: stats.again, c: 'var(--bad-text)' },
+              { k: tr('review.statHard'), v: stats.hard, c: 'var(--warn-text)' },
+              { k: tr('review.statGood'), v: stats.good, c: 'var(--ok-text)' },
+              { k: tr('review.statEasy'), v: stats.easy, c: 'var(--info-text)' },
             ].map((s) => (
               <div className="stat" key={s.k}>
                 <div className="stat-k">{s.k}</div>
@@ -158,19 +161,19 @@ export function ReviewPage() {
           </div>
 
           <div className="callout co-insight" style={{ textAlign: 'left', marginBottom: 'var(--s-5)' }}>
-            <span className="callout-icon" aria-hidden>💡</span>
+            <Icon className="callout-icon" name="lightbulb" size={18} />
             <div className="callout-body">
               {recallRate > 0.95
-                ? 'Bạn nhớ gần như hết. Điều đó nghe hay nhưng lại có nghĩa là hệ thống đang cho bạn ôn hơi sớm — bạn đang tốn thời gian cho thứ chưa cần. Thử hạ mục tiêu ghi nhớ xuống 0,85 trong Cài đặt.'
+                ? tr('review.adviceTooEasy')
                 : recallRate < 0.75
-                  ? 'Tỉ lệ quên hơi cao. Có thể bạn đang nạp bài mới nhanh hơn tốc độ củng cố. Thử giảm số thẻ mới mỗi ngày, hoặc quay lại đọc kỹ hơn phần bạn hay quên.'
-                  : 'Tỉ lệ nhớ của bạn đang ở vùng tối ưu (khoảng 85–92%). Quên một chút là dấu hiệu tốt: nó nghĩa là mỗi lần ôn đều thực sự làm việc gì đó cho trí nhớ.'}
+                  ? tr('review.adviceTooHard')
+                  : tr('review.adviceOptimal')}
             </div>
           </div>
 
           <div className="row" style={{ justifyContent: 'center' }}>
-            <a className="btn btn-primary" href={href('/')}>Về trang chủ</a>
-            <a className="btn" href={href('/luyen-tap')}>Luyện tập thêm</a>
+            <a className="btn btn-primary" href={href('/')}>{tr('common.backHome')}</a>
+            <a className="btn" href={href('/luyen-tap')}>{tr('review.practiceMore')}</a>
           </div>
         </div>
       </div>
@@ -186,23 +189,28 @@ export function ReviewPage() {
       <div className="row-wrap" style={{ justifyContent: 'space-between' }}>
         <div className="faint">
           {i + 1} / {queue.length}
-          {isNew && <span className="chip chip-info" style={{ marginLeft: 8 }}>thẻ mới</span>}
+          {isNew && <span className="chip chip-info" style={{ marginLeft: 8 }}>{tr('review.newCard')}</span>}
         </div>
-        <a href={href('/')} className="faint" style={{ textDecoration: 'none' }}>Dừng phiên ✕</a>
+        <a href={href('/')} className="faint row" style={{ textDecoration: 'none', gap: 4 }}>
+          {tr('review.stop')} <Icon name="x" size={13} />
+        </a>
       </div>
       <div className="bar">
         <div className="bar-fill" style={{ width: `${(i / queue.length) * 100}%` }} />
       </div>
 
       <div className="flash">
-        <span className="flash-tag chip chip-hue">{track?.icon} {track?.title}</span>
+        <span className="flash-tag chip chip-hue">
+          {track?.icon && <Icon name={track.icon} size={12} />}
+          {track?.title}
+        </span>
         <button
           onClick={() => toggleFlag(card.id)}
-          title={flagged ? 'Bỏ đánh dấu' : 'Đánh dấu để xem lại'}
-          style={{ position: 'absolute', top: 'var(--s-4)', right: 'var(--s-4)', fontSize: '1.1rem', opacity: flagged ? 1 : 0.32 }}
+          title={flagged ? tr('review.unflag') : tr('review.flag')}
+          style={{ position: 'absolute', top: 'var(--s-4)', right: 'var(--s-4)', opacity: flagged ? 1 : 0.32 }}
           aria-pressed={flagged}
         >
-          🚩
+          <Icon name="flag" size={17} filled={flagged} />
         </button>
 
         <div className="flash-front">{card.front}</div>
@@ -210,37 +218,43 @@ export function ReviewPage() {
         {shown ? (
           <div className="flash-back">
             {card.back}
-            {card.hint && <div className="faint" style={{ marginTop: 'var(--s-3)' }}>Gợi ý: {card.hint}</div>}
+            {card.hint && (
+              <div className="faint" style={{ marginTop: 'var(--s-3)' }}>
+                {tr('common.hint')}: {card.hint}
+              </div>
+            )}
           </div>
         ) : (
           <div className="center" style={{ marginTop: 'var(--s-6)' }}>
-            {card.hint && <div className="faint" style={{ marginBottom: 'var(--s-3)' }}>Gợi ý: {card.hint}</div>}
-            <div className="faint">Cố nhớ lại trước đã — chính lúc vật lộn này mới là lúc trí nhớ được củng cố.</div>
+            {card.hint && (
+              <div className="faint" style={{ marginBottom: 'var(--s-3)' }}>
+                {tr('common.hint')}: {card.hint}
+              </div>
+            )}
+            <div className="faint">{tr('review.tryRecall')}</div>
           </div>
         )}
       </div>
 
       {!shown ? (
         <button className="btn btn-primary btn-lg btn-block" onClick={() => setShown(true)}>
-          Xem đáp án <kbd style={{ marginLeft: 8 }}>Space</kbd>
+          {tr('review.showAnswer')} <kbd style={{ marginLeft: 8 }}>Space</kbd>
         </button>
       ) : (
         <div className="stack" style={{ '--gap': 'var(--s-2)' } as React.CSSProperties}>
           <div className="grades">
             {([1, 2, 3, 4] as Grade[]).map((g) => (
-              <button key={g} className={`grade ${GRADE_META[g].cls}`} onClick={() => answer(g)} title={GRADE_META[g].desc}>
-                <b>{GRADE_META[g].label}</b>
+              <button key={g} className={`grade ${GRADE_META[g].cls}`} onClick={() => answer(g)} title={tr(GRADE_META[g].descKey)}>
+                <b>{tr(GRADE_META[g].labelKey)}</b>
                 {p.settings.showIntervals && previews && <span>{formatInterval(previews[g])}</span>}
                 <span style={{ opacity: 0.6 }}>{g}</span>
               </button>
             ))}
           </div>
-          <div className="faint center">
-            Chấm thật thà. Bấm "Dễ" cho thẻ bạn thực ra phải nghĩ 5 giây là tự phá lịch ôn của chính mình.
-          </div>
+          <div className="faint center">{tr('review.gradeHonestly')}</div>
           <div className="center">
             <a className="faint" href={href(`/hoc/${card.lessonId}`)} style={{ fontSize: 'var(--fs-xs)' }}>
-              Xem lại bài: {card.lessonTitle} →
+              {tr('review.reviewLesson', { title: card.lessonTitle })} <Icon name="arrow-right" size={12} />
             </a>
           </div>
         </div>

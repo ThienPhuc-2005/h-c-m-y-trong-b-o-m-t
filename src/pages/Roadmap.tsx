@@ -10,10 +10,13 @@ import { TRACKS, COURSE_STATS } from '../content';
 import { useProgress } from '../lib/storage';
 import { trackProgress, courseProgress, lessonState } from '../lib/mastery';
 import { href } from '../lib/router';
+import { Icon } from '../components/Icon';
 import { Ring, LevelBadge } from '../components/Shared';
 import { fmtDuration } from '../lib/utils';
+import { useT } from '../i18n';
 
 export function RoadmapPage() {
+  const t = useT();
   const p = useProgress();
   const course = useMemo(() => courseProgress(p), [p]);
   const [open, setOpen] = useState<string | null>(null);
@@ -21,62 +24,65 @@ export function RoadmapPage() {
   return (
     <div className="container stack" style={{ '--gap': 'var(--s-6)' } as React.CSSProperties}>
       <header>
-        <h1 style={{ fontSize: 'var(--fs-2xl)' }}>Lộ trình</h1>
-        <p className="muted" style={{ maxWidth: '62ch', marginTop: 'var(--s-2)' }}>
-          Mười một chặng, xếp theo thứ tự phụ thuộc. Bạn có thể học lệch thứ tự, nhưng mỗi chặng đều giả định
-          bạn đã nắm chặng trước — nhảy cóc thường tốn thời gian hơn là tiết kiệm.
-        </p>
+        <h1 style={{ fontSize: 'var(--fs-2xl)' }}>{t('roadmap.title')}</h1>
+        <p className="muted" style={{ maxWidth: '62ch', marginTop: 'var(--s-2)' }}>{t('roadmap.intro')}</p>
       </header>
 
       <div className="card">
         <div className="row-wrap">
           <Ring value={course.ratio} size={64} />
           <div style={{ flex: 1, minWidth: 200 }}>
-            <b>
-              {course.done}/{course.total} bài hoàn thành
-            </b>
+            <b>{t('roadmap.doneOfTotal', { done: course.done, total: course.total })}</b>
             <div className="faint">
-              {course.mastered} bài đã thành thạo · còn lại khoảng{' '}
-              {fmtDuration(TRACKS.reduce((s, t) => s + trackProgress(t.id, p).minutesLeft, 0))}
+              {t('roadmap.masteredLeft', {
+                n: course.mastered,
+                time: fmtDuration(TRACKS.reduce((s, tr) => s + trackProgress(tr.id, p).minutesLeft, 0)),
+              })}
             </div>
           </div>
           <div className="row-wrap faint" style={{ gap: 'var(--s-4)' }}>
-            <span>{COURSE_STATS.cards} thẻ ghi nhớ</span>
-            <span>{COURSE_STATS.questions} câu hỏi</span>
-            <span>24 phòng lab</span>
+            <span>{COURSE_STATS.cards} {t('common.memoryCards')}</span>
+            <span>{COURSE_STATS.questions} {t('common.questions')}</span>
+            <span>{COURSE_STATS.labs} {t('common.labs')}</span>
           </div>
         </div>
       </div>
 
       <div className="roadmap">
-        {TRACKS.map((t, ti) => {
-          const tp = trackProgress(t.id, p);
-          const isOpen = open === t.id;
+        {TRACKS.map((tr, ti) => {
+          const tp = trackProgress(tr.id, p);
+          const isOpen = open === tr.id;
           const done = tp.total > 0 && tp.done === tp.total;
           return (
-            <div className="rm-track" key={t.id} data-hue={t.hue}>
+            <div className="rm-track" key={tr.id} data-hue={tr.hue}>
               <div className="rm-rail">
-                <div className="rm-dot" aria-hidden>{done ? '✓' : t.icon}</div>
+                <div className="rm-dot">
+                  <Icon name={done ? 'check' : tr.icon} size={21} />
+                </div>
                 {ti < TRACKS.length - 1 && <div className="rm-line" />}
               </div>
 
               <div className="card card-hover" style={{ marginBottom: 'var(--s-3)' }}>
                 <button
-                  onClick={() => setOpen(isOpen ? null : t.id)}
+                  onClick={() => setOpen(isOpen ? null : tr.id)}
                   aria-expanded={isOpen}
                   style={{ width: '100%', textAlign: 'left', display: 'block' }}
                 >
                   <div className="row-wrap" style={{ gap: 'var(--s-2)', marginBottom: 4 }}>
-                    <span className="chip chip-hue">Chặng {t.order}</span>
+                    <span className="chip chip-hue">{t('roadmap.track', { n: tr.order })}</span>
                     <span className="spacer" />
-                    <span className="faint nowrap">{tp.done}/{tp.total} bài</span>
-                    {tp.mastered > 0 && <span className="chip chip-ok">★ {tp.mastered}</span>}
+                    <span className="faint nowrap">{t('roadmap.lessonsOf', { done: tp.done, total: tp.total })}</span>
+                    {tp.mastered > 0 && (
+                      <span className="chip chip-ok">
+                        <Icon name="star" size={12} filled /> {tp.mastered}
+                      </span>
+                    )}
                   </div>
-                  <h2 style={{ fontSize: 'var(--fs-lg)' }}>{t.title}</h2>
+                  <h2 style={{ fontSize: 'var(--fs-lg)' }}>{tr.title}</h2>
                   <div style={{ color: 'var(--hue-text)', fontSize: 'var(--fs-sm)', fontWeight: 550, marginTop: 2 }}>
-                    {t.tagline}
+                    {tr.tagline}
                   </div>
-                  <p className="muted" style={{ fontSize: 'var(--fs-sm)', marginTop: 'var(--s-2)' }}>{t.blurb}</p>
+                  <p className="muted" style={{ fontSize: 'var(--fs-sm)', marginTop: 'var(--s-2)' }}>{tr.blurb}</p>
                   <div className="bar" style={{ marginTop: 'var(--s-3)' }}>
                     <div className="bar-fill" style={{ width: `${tp.ratio * 100}%` }} />
                   </div>
@@ -84,13 +90,13 @@ export function RoadmapPage() {
 
                 {isOpen && (
                   <div style={{ marginTop: 'var(--s-4)', paddingTop: 'var(--s-4)', borderTop: '1px solid var(--border-subtle)' }} className="anim-in">
-                    <div className="stat-k" style={{ marginBottom: 'var(--s-2)' }}>Sau chặng này bạn làm được</div>
+                    <div className="stat-k" style={{ marginBottom: 'var(--s-2)' }}>{t('roadmap.outcomes')}</div>
                     <ul style={{ fontSize: 'var(--fs-sm)', display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 'var(--s-4)' }}>
-                      {t.outcomes.map((o, i) => <li key={i}>{o}</li>)}
+                      {tr.outcomes.map((o, i) => <li key={i}>{o}</li>)}
                     </ul>
 
                     <div className="stack" style={{ '--gap': 'var(--s-2)' } as React.CSSProperties}>
-                      {t.lessons.map((l) => {
+                      {tr.lessons.map((l) => {
                         const st = lessonState(l, p);
                         return (
                           <a
@@ -107,8 +113,23 @@ export function RoadmapPage() {
                               gap: 'var(--s-3)',
                             }}
                           >
-                            <span aria-hidden style={{ width: 18 }}>
-                              {st === 'thanh-thao' ? '★' : st === 'da-xong' ? '✓' : st === 'dang-hoc' ? '▸' : st === 'khoa' ? '🔒' : '○'}
+                            <span style={{ width: 18, display: 'grid', placeItems: 'center' }}>
+                              <Icon
+                                size={15}
+                                filled={st === 'thanh-thao'}
+                                stroke={st === 'moi' ? 1.5 : 2}
+                                name={
+                                  st === 'thanh-thao'
+                                    ? 'star'
+                                    : st === 'da-xong'
+                                      ? 'check'
+                                      : st === 'dang-hoc'
+                                        ? 'chevron-right'
+                                        : st === 'khoa'
+                                          ? 'lock'
+                                          : 'circle'
+                                }
+                              />
                             </span>
                             <span style={{ flex: 1, minWidth: 180 }}>
                               <b style={{ fontSize: 'var(--fs-sm)' }}>{l.title}</b>
@@ -121,8 +142,8 @@ export function RoadmapPage() {
                       })}
                     </div>
 
-                    <a className="btn btn-primary btn-sm" style={{ marginTop: 'var(--s-4)' }} href={href(`/chang/${t.id}`)}>
-                      Mở chặng này →
+                    <a className="btn btn-primary btn-sm" style={{ marginTop: 'var(--s-4)' }} href={href(`/chang/${tr.id}`)}>
+                      {t('roadmap.openTrack')} <Icon name="arrow-right" size={14} />
                     </a>
                   </div>
                 )}

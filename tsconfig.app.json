@@ -4,8 +4,11 @@
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
-    "types": ["vite/client"],
+    // "node" là cho các tệp kiểm thử: chúng đọc thư mục mã nguồn bằng `node:fs`
+    // để bảo đảm những bất biến mà trình biên dịch không thấy được.
+    "types": ["vite/client", "node"],
     "allowArbitraryExtensions": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
 
     /* Bundler mode */

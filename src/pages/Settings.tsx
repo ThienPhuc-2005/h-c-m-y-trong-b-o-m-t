@@ -19,12 +19,18 @@ import {
 import { downloadText } from '../lib/utils';
 import { auditCourse, COURSE_STATS } from '../content';
 import { Slider, Toggle } from '../labs/kit';
+import { Icon } from '../components/Icon';
+import { useT, useLang, setLang, LANGS } from '../i18n';
 
 export function SettingsPage() {
+  const t = useT();
+  const lang = useLang();
   const p = useProgress();
   const s = p.settings;
   const fileRef = useRef<HTMLInputElement>(null);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // Lưu KHOÁ dịch chứ không lưu câu đã dịch: nếu người dùng đổi ngôn ngữ
+  // ngay sau khi nhập tệp, thông báo cũng phải đổi theo.
+  const [msg, setMsg] = useState<{ ok: boolean; key: string } | null>(null);
   const [confirm, setConfirm] = useState<'none' | 'learning' | 'all'>('none');
   const [showAudit, setShowAudit] = useState(false);
 
@@ -32,7 +38,7 @@ export function SettingsPage() {
     const r = new FileReader();
     r.onload = () => {
       const res = importJSON(String(r.result));
-      setMsg({ ok: res.ok, text: res.message });
+      setMsg({ ok: res.ok, key: res.messageKey });
     };
     r.readAsText(file);
   };
@@ -42,119 +48,125 @@ export function SettingsPage() {
   return (
     <div className="container container-narrow stack" style={{ '--gap': 'var(--s-6)' } as React.CSSProperties}>
       <header>
-        <h1 style={{ fontSize: 'var(--fs-2xl)' }}>Cài đặt</h1>
+        <h1 style={{ fontSize: 'var(--fs-2xl)' }}>{t('settings.title')}</h1>
       </header>
 
       {msg && (
         <div className={`callout ${msg.ok ? 'co-pro' : 'co-warn'}`}>
-          <span className="callout-icon" aria-hidden>{msg.ok ? '✓' : '⚠'}</span>
-          <div className="callout-body">{msg.text}</div>
+          <Icon className="callout-icon" name={msg.ok ? 'check' : 'alert-triangle'} size={17} />
+          <div className="callout-body">{t(msg.key)}</div>
         </div>
       )}
 
       {/* ---- Hiển thị ------------------------------------------------------ */}
       <section className="card card-pad-lg stack">
-        <h2 style={{ fontSize: 'var(--fs-lg)' }}>Hiển thị và khả năng tiếp cận</h2>
+        <h2 style={{ fontSize: 'var(--fs-lg)' }}>{t('settings.displayHead')}</h2>
 
         <div className="field">
-          <label><span>Chủ đề màu</span></label>
+          <label><span>{t('settings.language')}</span></label>
           <div className="row-wrap" style={{ gap: 'var(--s-2)' }}>
-            {([
-              ['auto', '🖥️ Theo hệ thống'],
-              ['light', '☀️ Sáng'],
-              ['dark', '🌙 Tối'],
-            ] as const).map(([v, l]) => (
-              <button key={v} className={`chip ${s.theme === v ? 'chip-brand' : ''}`} onClick={() => setSettings({ theme: v })}>
-                {l}
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                className={`chip ${lang === l.code ? 'chip-brand' : ''}`}
+                onClick={() => setLang(l.code)}
+              >
+                <Icon name="languages" size={13} /> {l.label}
               </button>
             ))}
           </div>
-          <div className="field-hint">
-            Chế độ tối dùng nền #0f1117 thay vì đen tuyệt đối — tương phản cực đại làm chữ trắng bị loang,
-            đặc biệt khó chịu với người loạn thị.
+          <div className="field-hint">{t('content.noticeLong')}</div>
+        </div>
+
+        <div className="field">
+          <label><span>{t('settings.theme')}</span></label>
+          <div className="row-wrap" style={{ gap: 'var(--s-2)' }}>
+            {([
+              ['auto', 'monitor', 'settings.themeAuto'],
+              ['light', 'sun', 'settings.themeLight'],
+              ['dark', 'moon', 'settings.themeDark'],
+            ] as const).map(([v, ico, k]) => (
+              <button key={v} className={`chip ${s.theme === v ? 'chip-brand' : ''}`} onClick={() => setSettings({ theme: v })}>
+                <Icon name={ico} size={13} /> {t(k)}
+              </button>
+            ))}
           </div>
+          <div className="field-hint">{t('settings.themeHint')}</div>
         </div>
 
         <Slider
-          label="Cỡ chữ"
+          label={t('settings.fontSize')}
           value={s.fontScale}
           min={0.85}
           max={1.4}
           step={0.05}
           onChange={(v) => setSettings({ fontScale: v })}
           format={(v) => `${Math.round(v * 100)}%`}
-          hint="Nếu bạn phải nheo mắt hoặc ngả người về phía màn hình, hãy tăng lên. Mỏi mắt làm giảm khả năng tiếp thu rõ rệt."
+          hint={t('settings.fontSizeHint')}
         />
 
-        <Toggle label="Giảm hoạt ảnh" checked={s.reduceMotion} onChange={(v) => setSettings({ reduceMotion: v })} />
-        <div className="field-hint" style={{ marginTop: -8 }}>
-          Dành cho người nhạy cảm với chuyển động (rối loạn tiền đình, đau nửa đầu) — hoặc chỉ đơn giản là
-          thích yên tĩnh.
-        </div>
+        <Toggle label={t('settings.reduceMotion')} checked={s.reduceMotion} onChange={(v) => setSettings({ reduceMotion: v })} />
+        <div className="field-hint" style={{ marginTop: -8 }}>{t('settings.reduceMotionHint')}</div>
 
-        <Toggle label="Chế độ tập trung (dòng ngắn hơn, giãn dòng rộng hơn)" checked={s.focusMode} onChange={(v) => setSettings({ focusMode: v })} />
+        <Toggle label={t('settings.focusMode')} checked={s.focusMode} onChange={(v) => setSettings({ focusMode: v })} />
       </section>
 
       {/* ---- Nhịp học ------------------------------------------------------ */}
       <section className="card card-pad-lg stack">
-        <h2 style={{ fontSize: 'var(--fs-lg)' }}>Nhịp học</h2>
+        <h2 style={{ fontSize: 'var(--fs-lg)' }}>{t('settings.paceHead')}</h2>
 
         <Slider
-          label="Mục tiêu mỗi ngày"
+          label={t('settings.dailyGoal')}
           value={s.dailyGoalMinutes}
           min={5}
           max={120}
           step={5}
           onChange={(v) => setSettings({ dailyGoalMinutes: v })}
-          format={(v) => `${v} phút`}
-          hint="Chọn con số bạn giữ được kể cả ngày bận nhất. Mục tiêu quá tham vọng bị bỏ lỡ vài lần sẽ dẫn tới bỏ hẳn."
+          format={(v) => `${v} ${t('common.minutes')}`}
+          hint={t('settings.dailyGoalHint')}
         />
 
         <Slider
-          label="Thẻ mới tối đa mỗi ngày"
+          label={t('settings.newCards')}
           value={s.newCardsPerDay}
           min={0}
           max={50}
           step={1}
           onChange={(v) => setSettings({ newCardsPerDay: v })}
-          hint="Đây là núm quan trọng nhất trang này. Học 60 thẻ mới hôm nay nghĩa là 60 thẻ đến hạn vài ngày sau, cộng dồn với thẻ cũ. Vài lần như vậy là núi nợ ôn tập — nguyên nhân số 1 khiến người ta bỏ các app lặp lại ngắt quãng."
+          hint={t('settings.newCardsHint')}
         />
 
         <Slider
-          label="Thẻ ôn tối đa mỗi ngày"
+          label={t('settings.maxReviews')}
           value={s.maxReviewsPerDay}
           min={20}
           max={400}
           step={10}
           onChange={(v) => setSettings({ maxReviewsPerDay: v })}
-          hint="Trần an toàn cho những ngày bận. Thẻ vượt trần tự động dời sang hôm sau."
+          hint={t('settings.maxReviewsHint')}
         />
 
         <Slider
-          label="Mục tiêu xác suất nhớ"
+          label={t('settings.targetRetention')}
           value={s.targetRetention}
           min={0.8}
           max={0.97}
           step={0.01}
           onChange={(v) => setSettings({ targetRetention: v })}
           format={(v) => `${(v * 100).toFixed(0)}%`}
-          hint="0,90 là điểm cân bằng tốt nhất giữa thời gian bỏ ra và lượng nhớ được. Tăng lên 0,95 khiến số lượt ôn tăng vọt trong khi lợi ích chỉ nhỉnh hơn chút — chỉ đáng khi bạn đang chuẩn bị cho một kỳ thi cụ thể."
+          hint={t('settings.targetRetentionHint')}
         />
 
-        <Toggle label="Hiện khoảng cách ôn kế tiếp trên nút chấm điểm" checked={s.showIntervals} onChange={(v) => setSettings({ showIntervals: v })} />
-        <Toggle label="Hỏi mức độ tự tin trước khi trả lời" checked={s.askConfidence} onChange={(v) => setSettings({ askConfidence: v })} />
-        <div className="field-hint" style={{ marginTop: -8 }}>
-          Tính năng này rèn khả năng tự đánh giá — kỹ năng quyết định việc bạn có ôn đúng chỗ hay không. Tắt
-          nó sẽ làm phiên học nhanh hơn nhưng bạn mất biểu đồ hiệu chuẩn ở trang Tiến độ.
-        </div>
+        <Toggle label={t('settings.showIntervals')} checked={s.showIntervals} onChange={(v) => setSettings({ showIntervals: v })} />
+        <Toggle label={t('settings.askConfidence')} checked={s.askConfidence} onChange={(v) => setSettings({ askConfidence: v })} />
+        <div className="field-hint" style={{ marginTop: -8 }}>{t('settings.askConfidenceHint')}</div>
       </section>
 
       {/* ---- Dữ liệu ------------------------------------------------------- */}
       <section className="card card-pad-lg stack">
-        <h2 style={{ fontSize: 'var(--fs-lg)' }}>Dữ liệu của bạn</h2>
+        <h2 style={{ fontSize: 'var(--fs-lg)' }}>{t('settings.dataHead')}</h2>
         <p className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
-          Toàn bộ tiến độ nằm trong trình duyệt này, không có bản sao ở đâu khác. Xoá dữ liệu duyệt web, dùng
-          chế độ ẩn danh, hoặc đổi máy đều làm mất sạch. <b>Hãy xuất tệp sao lưu định kỳ.</b>
+          {t('settings.dataIntro')} <b>{t('settings.dataIntroBold')}</b>
         </p>
 
         <div className="row-wrap">
@@ -162,13 +174,13 @@ export function SettingsPage() {
             className="btn btn-primary"
             onClick={() => {
               downloadText(`aegis-tien-do-${new Date().toISOString().slice(0, 10)}.json`, exportJSON());
-              setMsg({ ok: true, text: 'Đã tải tệp sao lưu về máy.' });
+              setMsg({ ok: true, key: 'settings.exported' });
             }}
           >
-            ⬇ Xuất tệp sao lưu
+            <Icon name="download" size={15} /> {t('settings.export')}
           </button>
           <button className="btn" onClick={() => fileRef.current?.click()}>
-            ⬆ Nhập từ tệp
+            <Icon name="upload" size={15} /> {t('settings.import')}
           </button>
           <input
             ref={fileRef}
@@ -188,23 +200,21 @@ export function SettingsPage() {
         <div className="stack" style={{ '--gap': 'var(--s-3)' } as React.CSSProperties}>
           {confirm === 'none' && (
             <div className="row-wrap">
-              <button className="btn btn-sm" onClick={() => setConfirm('learning')}>Học lại từ đầu</button>
-              <button className="btn btn-sm btn-danger" onClick={() => setConfirm('all')}>Xoá sạch mọi thứ</button>
+              <button className="btn btn-sm" onClick={() => setConfirm('learning')}>{t('settings.resetLearning')}</button>
+              <button className="btn btn-sm btn-danger" onClick={() => setConfirm('all')}>{t('settings.resetAll')}</button>
               <button className="btn btn-sm btn-ghost" onClick={() => setSettings({ ...DEFAULT_SETTINGS, onboarded: true, name: s.name })}>
-                Khôi phục cài đặt mặc định
+                {t('settings.resetDefaults')}
               </button>
             </div>
           )}
 
           {confirm !== 'none' && (
             <div className="callout co-warn">
-              <span className="callout-icon" aria-hidden>🛑</span>
+              <Icon className="callout-icon" name="alert-octagon" size={18} />
               <div style={{ flex: 1 }}>
-                <div className="callout-title">Không thể hoàn tác</div>
+                <div className="callout-title">{t('settings.noUndo')}</div>
                 <div className="callout-body">
-                  {confirm === 'learning'
-                    ? 'Sẽ xoá toàn bộ tiến độ bài học, thẻ ghi nhớ và thống kê, nhưng giữ lại các tuỳ chỉnh của bạn.'
-                    : 'Sẽ xoá TẤT CẢ: tiến độ, thẻ, ghi chú, tuỳ chỉnh. App quay về trạng thái mới cài.'}
+                  {t(confirm === 'learning' ? 'settings.confirmLearning' : 'settings.confirmAll')}
                   <div className="row-wrap" style={{ marginTop: 'var(--s-3)' }}>
                     <button
                       className="btn btn-sm btn-danger"
@@ -212,12 +222,12 @@ export function SettingsPage() {
                         if (confirm === 'learning') resetLearningOnly();
                         else resetAll();
                         setConfirm('none');
-                        setMsg({ ok: true, text: 'Đã xoá.' });
+                        setMsg({ ok: true, key: 'settings.erased' });
                       }}
                     >
-                      Tôi hiểu, xoá đi
+                      {t('settings.confirmYes')}
                     </button>
-                    <button className="btn btn-sm" onClick={() => setConfirm('none')}>Huỷ</button>
+                    <button className="btn btn-sm" onClick={() => setConfirm('none')}>{t('settings.cancel')}</button>
                   </div>
                 </div>
               </div>
@@ -228,22 +238,22 @@ export function SettingsPage() {
 
       {/* ---- Phím tắt ------------------------------------------------------ */}
       <section className="card card-pad-lg">
-        <h2 style={{ fontSize: 'var(--fs-lg)', marginBottom: 'var(--s-4)' }}>Phím tắt</h2>
+        <h2 style={{ fontSize: 'var(--fs-lg)', marginBottom: 'var(--s-4)' }}>{t('settings.shortcutsHead')}</h2>
         <div className="grid grid-2" style={{ fontSize: 'var(--fs-sm)' }}>
           {[
-            ['/  hoặc Ctrl+K', 'Tìm kiếm nhanh'],
-            ['H', 'Trang chủ'],
-            ['R', 'Ôn tập'],
-            ['L', 'Lộ trình'],
-            ['P', 'Luyện tập'],
-            ['G', 'Thuật ngữ'],
-            ['S', 'Cài đặt'],
-            ['Space', 'Lật thẻ / chấm "Được"'],
-            ['1 2 3 4', 'Chấm điểm thẻ đang ôn'],
+            ['/  ·  Ctrl+K', 'settings.scSearch'],
+            ['H', 'settings.scHome'],
+            ['R', 'settings.scReview'],
+            ['L', 'settings.scRoadmap'],
+            ['P', 'settings.scPractice'],
+            ['G', 'settings.scGlossary'],
+            ['S', 'settings.scSettings'],
+            ['Space', 'settings.scFlip'],
+            ['1 2 3 4', 'settings.scGrade'],
           ].map(([k, d]) => (
             <div key={k} className="row">
               <kbd>{k}</kbd>
-              <span className="muted">{d}</span>
+              <span className="muted">{t(d)}</span>
             </div>
           ))}
         </div>
@@ -251,27 +261,33 @@ export function SettingsPage() {
 
       {/* ---- Về khoá học --------------------------------------------------- */}
       <section className="panel">
-        <div className="stat-k" style={{ marginBottom: 'var(--s-3)' }}>Về khoá học này</div>
+        <div className="stat-k" style={{ marginBottom: 'var(--s-3)' }}>{t('settings.aboutHead')}</div>
         <div className="grid grid-3" style={{ fontSize: 'var(--fs-sm)', marginBottom: 'var(--s-4)' }}>
-          <div><b>{COURSE_STATS.tracks}</b> <span className="faint">chặng</span></div>
-          <div><b>{COURSE_STATS.lessons}</b> <span className="faint">bài học</span></div>
-          <div><b>{COURSE_STATS.cards}</b> <span className="faint">thẻ ghi nhớ</span></div>
-          <div><b>{COURSE_STATS.questions}</b> <span className="faint">câu hỏi</span></div>
-          <div><b>{COURSE_STATS.minutes}</b> <span className="faint">phút nội dung</span></div>
-          <div><b>24</b> <span className="faint">phòng lab</span></div>
+          <div><b>{COURSE_STATS.tracks}</b> <span className="faint">{t('settings.statTracks')}</span></div>
+          <div><b>{COURSE_STATS.lessons}</b> <span className="faint">{t('settings.statLessons')}</span></div>
+          <div><b>{COURSE_STATS.cards}</b> <span className="faint">{t('settings.statCards')}</span></div>
+          <div><b>{COURSE_STATS.questions}</b> <span className="faint">{t('settings.statQuestions')}</span></div>
+          <div><b>{COURSE_STATS.minutes}</b> <span className="faint">{t('settings.statMinutes')}</span></div>
+          <div><b>{COURSE_STATS.labs}</b> <span className="faint">{t('settings.statLabs')}</span></div>
         </div>
         <button className="btn btn-sm btn-ghost" onClick={() => setShowAudit((x) => !x)}>
-          {showAudit ? 'Ẩn' : 'Kiểm tra'} sức khoẻ nội dung
+          {t(showAudit ? 'settings.auditHide' : 'settings.auditShow')}
         </button>
         {showAudit && (
           <div style={{ marginTop: 'var(--s-3)' }}>
             {issues.length === 0 ? (
-              <div className="chip chip-ok">✓ Mọi bài học đều đạt các tiêu chí bắt buộc</div>
+              <div className="chip chip-ok">
+                <Icon name="check" size={13} /> {t('settings.auditOk')}
+              </div>
             ) : (
               <>
                 <div className="row-wrap" style={{ marginBottom: 'var(--s-2)' }}>
-                  <span className="chip chip-bad">{issues.filter((i) => i.severity === 'error').length} lỗi</span>
-                  <span className="chip chip-warn">{issues.filter((i) => i.severity === 'warn').length} cảnh báo</span>
+                  <span className="chip chip-bad">
+                    {t('settings.auditErrors', { n: issues.filter((i) => i.severity === 'error').length })}
+                  </span>
+                  <span className="chip chip-warn">
+                    {t('settings.auditWarns', { n: issues.filter((i) => i.severity === 'warn').length })}
+                  </span>
                 </div>
                 <div className="table-wrap" style={{ maxHeight: 300, overflowY: 'auto' }}>
                   <table className="data">
@@ -280,7 +296,7 @@ export function SettingsPage() {
                         <tr key={i}>
                           <td className="mono" style={{ fontSize: 'var(--fs-xs)' }}>{it.lessonId}</td>
                           <td style={{ fontSize: 'var(--fs-xs)' }}>
-                            {it.severity === 'error' ? '🛑' : '⚠️'} {it.message}
+                            <Icon name={it.severity === 'error' ? 'alert-octagon' : 'alert-triangle'} size={12} /> {it.message}
                           </td>
                         </tr>
                       ))}

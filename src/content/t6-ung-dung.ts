@@ -15,7 +15,7 @@ export const track6: Track = {
   order: 6,
   title: 'Ứng dụng thực chiến',
   tagline: 'Chín hệ thống phát hiện, xây từ đầu đến cuối',
-  icon: '🎯',
+  icon: 'target',
   hue: 'orange',
   blurb:
     'Chín bài toán, mỗi bài một hệ thống hoàn chỉnh: dữ liệu lấy ở đâu, đặc trưng nào đáng tiền, mô hình nào đủ dùng, đo bằng con số nào, chạy ở chỗ nào trong hạ tầng, và kẻ tấn công sẽ né ra sao. Đây là chặng biến kiến thức rời rạc thành thứ chạy được trong sản xuất.',

@@ -8,6 +8,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { LabShell, Slider, Readout, Chart, Axes, Line, Dots, mkPlot, px, py, COLORS, Bars, Reseed, useSeed } from './kit';
 import { mulberry32, gaussian, sigmoid, clamp, shuffle } from '../lib/utils';
+import { Icon } from '../components/Icon';
 
 /* ========================================================================== */
 /*  lab-logistic — Hồi quy logistic trên đặc trưng URL                         */
@@ -129,12 +130,15 @@ export function LabLogistic() {
           <Slider label="Tốc độ học (learning rate)" value={lr} min={0.01} max={8} step={0.01} onChange={setLr} format={(v) => v.toFixed(2)} hint="Quá nhỏ: rất lâu. Quá lớn: dao động, không hội tụ." />
           <div className="row-wrap">
             <button className="btn btn-primary btn-sm" onClick={() => setRunning((r) => !r)}>
-              {running ? '⏸ Tạm dừng' : '▶ Huấn luyện'}
+              <Icon name={running ? 'pause' : 'play'} size={14} filled={!running} />
+              {running ? 'Tạm dừng' : 'Huấn luyện'}
             </button>
             <button className="btn btn-sm" onClick={() => setModel((m) => stepOnce(m, lr))}>
-              ⏭ Một bước
+              <Icon name="chevron-right" size={14} /> Một bước
             </button>
-            <button className="btn btn-sm" onClick={reset}>↺ Đặt lại</button>
+            <button className="btn btn-sm" onClick={reset}>
+              <Icon name="rotate-ccw" size={14} /> Đặt lại
+            </button>
             <Reseed onClick={reseed} />
           </div>
           <div>
@@ -273,7 +277,8 @@ export function LabNaiveBayes() {
       <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
         <span className="chip chip-ok">bình thường</span>
         <span className={`chip ${scored.p > 0.5 ? 'chip-bad' : 'chip-ok'}`}>
-          {scored.p > 0.5 ? '⚠ Xếp loại: THƯ RÁC' : '✓ Xếp loại: BÌNH THƯỜNG'}
+          <Icon name={scored.p > 0.5 ? 'alert-triangle' : 'check'} size={12} />
+          {scored.p > 0.5 ? 'Xếp loại: THƯ RÁC' : 'Xếp loại: BÌNH THƯỜNG'}
         </span>
         <span className="chip chip-bad">thư rác</span>
       </div>
@@ -357,7 +362,11 @@ export function LabTree() {
           <span className="chip chip-bad">{pos} độc</span>
           <span className="chip chip-ok">{rows.length - pos} lành</span>
         </div>
-        <div className="faint" style={{ marginTop: 6 }}>Entropy: {entropyOf(rows).toFixed(3)} {pure && rows.length > 0 && '· lá thuần khiết ✓'}</div>
+        <div className="faint" style={{ marginTop: 6 }}>Entropy: {entropyOf(rows).toFixed(3)} {pure && rows.length > 0 && (
+            <>
+              · lá thuần khiết <Icon name="check" size={11} />
+            </>
+          )}</div>
       </div>
     );
   };
@@ -634,7 +643,7 @@ export function LabGradient() {
         items={[
           { k: 'Vị trí cuối', v: final[0].toFixed(3) },
           { k: 'Mất mát cuối', v: final[1].toFixed(4), tone: final[1] < 0.25 ? 'ok' : final[1] < 0.5 ? 'warn' : 'bad' },
-          { k: 'Trạng thái', v: diverged ? 'Phân kỳ ✗' : 'Hội tụ ✓', tone: diverged ? 'bad' : 'ok' },
+          { k: 'Trạng thái', v: diverged ? 'Phân kỳ' : 'Hội tụ', tone: diverged ? 'bad' : 'ok' },
         ]}
       />
     </LabShell>
@@ -757,7 +766,7 @@ export function LabPerceptron() {
             ]}
           />
           <div className={`callout ${acc === 1 ? 'co-pro' : 'co-pitfall'}`}>
-            <span className="callout-icon" aria-hidden>{acc === 1 ? '✓' : '⚠'}</span>
+            <Icon className="callout-icon" name={acc === 1 ? 'check' : 'alert-triangle'} size={18} />
             <div className="callout-body">
               {hidden === 0 && problem === 'xor'
                 ? 'Không lớp ẩn + XOR = bất khả thi. Đây là kết luận toán học của Minsky & Papert (1969) từng khiến ngành AI đóng băng gần hai thập kỷ.'

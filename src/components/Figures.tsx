@@ -15,6 +15,7 @@
 
 import type { ReactNode } from 'react';
 import { isKnownFigure } from '../content/registry';
+import { Icon } from './Icon';
 
 const C = {
   brand: 'var(--brand)',
@@ -180,22 +181,22 @@ const ConfusionFig = () => (
     <T x={52} y={229} size={11}>im lặng</T>
 
     <rect x={90} y={60} width={190} height={100} rx={10} fill="var(--ok-soft)" stroke={C.ok} strokeWidth="2" />
-    <T x={185} y={95} strong>✓ Đúng dương (TP)</T>
+    <T x={185} y={95} strong>Đúng dương (TP)</T>
     <T x={185} y={116} size={11}>Bắt được kẻ tấn công</T>
     <T x={185} y={134} size={11}>Đây là lý do hệ thống tồn tại</T>
 
     <rect x={290} y={60} width={190} height={100} rx={10} fill="var(--warn-soft)" stroke={C.warn} strokeWidth="2" />
-    <T x={385} y={95} strong>⚠ Sai dương (FP)</T>
+    <T x={385} y={95} strong>Sai dương (FP)</T>
     <T x={385} y={116} size={11}>Báo động giả</T>
     <T x={385} y={134} size={11}>Tốn giờ analyst, gây chai lì</T>
 
     <rect x={90} y={170} width={190} height={100} rx={10} fill="var(--bad-soft)" stroke={C.bad} strokeWidth="2" />
-    <T x={185} y={205} strong>✕ Sai âm (FN)</T>
+    <T x={185} y={205} strong>Sai âm (FN)</T>
     <T x={185} y={226} size={11}>Bỏ lọt tấn công</T>
     <T x={185} y={244} size={11}>Đắt nhất, và bạn không biết</T>
 
     <rect x={290} y={170} width={190} height={100} rx={10} fill="var(--bg-sunken)" stroke={C.line} strokeWidth="2" />
-    <T x={385} y={205} strong>· Đúng âm (TN)</T>
+    <T x={385} y={205} strong>Đúng âm (TN)</T>
     <T x={385} y={226} size={11}>Bình thường, không báo</T>
     <T x={385} y={244} size={11}>Chiếm 99,99% mọi thứ</T>
   </Svg>
@@ -844,7 +845,7 @@ export function Figure({ id, caption }: { id: string; caption?: string }) {
     return (
       <figure className="figure">
         <div className="empty" style={{ padding: 'var(--s-6)' }}>
-          <div className="empty-ico">🖼️</div>
+          <div className="empty-ico"><Icon name="image" size={38} stroke={1.5} /></div>
           <div className="faint">Hình minh hoạ đang được bổ sung{isKnownFigure(id) ? '' : ` (${id})`}</div>
         </div>
         {caption && <figcaption className="figure-caption">{caption}</figcaption>}

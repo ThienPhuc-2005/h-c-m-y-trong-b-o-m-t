@@ -18,7 +18,7 @@ export const track2: Track = {
   order: 2,
   title: 'Dữ liệu bảo mật trong thực tế',
   tagline: 'Mô hình chỉ tốt bằng dữ liệu nuôi nó',
-  icon: '🗃️',
+  icon: 'database',
   hue: 'teal',
   blurb:
     'Sáu bài về phần công việc chiếm 70–80% thời gian của mọi dự án ML bảo mật nhưng gần như không được dạy ở đâu: tìm dữ liệu, làm sạch, lấy nhãn, và chia tập sao cho con số bạn đo được không phải ảo giác. Đây là chặng biến bạn từ người chạy được scikit-learn thành người có kết quả đáng tin.',

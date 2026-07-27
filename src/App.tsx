@@ -14,19 +14,24 @@ import { ProgressPage } from './pages/Progress';
 import { SettingsPage } from './pages/Settings';
 import { Onboarding } from './pages/Onboarding';
 import { SearchPalette, openSearch } from './components/Search';
+import { Icon, BrandIcon } from './components/Icon';
+import type { IconName } from './components/Icon';
+import { useT, useLang, setLang, LANGS } from './i18n';
 
-const NAV = [
-  { path: '/', label: 'Hôm nay', icon: '🏠' },
-  { path: '/lo-trinh', label: 'Lộ trình', icon: '🗺️' },
-  { path: '/on-tap', label: 'Ôn tập', icon: '🔁', badge: 'due' as const },
-  { path: '/luyen-tap', label: 'Luyện tập', icon: '🎲' },
-  { path: '/phong-lab', label: 'Phòng lab', icon: '🔬' },
-  { path: '/thuat-ngu', label: 'Thuật ngữ', icon: '📚' },
-  { path: '/tien-do', label: 'Tiến độ', icon: '📊' },
+const NAV: { path: string; key: string; icon: IconName; badge?: 'due' }[] = [
+  { path: '/', key: 'nav.today', icon: 'home' },
+  { path: '/lo-trinh', key: 'nav.roadmap', icon: 'map' },
+  { path: '/on-tap', key: 'nav.review', icon: 'repeat', badge: 'due' },
+  { path: '/luyen-tap', key: 'nav.practice', icon: 'dices' },
+  { path: '/phong-lab', key: 'nav.labs', icon: 'flask' },
+  { path: '/thuat-ngu', key: 'nav.glossary', icon: 'book-a' },
+  { path: '/tien-do', key: 'nav.progress', icon: 'chart' },
 ];
 
 export default function App() {
   const route = useRoute();
+  const t = useT();
+  const lang = useLang();
   const progress = useProgress();
   const seg = segments(route);
   const { settings } = progress;
@@ -45,6 +50,12 @@ export default function App() {
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
   }, [settings.theme]);
+
+  // Đồng bộ thuộc tính lang của tài liệu với lựa chọn đã lưu, ngay từ lần vẽ
+  // đầu tiên: trình đọc màn hình chọn giọng đọc dựa vào nó.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -114,15 +125,15 @@ export default function App() {
 
   return (
     <div className="app">
-      <a className="skip-link" href="#main">Bỏ qua điều hướng, tới nội dung chính</a>
+      <a className="skip-link" href="#main">{t('nav.skip')}</a>
 
-      <nav className="nav no-print" aria-label="Điều hướng chính">
+      <nav className="nav no-print" aria-label={t('nav.main')}>
         <div className="container container-wide nav-inner">
           <a className="brand" href={href('/')}>
             <BrandMark />
             <span>
               AEGIS
-              <span className="brand-sub">Học máy cho An ninh mạng</span>
+              <span className="brand-sub">{t('nav.brandSub')}</span>
             </span>
           </a>
 
@@ -131,8 +142,8 @@ export default function App() {
               const active = n.path === '/' ? route === '/' : route.startsWith(n.path);
               return (
                 <a key={n.path} className="nav-link" href={href(n.path)} aria-current={active ? 'page' : undefined}>
-                  <span aria-hidden>{n.icon}</span>
-                  <span>{n.label}</span>
+                  <Icon name={n.icon} size={17} />
+                  <span>{t(n.key)}</span>
                   {n.badge === 'due' && dueCount > 0 && (
                     <span className="nav-badge">{dueCount > 99 ? '99+' : dueCount}</span>
                   )}
@@ -142,23 +153,39 @@ export default function App() {
           </div>
 
           <span className="spacer" />
+          {/* Nút đổi ngôn ngữ hiện thẳng mã ngôn ngữ ĐANG dùng, không phải cờ:
+              cờ đại diện cho quốc gia chứ không phải ngôn ngữ, và một lá cờ
+              nhỏ xíu là thứ khó đọc nhất trên thanh điều hướng. */}
+          <div className="lang-switch" role="group" aria-label={t('nav.language')}>
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                className="lang-opt"
+                onClick={() => setLang(l.code)}
+                aria-pressed={lang === l.code}
+                title={`${t('nav.languageTitle')} — ${l.label}`}
+              >
+                {l.short}
+              </button>
+            ))}
+          </div>
           <button
             className="nav-link"
             onClick={openSearch}
-            aria-label="Tìm kiếm nhanh"
-            title="Tìm kiếm (Ctrl+K hoặc /)"
+            aria-label={t('nav.searchLabel')}
+            title={t('nav.searchTitle')}
           >
-            <span aria-hidden>🔎</span>
+            <Icon name="search" size={17} />
             <kbd style={{ fontSize: '0.7em' }}>/</kbd>
           </button>
           <a
             className="nav-link"
             href={href('/cai-dat')}
             aria-current={route.startsWith('/cai-dat') ? 'page' : undefined}
-            aria-label="Cài đặt"
-            title="Cài đặt (phím S)"
+            aria-label={t('nav.settings')}
+            title={t('nav.settingsTitle')}
           >
-            <span aria-hidden>⚙️</span>
+            <Icon name="settings" size={17} />
           </a>
         </div>
       </nav>
@@ -173,13 +200,27 @@ export default function App() {
         <footer className="container no-print" style={{ paddingBottom: 'var(--s-8)' }}>
           <hr />
           <div className="row-wrap faint" style={{ justifyContent: 'space-between' }}>
-            <span>AEGIS — chạy hoàn toàn trong trình duyệt của bạn. Không tài khoản, không máy chủ, không theo dõi.</span>
+            <span>{t('footer.tagline')}</span>
             <span className="row" style={{ gap: 'var(--s-3)' }}>
-              <a href={href('/cai-dat')}>Sao lưu tiến độ</a>
+              <a href={href('/cai-dat')}>{t('footer.backup')}</a>
               <span aria-hidden>·</span>
               <span>
-                <kbd>/</kbd> tìm kiếm <kbd>H</kbd> trang chủ <kbd>R</kbd> ôn tập <kbd>L</kbd> lộ trình
+                <kbd>/</kbd> {t('footer.keySearch')} <kbd>H</kbd> {t('footer.keyHome')} <kbd>R</kbd>{' '}
+                {t('footer.keyReview')} <kbd>L</kbd> {t('footer.keyRoadmap')}
               </span>
+            </span>
+          </div>
+          <div className="row-wrap faint" style={{ justifyContent: 'space-between', marginTop: 'var(--s-3)' }}>
+            <span>{t('footer.author')}</span>
+            <span className="row" style={{ gap: 'var(--s-4)' }}>
+              <a className="row" style={{ gap: 'var(--s-2)' }} href="https://www.facebook.com/thien.phuc.450676/" target="_blank" rel="noopener noreferrer">
+                <BrandIcon name="facebook" />
+                Facebook
+              </a>
+              <a className="row" style={{ gap: 'var(--s-2)' }} href="https://t.me/Benedetta24k" target="_blank" rel="noopener noreferrer">
+                <BrandIcon name="telegram" />
+                Telegram
+              </a>
             </span>
           </div>
         </footer>
@@ -191,14 +232,10 @@ export default function App() {
 function BrandMark() {
   return (
     <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden>
-      <defs>
-        <linearGradient id="aegis-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--brand)" />
-          <stop offset="100%" stopColor="var(--info)" />
-        </linearGradient>
-      </defs>
-      <path d="M16 2 L28 7 v9 c0 7.2-5 12.6-12 14.9C9 28.6 4 23.2 4 16 V7 z" fill="url(#aegis-mark)" opacity="0.16" />
-      <path d="M16 2 L28 7 v9 c0 7.2-5 12.6-12 14.9C9 28.6 4 23.2 4 16 V7 z" fill="none" stroke="url(#aegis-mark)" strokeWidth="1.8" />
+      {/* Màu đặc, không chuyển sắc: khiên là hình đọc ở cỡ 30px, và một dải
+          gradient ở kích thước đó chỉ làm nét viền bạc màu ở một đầu. */}
+      <path d="M16 2 L28 7 v9 c0 7.2-5 12.6-12 14.9C9 28.6 4 23.2 4 16 V7 z" fill="var(--brand)" opacity="0.14" />
+      <path d="M16 2 L28 7 v9 c0 7.2-5 12.6-12 14.9C9 28.6 4 23.2 4 16 V7 z" fill="none" stroke="var(--brand)" strokeWidth="1.8" />
       <path d="M16 15.6 L10.5 18.6 M16 15.6 L21.5 18.6 M10.5 20 L21.5 20" stroke="var(--brand)" strokeWidth="1.3" opacity="0.65" />
       <circle cx="16" cy="13" r="2.6" fill="var(--brand)" />
       <circle cx="10.5" cy="20" r="2" fill="var(--info)" />
@@ -208,16 +245,15 @@ function BrandMark() {
 }
 
 function NotFound() {
+  const t = useT();
   return (
     <div className="container">
       <div className="empty">
-        <div className="empty-ico" aria-hidden>🧭</div>
-        <h2>Không tìm thấy trang này</h2>
-        <p className="muted" style={{ marginBottom: 'var(--s-5)' }}>
-          Có thể liên kết đã cũ hoặc địa chỉ bị gõ nhầm.
-        </p>
+        <div className="empty-ico"><Icon name="compass" size={40} stroke={1.5} /></div>
+        <h2>{t('notFound.title')}</h2>
+        <p className="muted" style={{ marginBottom: 'var(--s-5)' }}>{t('notFound.sub')}</p>
         <a className="btn btn-primary" href={href('/')}>
-          Về trang chủ
+          {t('common.backHome')}
         </a>
       </div>
     </div>

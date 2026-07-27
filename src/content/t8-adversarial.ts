@@ -18,7 +18,7 @@ export const track8: Track = {
   order: 8,
   title: 'Học máy đối kháng',
   tagline: 'Mô hình của bạn cũng là một bề mặt tấn công',
-  icon: '⚔️',
+  icon: 'swords',
   hue: 'rose',
   blurb:
     'Khi bạn đưa một mô hình vào đường phát hiện, bạn vừa thêm một thành phần mới vào bề mặt tấn công của tổ chức — và nó có những kiểu hỏng mà tường lửa hay EDR truyền thống không có. Sáu bài này dạy bạn bản đồ tấn công đầy đủ vào hệ thống học máy, từ né tránh, đầu độc, trộm mô hình cho tới rò rỉ dữ liệu huấn luyện. Toàn bộ viết theo hướng phòng thủ: hiểu cơ chế để thiết kế biện pháp giảm thiểu và để red team hệ thống của chính bạn.',

@@ -10,6 +10,7 @@
 import { useMemo, useState } from 'react';
 import { LabShell, Slider, Readout, Chart, Axes, Line, Area, Dots, mkPlot, px, py, COLORS, Bars, Toggle } from './kit';
 import { fmtNum, mulberry32, gaussian, clamp } from '../lib/utils';
+import { Icon } from '../components/Icon';
 
 /* ========================================================================== */
 /*  lab-base-rate — Nghịch lý tỉ lệ nền                                        */
@@ -202,15 +203,15 @@ export function LabConfusion() {
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             <div className="card" style={{ background: 'var(--ok-soft)', borderColor: 'var(--ok-border)', padding: 'var(--s-3)' }}>
-              <div className="stat-k">✓ Đúng dương</div>
+              <div className="stat-k"><Icon name="check" size={11} /> Đúng dương</div>
               <div className="stat-v" style={{ fontSize: 'var(--fs-xl)', color: 'var(--ok-text)' }}>{tp}</div>
             </div>
             <div className="card" style={{ background: 'var(--warn-soft)', borderColor: 'var(--warn-border)', padding: 'var(--s-3)' }}>
-              <div className="stat-k">⚠ Báo động giả</div>
+              <div className="stat-k"><Icon name="alert-triangle" size={11} /> Báo động giả</div>
               <div className="stat-v" style={{ fontSize: 'var(--fs-xl)', color: 'var(--warn-text)' }}>{fp}</div>
             </div>
             <div className="card" style={{ background: 'var(--bad-soft)', borderColor: 'var(--bad-border)', padding: 'var(--s-3)' }}>
-              <div className="stat-k">✕ Bỏ sót</div>
+              <div className="stat-k"><Icon name="x" size={11} /> Bỏ sót</div>
               <div className="stat-v" style={{ fontSize: 'var(--fs-xl)', color: 'var(--bad-text)' }}>{fn}</div>
             </div>
             <div className="card" style={{ padding: 'var(--s-3)' }}>
@@ -507,14 +508,28 @@ export function LabAlertLoad() {
                 style={{ width: `${Math.min(100, ratio * 100)}%`, background: ratio > 1 ? 'var(--bad)' : ratio > 0.75 ? 'var(--warn)' : 'var(--ok)' }}
               />
             </div>
-            <div style={{ fontSize: 'var(--fs-sm)' }}>
-              {ratio > 1.5
-                ? '🔴 Sụp đổ. Đội sẽ bỏ qua cảnh báo hàng loạt trong vòng vài tuần.'
-                : ratio > 1
-                  ? '🟠 Quá tải. Hàng đợi tăng mỗi ngày, thời gian phát hiện kéo dài.'
-                  : ratio > 0.75
-                    ? '🟡 Sát ngưỡng. Không còn dư địa cho ngày cao điểm hay sự cố.'
-                    : '🟢 Bền vững. Còn chỗ cho điều tra chủ động và săn tìm mối đe doạ.'}
+            <div className="row" style={{ fontSize: 'var(--fs-sm)', gap: 'var(--s-2)', alignItems: 'flex-start' }}>
+              {/* Chấm tròn tô đặc + chữ: người mù màu đỏ–lục vẫn phân biệt được bốn
+                  mức, vì mỗi mức có câu mô tả riêng chứ không chỉ khác màu. */}
+              <Icon
+                name="dot"
+                size={13}
+                filled
+                style={{
+                  marginTop: 3,
+                  color:
+                    ratio > 1.5 ? 'var(--bad)' : ratio > 1 ? 'var(--warn)' : ratio > 0.75 ? 'var(--warn-text)' : 'var(--ok)',
+                }}
+              />
+              <span>
+                {ratio > 1.5
+                  ? 'Sụp đổ. Đội sẽ bỏ qua cảnh báo hàng loạt trong vòng vài tuần.'
+                  : ratio > 1
+                    ? 'Quá tải. Hàng đợi tăng mỗi ngày, thời gian phát hiện kéo dài.'
+                    : ratio > 0.75
+                      ? 'Sát ngưỡng. Không còn dư địa cho ngày cao điểm hay sự cố.'
+                      : 'Bền vững. Còn chỗ cho điều tra chủ động và săn tìm mối đe doạ.'}
+              </span>
             </div>
             <div className="faint" style={{ marginTop: 8 }}>
               Cần thêm {Math.max(0, Math.ceil((alerts - capacity) / (8 * (60 / minutes))))} analyst để cân bằng,

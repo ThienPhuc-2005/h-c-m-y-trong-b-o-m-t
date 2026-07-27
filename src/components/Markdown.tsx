@@ -13,6 +13,8 @@
 
 import { Fragment, useState, type ReactNode } from 'react';
 import { getTerm } from '../content/glossary';
+import { Icon } from './Icon';
+import { t } from '../i18n';
 
 interface Props {
   children: string;
@@ -64,7 +66,8 @@ function parse(src: string): ReactNode[] {
       }
       return (
         <a key={i} href={target} target="_blank" rel="noopener noreferrer">
-          {text} ↗
+          {text}
+          <Icon name="external-link" size={12} />
         </a>
       );
     }
@@ -84,7 +87,7 @@ function TermRef({ id, text }: { id: string; text: string }) {
         className="termref"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        title={`${term.en} — bấm để xem định nghĩa`}
+        title={t('markdown.termTitle', { en: term.en })}
       >
         {text}
       </button>
@@ -126,7 +129,7 @@ function TermRef({ id, text }: { id: string; text: string }) {
                 fontSize: 'var(--fs-xs)',
               }}
             >
-              ⚠ Đừng nhầm với: {term.notToConfuseWith}
+              <Icon name="alert-triangle" size={12} /> {t('markdown.notToConfuse')}: {term.notToConfuseWith}
             </span>
           )}
         </span>

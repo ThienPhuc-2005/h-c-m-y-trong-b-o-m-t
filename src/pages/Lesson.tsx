@@ -19,9 +19,12 @@ import { LevelBadge, Empty } from '../components/Shared';
 import { href } from '../lib/router';
 import { useProgress, touchLesson, setNote, getCard, putCard, logMinutes } from '../lib/storage';
 import { lessonState } from '../lib/mastery';
+import { Icon } from '../components/Icon';
+import { useT } from '../i18n';
 import { currentRetention } from '../lib/srs';
 
 export function LessonPage({ id }: { id?: string }) {
+  const t = useT();
   const p = useProgress();
   const lesson = id ? getLesson(id) : undefined;
   const track = lesson ? getTrack(lesson.trackId) : undefined;
@@ -76,7 +79,11 @@ export function LessonPage({ id }: { id?: string }) {
   if (!lesson) {
     return (
       <div className="container">
-        <Empty icon="📖" title="Không tìm thấy bài học" action={<a className="btn btn-primary" href={href('/lo-trinh')}>Về lộ trình</a>} />
+        <Empty
+          icon="book"
+          title={t('lesson.notFound')}
+          action={<a className="btn btn-primary" href={href('/lo-trinh')}>{t('lesson.backToRoadmap')}</a>}
+        />
       </div>
     );
   }
@@ -116,16 +123,20 @@ export function LessonPage({ id }: { id?: string }) {
         <header className="stack no-print" style={{ '--gap': 'var(--s-3)' } as React.CSSProperties}>
           <div className="row-wrap faint">
             <a href={href(`/chang/${lesson.trackId}`)} style={{ textDecoration: 'none' }}>
-              ← {track?.icon} {track?.title}
+              <Icon name="arrow-left" size={13} /> {track?.icon && <Icon name={track.icon} size={13} />} {track?.title}
             </a>
           </div>
           <div className="row-wrap" style={{ gap: 'var(--s-2)' }}>
             <LevelBadge level={lesson.level} />
-            <span className="chip">⏱ {lesson.minutes} phút</span>
-            <span className="chip">🧠 {lesson.cards.length} thẻ</span>
-            <span className="chip">❓ {lesson.quiz.length} câu hỏi</span>
-            {st === 'thanh-thao' && <span className="chip chip-ok">★ Đã thành thạo</span>}
-            {st === 'da-xong' && <span className="chip chip-info">✓ Đã hoàn thành</span>}
+            <span className="chip"><Icon name="hourglass" size={12} /> {lesson.minutes} {t('common.minutes')}</span>
+            <span className="chip"><Icon name="brain" size={12} /> {lesson.cards.length} {t('common.cards')}</span>
+            <span className="chip"><Icon name="help-circle" size={12} /> {lesson.quiz.length} {t('common.questions')}</span>
+            {st === 'thanh-thao' && (
+              <span className="chip chip-ok"><Icon name="star" size={12} filled /> {t('common.mastered')}</span>
+            )}
+            {st === 'da-xong' && (
+              <span className="chip chip-info"><Icon name="check" size={12} /> {t('common.completed')}</span>
+            )}
           </div>
           <h1 style={{ fontSize: 'var(--fs-3xl)' }}>{lesson.title}</h1>
           <p className="muted" style={{ fontSize: 'var(--fs-lg)', lineHeight: 'var(--lh-snug)' }}>{lesson.subtitle}</p>
@@ -133,9 +144,9 @@ export function LessonPage({ id }: { id?: string }) {
 
         {blocked.length > 0 && (
           <div className="callout co-pitfall no-print">
-            <span className="callout-icon" aria-hidden>🔒</span>
+            <Icon className="callout-icon" name="lock" size={18} />
             <div>
-              <div className="callout-title">Bài này giả định bạn đã học trước</div>
+              <div className="callout-title">{t('lesson.prereqTitle')}</div>
               <div className="callout-body">
                 {blocked.map((b) => {
                   const bl = getLesson(b);
@@ -145,9 +156,7 @@ export function LessonPage({ id }: { id?: string }) {
                     </a>
                   ) : null;
                 })}
-                <div className="faint" style={{ marginTop: 6 }}>
-                  Bạn vẫn đọc tiếp được — chỉ là sẽ khó hơn cần thiết.
-                </div>
+                <div className="faint" style={{ marginTop: 6 }}>{t('lesson.prereqBody')}</div>
               </div>
             </div>
           </div>
@@ -156,25 +165,25 @@ export function LessonPage({ id }: { id?: string }) {
         {/* ---- VÌ SAO HỌC BÀI NÀY — khối quan trọng nhất trang ------------ */}
         <section className="card card-pad-lg" style={{ background: 'var(--hue-soft)', borderColor: 'color-mix(in srgb, var(--hue) 32%, transparent)' }}>
           <div className="row" style={{ gap: 'var(--s-3)', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '1.4rem' }} aria-hidden>🎯</span>
+            <Icon name="target" size={22} style={{ color: 'var(--hue-text)' }} />
             <div className="stack" style={{ '--gap': 'var(--s-4)' } as React.CSSProperties}>
               <div>
-                <div className="stat-k" style={{ marginBottom: 4 }}>Học cái này để làm gì</div>
+                <div className="stat-k" style={{ marginBottom: 4 }}>{t('lesson.whyShort')}</div>
                 <div style={{ fontSize: 'var(--fs-md)', fontWeight: 550 }}>{lesson.why.short}</div>
               </div>
 
               <div>
-                <div className="stat-k" style={{ marginBottom: 4 }}>Tình huống thật</div>
+                <div className="stat-k" style={{ marginBottom: 4 }}>{t('lesson.whyReal')}</div>
                 <div style={{ fontSize: 'var(--fs-sm)' }}>{lesson.why.scenario}</div>
               </div>
 
               <div>
-                <div className="stat-k" style={{ marginBottom: 4 }}>Nếu không biết thì sao</div>
+                <div className="stat-k" style={{ marginBottom: 4 }}>{t('lesson.whyCostHead')}</div>
                 <div style={{ fontSize: 'var(--fs-sm)' }}>{lesson.why.costOfNotKnowing}</div>
               </div>
 
               <div>
-                <div className="stat-k" style={{ marginBottom: 6 }}>Ai dùng kiến thức này hằng ngày</div>
+                <div className="stat-k" style={{ marginBottom: 6 }}>{t('lesson.whyRolesHead')}</div>
                 <div className="row-wrap" style={{ gap: 'var(--s-2)' }}>
                   {lesson.why.roles.map((r) => (
                     <span key={r} className="chip chip-hue">{r}</span>
@@ -186,7 +195,7 @@ export function LessonPage({ id }: { id?: string }) {
         </section>
 
         <section className="panel">
-          <div className="stat-k" style={{ marginBottom: 'var(--s-2)' }}>Xong bài này bạn sẽ</div>
+          <div className="stat-k" style={{ marginBottom: 'var(--s-2)' }}>{t('lesson.objectivesHead')}</div>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 'var(--fs-sm)' }}>
             {lesson.objectives.map((o, i) => (
               <li key={i}>{o}</li>
@@ -203,7 +212,7 @@ export function LessonPage({ id }: { id?: string }) {
 
         {/* ---- Ý chính ---------------------------------------------------- */}
         <section className="card card-pad-lg">
-          <h2 style={{ fontSize: 'var(--fs-lg)', marginBottom: 'var(--s-4)' }}>Ý chính cần mang đi</h2>
+          <h2 style={{ fontSize: 'var(--fs-lg)', marginBottom: 'var(--s-4)' }}>{t('lesson.takeawaysHead')}</h2>
           <ol style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
             {lesson.keyTakeaways.map((k, i) => (
               <li key={i} style={{ fontSize: 'var(--fs-base)' }}>{k}</li>
@@ -218,44 +227,48 @@ export function LessonPage({ id }: { id?: string }) {
         <section className="no-print">
           {!showQuiz ? (
             <div className="card card-pad-lg center">
-              <div style={{ fontSize: '2rem', marginBottom: 'var(--s-2)' }} aria-hidden>✍️</div>
-              <h2 style={{ fontSize: 'var(--fs-lg)', marginBottom: 'var(--s-2)' }}>Kiểm tra lại trước khi đi tiếp</h2>
+              <div className="empty-ico"><Icon name="pen-line" size={32} stroke={1.5} /></div>
+              <h2 style={{ fontSize: 'var(--fs-lg)', marginBottom: 'var(--s-2)' }}>{t('lesson.quizPrompt')}</h2>
               <p className="muted" style={{ maxWidth: '50ch', margin: '0 auto var(--s-5)' }}>
-                {lesson.quiz.length} câu. Đây không phải để chấm điểm bạn — hành động cố nhớ lại chính là thứ
-                biến bài vừa đọc thành kiến thức giữ được. Đọc lại lần nữa sẽ dễ chịu hơn nhưng gần như vô ích.
+                {t('lesson.quizSub', { n: lesson.quiz.length })}
               </p>
               <button className="btn btn-primary btn-lg" onClick={() => setShowQuiz(true)}>
-                Bắt đầu kiểm tra
+                {t('lesson.startQuiz')}
               </button>
               {lp?.bestScore ? (
                 <div className="faint" style={{ marginTop: 'var(--s-3)' }}>
-                  Lần tốt nhất: {Math.round(lp.bestScore * 100)}% · {lp.attempts} lần làm
+                  {t('lesson.bestAttempt', { pct: Math.round(lp.bestScore * 100), n: lp.attempts })}
                 </div>
               ) : null}
             </div>
           ) : (
-            <QuizSet items={lesson.quiz} title={`Kiểm tra: ${lesson.title}`} onDone={finish} askConfidence={p.settings.askConfidence} />
+            <QuizSet
+              items={lesson.quiz}
+              title={t('lesson.quizTitle', { title: lesson.title })}
+              onDone={finish}
+              askConfidence={p.settings.askConfidence}
+            />
           )}
         </section>
 
         {/* ---- Ghi chú riêng ---------------------------------------------- */}
         <section className="no-print">
           <details className="acc">
-            <summary>📝 Ghi chú của bạn về bài này</summary>
+            <summary>
+              <Icon name="notebook-pen" size={15} /> {t('lesson.notesHead')}
+            </summary>
             <div className="acc-body">
               <p className="faint" style={{ marginBottom: 'var(--s-3)' }}>
-                Viết lại bằng lời của chính bạn là một trong những cách ghi nhớ mạnh nhất — mạnh hơn cả tô màu
-                hay chép lại nguyên văn. Thử trả lời: "Nếu phải giải thích bài này cho đồng nghiệp trong 30
-                giây, tôi sẽ nói gì?"
+                {t('lesson.notesHint')}
               </p>
               <textarea
                 value={note}
                 onChange={(e) => setLocalNote(e.target.value)}
                 onBlur={() => setNote(lesson.id, note)}
-                placeholder="Ghi chú, câu hỏi còn thắc mắc, liên hệ với công việc của bạn…"
+                placeholder={t('lesson.notesPlaceholder')}
                 rows={5}
               />
-              <div className="faint" style={{ marginTop: 6 }}>Tự lưu khi bạn bấm ra ngoài.</div>
+              <div className="faint" style={{ marginTop: 6 }}>{t('lesson.notesAutoSave')}</div>
             </div>
           </details>
         </section>
@@ -263,13 +276,15 @@ export function LessonPage({ id }: { id?: string }) {
         {/* ---- Đọc thêm --------------------------------------------------- */}
         {lesson.further && lesson.further.length > 0 && (
           <section className="panel">
-            <div className="stat-k" style={{ marginBottom: 'var(--s-3)' }}>Đọc thêm nếu muốn đào sâu</div>
+            <div className="stat-k" style={{ marginBottom: 'var(--s-3)' }}>{t('lesson.furtherHead')}</div>
             <div className="stack" style={{ '--gap': 'var(--s-3)' } as React.CSSProperties}>
               {lesson.further.map((f, i) => (
                 <div key={i}>
                   <b style={{ fontSize: 'var(--fs-sm)' }}>
                     {f.url ? (
-                      <a href={f.url} target="_blank" rel="noopener noreferrer">{f.title} ↗</a>
+                      <a href={f.url} target="_blank" rel="noopener noreferrer">
+                        {f.title} <Icon name="external-link" size={12} />
+                      </a>
                     ) : (
                       f.title
                     )}
@@ -285,14 +300,16 @@ export function LessonPage({ id }: { id?: string }) {
         <nav className="row-wrap no-print" style={{ justifyContent: 'space-between', gap: 'var(--s-3)', paddingTop: 'var(--s-4)', borderTop: '1px solid var(--border)' }}>
           {nav.prev ? (
             <a className="btn" href={href(`/hoc/${nav.prev.id}`)} style={{ maxWidth: '46%' }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>← {nav.prev.title}</span>
+              <Icon name="arrow-left" size={14} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{nav.prev.title}</span>
             </a>
           ) : (
             <span />
           )}
           {nav.next && (
             <a className="btn btn-primary" href={href(`/hoc/${nav.next.id}`)} style={{ maxWidth: '46%' }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{nav.next.title} →</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{nav.next.title}</span>
+              <Icon name="arrow-right" size={14} />
             </a>
           )}
         </nav>
@@ -309,6 +326,7 @@ export function LessonPage({ id }: { id?: string }) {
  * của việc học biến thành vài mẩu cụ thể mà hệ thống sẽ giữ giúp họ.
  */
 function CardPreview({ lessonId }: { lessonId: string }) {
+  const t = useT();
   const p = useProgress();
   const lesson = getLesson(lessonId);
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
@@ -320,12 +338,12 @@ function CardPreview({ lessonId }: { lessonId: string }) {
     <section className="card card-pad-lg no-print">
       <div className="row-wrap" style={{ marginBottom: 'var(--s-4)' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <h2 style={{ fontSize: 'var(--fs-lg)' }}>Bài này để lại {lesson.cards.length} thẻ ghi nhớ</h2>
-          <p className="muted" style={{ fontSize: 'var(--fs-sm)', marginTop: 4 }}>
-            Sau khi bạn làm bài kiểm tra, hệ thống sẽ đưa chúng quay lại đúng lúc bạn sắp quên.
-          </p>
+          <h2 style={{ fontSize: 'var(--fs-lg)' }}>{t('lesson.cardsFromLesson', { n: lesson.cards.length })}</h2>
+          <p className="muted" style={{ fontSize: 'var(--fs-sm)', marginTop: 4 }}>{t('lesson.cardsFromLessonSub')}</p>
         </div>
-        {active > 0 && <span className="chip chip-ok">{active}/{lesson.cards.length} đang trong lịch ôn</span>}
+        {active > 0 && (
+          <span className="chip chip-ok">{t('lesson.inSchedule', { n: active, total: lesson.cards.length })}</span>
+        )}
       </div>
 
       <div className="stack" style={{ '--gap': 'var(--s-2)' } as React.CSSProperties}>
@@ -343,10 +361,10 @@ function CardPreview({ lessonId }: { lessonId: string }) {
                 <span style={{ flex: 1, fontWeight: 600, minWidth: 200 }}>{c.front}</span>
                 {r !== null && (
                   <span className={`chip ${r > 0.9 ? 'chip-ok' : r > 0.7 ? 'chip-warn' : 'chip-bad'}`}>
-                    nhớ {(r * 100).toFixed(0)}%
+                    {t('lesson.recallPct', { n: (r * 100).toFixed(0) })}
                   </span>
                 )}
-                <span className="faint">{flipped[c.id] ? '▾' : '▸'}</span>
+                <Icon name="chevron-right" size={14} className="faint" style={{ transform: flipped[c.id] ? 'rotate(90deg)' : undefined }} />
               </div>
               {flipped[c.id] && (
                 <div className="muted anim-in" style={{ marginTop: 'var(--s-2)', paddingTop: 'var(--s-2)', borderTop: '1px dashed var(--border)' }}>

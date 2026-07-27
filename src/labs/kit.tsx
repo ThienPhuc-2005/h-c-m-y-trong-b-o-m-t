@@ -9,6 +9,8 @@
 
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { setCheck } from '../lib/storage';
+import { Icon } from '../components/Icon';
+import { useT } from '../i18n';
 
 export function LabShell({
   id,
@@ -21,6 +23,8 @@ export function LabShell({
   children: ReactNode;
   takeaway?: ReactNode;
 }) {
+  const t = useT();
+
   // Ghi nhận lab đã được mở — dùng cho huy hiệu "chuột bạch phòng lab".
   // Dùng setCheck (đặt giá trị) chứ không phải toggleCheck (đảo): effect có thể
   // chạy hai lần và hai lần đảo sẽ triệt tiêu nhau.
@@ -29,20 +33,18 @@ export function LabShell({
   }, [id]);
 
   return (
-    <section className="lab" aria-label={`Phòng thí nghiệm: ${title}`}>
+    <section className="lab" aria-label={t('lab.regionLabel', { title })}>
       <header className="lab-head">
-        <span aria-hidden>🔬</span>
+        <Icon name="flask" size={17} />
         <h4>{title}</h4>
       </header>
       <div className="lab-body stack" style={{ '--gap': 'var(--s-5)' } as React.CSSProperties}>
         {children}
         {takeaway && (
           <div className="callout co-insight">
-            <span className="callout-icon" aria-hidden>
-              💡
-            </span>
+            <Icon className="callout-icon" name="lightbulb" size={18} />
             <div>
-              <div className="callout-title">Điều cần rút ra</div>
+              <div className="callout-title">{t('labs.takeaway')}</div>
               <div className="callout-body">{takeaway}</div>
             </div>
           </div>
@@ -304,9 +306,10 @@ export function Bars({
 
 /** Nút chạy lại mô phỏng — nhiều lab cần hạt ngẫu nhiên mới. */
 export function Reseed({ onClick }: { onClick: () => void }) {
+  const t = useT();
   return (
     <button className="btn btn-sm" onClick={onClick}>
-      🎲 Dữ liệu mới
+      <Icon name="dices" size={14} /> {t('labs.reseed')}
     </button>
   );
 }

@@ -11,16 +11,19 @@
 import { useMemo, useState } from 'react';
 import { useProgress } from '../lib/storage';
 import { buildDrills } from '../lib/plan';
-import { weakConcepts, masteryMap, MASTERY_LABEL } from '../lib/mastery';
+import { weakConcepts, masteryMap, MASTERY_KEY } from '../lib/mastery';
 import { QuizItem } from '../components/Quiz';
 import { Empty } from '../components/Shared';
 import { href } from '../lib/router';
+import { Icon } from '../components/Icon';
+import { useT } from '../i18n';
 import { ALL_QUIZ } from '../content';
 import { shuffle } from '../lib/utils';
 
 type Mode = 'auto' | 'weak' | 'all';
 
 export function PracticePage() {
+  const t = useT();
   const p = useProgress();
   const [mode, setMode] = useState<Mode>('auto');
   const [session, setSession] = useState<ReturnType<typeof buildDrills> | null>(null);
@@ -55,10 +58,10 @@ export function PracticePage() {
     return (
       <div className="container container-narrow">
         <Empty
-          icon="🎲"
-          title="Chưa có gì để luyện tập"
-          sub="Phần luyện tập lấy câu hỏi từ những bài bạn đã mở. Hãy học bài đầu tiên trước đã."
-          action={<a className="btn btn-primary" href={href('/lo-trinh')}>Xem lộ trình</a>}
+          icon="dices"
+          title={t('practice.emptyTitle')}
+          sub={t('practice.emptySub')}
+          action={<a className="btn btn-primary" href={href('/lo-trinh')}>{t('practice.seeRoadmap')}</a>}
         />
       </div>
     );
@@ -69,18 +72,15 @@ export function PracticePage() {
     return (
       <div className="container container-narrow stack" style={{ '--gap': 'var(--s-6)' } as React.CSSProperties}>
         <header>
-          <h1 style={{ fontSize: 'var(--fs-2xl)' }}>Luyện tập</h1>
-          <p className="muted" style={{ marginTop: 'var(--s-2)' }}>
-            Câu hỏi vận dụng, trộn nhiều chủ đề. Sẽ khó hơn ôn thẻ — và đó chính là lý do nó hiệu quả hơn cho
-            kỹ năng thật.
-          </p>
+          <h1 style={{ fontSize: 'var(--fs-2xl)' }}>{t('practice.title')}</h1>
+          <p className="muted" style={{ marginTop: 'var(--s-2)' }}>{t('practice.intro')}</p>
         </header>
 
         <div className="grid grid-2">
           {[
-            { m: 'auto' as Mode, i: '🎯', t: 'Kế hoạch thông minh', d: '60% câu thuộc chỗ bạn đang yếu, 40% trộn ngẫu nhiên để không bỏ quên phần còn lại.', primary: true },
-            { m: 'weak' as Mode, i: '🩹', t: 'Chỉ chỗ yếu', d: `Tập trung vào ${weak.length} khái niệm đang lung lay nhất của bạn.`, disabled: weak.length === 0 },
-            { m: 'all' as Mode, i: '🌀', t: 'Trộn tất cả', d: 'Ngẫu nhiên hoàn toàn từ mọi bài đã học. Giống nhất với tình huống thật.' },
+            { m: 'auto' as Mode, i: 'target' as const, name: t('practice.modeAuto'), d: t('practice.modeAutoDesc'), primary: true },
+            { m: 'weak' as Mode, i: 'bandage' as const, name: t('practice.modeWeak'), d: t('practice.modeWeakDesc', { n: weak.length }), disabled: weak.length === 0 },
+            { m: 'all' as Mode, i: 'shuffle' as const, name: t('practice.modeAll'), d: t('practice.modeAllDesc') },
           ].map((o) => (
             <button
               key={o.m}
@@ -89,8 +89,10 @@ export function PracticePage() {
               disabled={o.disabled}
               onClick={() => start(o.m)}
             >
-              <div style={{ fontSize: '1.5rem', marginBottom: 'var(--s-2)' }} aria-hidden>{o.i}</div>
-              <b>{o.t}</b>
+              <div style={{ marginBottom: 'var(--s-2)', color: o.primary ? 'var(--brand-text)' : 'var(--text-muted)' }}>
+                <Icon name={o.i} size={22} />
+              </div>
+              <b>{o.name}</b>
               <p className="muted" style={{ fontSize: 'var(--fs-sm)', marginTop: 4 }}>{o.d}</p>
             </button>
           ))}
@@ -98,11 +100,8 @@ export function PracticePage() {
 
         {mastery.length > 0 && (
           <section className="card">
-            <h2 style={{ fontSize: 'var(--fs-md)', marginBottom: 'var(--s-2)' }}>Bản đồ thành thạo theo khái niệm</h2>
-            <p className="faint" style={{ marginBottom: 'var(--s-4)' }}>
-              Điểm tự động giảm dần theo thời gian nếu bạn không gặp lại khái niệm — đây là cách app nói thật
-              với bạn thay vì cho một dấu tích xanh vĩnh viễn.
-            </p>
+            <h2 style={{ fontSize: 'var(--fs-md)', marginBottom: 'var(--s-2)' }}>{t('practice.masteryTitle')}</h2>
+            <p className="faint" style={{ marginBottom: 'var(--s-4)' }}>{t('practice.masterySub')}</p>
             <div className="stack" style={{ '--gap': 'var(--s-2)' } as React.CSSProperties}>
               {mastery.slice(0, 16).map((m) => (
                 <div key={m.concept} className="row" style={{ gap: 'var(--s-3)' }}>
@@ -119,7 +118,7 @@ export function PracticePage() {
                     />
                   </div>
                   <span className="faint nowrap" style={{ flex: '0 0 76px', textAlign: 'right' }}>
-                    {MASTERY_LABEL[m.level]}
+                    {t(MASTERY_KEY[m.level])}
                   </span>
                 </div>
               ))}
@@ -136,20 +135,16 @@ export function PracticePage() {
     return (
       <div className="container container-narrow">
         <div className="card card-pad-lg center anim-in">
-          <div style={{ fontSize: '2.4rem', marginBottom: 'var(--s-2)' }} aria-hidden>
-            {n / session.length >= 0.8 ? '🎉' : '💪'}
+          <div className="empty-ico" style={{ color: n / session.length >= 0.8 ? 'var(--ok-text)' : 'var(--text-muted)' }}>
+            <Icon name={n / session.length >= 0.8 ? 'party' : 'trending-up'} size={38} stroke={1.5} />
           </div>
           <h1 style={{ fontSize: 'var(--fs-xl)', marginBottom: 'var(--s-2)' }}>
-            {n}/{session.length} câu đúng
+            {t('practice.scoreLine', { n, total: session.length })}
           </h1>
-          <p className="muted" style={{ maxWidth: '48ch', margin: '0 auto var(--s-5)' }}>
-            Kết quả luyện tập xen kẽ thường thấp hơn khi bạn làm từng bài riêng lẻ. Đó là bình thường và là
-            dấu hiệu tốt: bạn vừa luyện đúng kỹ năng khó nhất — nhận ra bài toán thuộc loại nào khi không có
-            ai gợi ý trước.
-          </p>
+          <p className="muted" style={{ maxWidth: '48ch', margin: '0 auto var(--s-5)' }}>{t('practice.resultNote')}</p>
           <div className="row" style={{ justifyContent: 'center' }}>
-            <button className="btn btn-primary" onClick={() => start(mode)}>Luyện tiếp</button>
-            <a className="btn" href={href('/')}>Về trang chủ</a>
+            <button className="btn btn-primary" onClick={() => start(mode)}>{t('practice.continue')}</button>
+            <a className="btn" href={href('/')}>{t('common.backHome')}</a>
           </div>
         </div>
       </div>
@@ -160,7 +155,7 @@ export function PracticePage() {
   return (
     <div className="container container-narrow stack">
       <div className="row-wrap" style={{ justifyContent: 'space-between' }}>
-        <span className="faint">Câu {idx + 1} / {session.length}</span>
+        <span className="faint">{t('practice.questionN', { n: idx + 1, total: session.length })}</span>
         <span className="chip">{q.lessonTitle}</span>
       </div>
       <div className="bar">
@@ -176,10 +171,11 @@ export function PracticePage() {
 
       {results.length > idx && (
         <div className="row">
-          <a className="btn btn-sm" href={href(`/hoc/${q.lessonId}`)}>Xem lại bài này</a>
+          <a className="btn btn-sm" href={href(`/hoc/${q.lessonId}`)}>{t('practice.reviewThisLesson')}</a>
           <span className="spacer" />
           <button className="btn btn-primary" onClick={() => setIdx((x) => x + 1)}>
-            {idx + 1 >= session.length ? 'Xem kết quả →' : 'Câu tiếp →'}
+            {idx + 1 >= session.length ? t('common.result') : t('practice.nextShort')}
+            <Icon name="arrow-right" size={14} />
           </button>
         </div>
       )}

@@ -21,6 +21,7 @@ import type { ConceptStat, Progress } from './storage';
 import { getProgress } from './storage';
 import { ALL_LESSONS, ALL_QUIZ, getLesson } from '../content';
 import type { Lesson } from '../content/types';
+import type { IconName } from '../components/Icon';
 import { clamp } from './utils';
 
 const DAY = 86_400_000;
@@ -43,12 +44,12 @@ export interface ConceptMastery {
   level: 'chua-hoc' | 'moi-biet' | 'dang-nam' | 'vung' | 'thanh-thao';
 }
 
-export const MASTERY_LABEL: Record<ConceptMastery['level'], string> = {
-  'chua-hoc': 'Chưa học',
-  'moi-biet': 'Mới biết',
-  'dang-nam': 'Đang nắm',
-  vung: 'Vững',
-  'thanh-thao': 'Thành thạo',
+export const MASTERY_KEY: Record<ConceptMastery['level'], string> = {
+  'chua-hoc': 'mastery.chua-hoc',
+  'moi-biet': 'mastery.moi-biet',
+  'dang-nam': 'mastery.dang-nam',
+  vung: 'mastery.vung',
+  'thanh-thao': 'mastery.thanh-thao',
 };
 
 export function conceptMastery(concept: string, p: Progress = getProgress()): ConceptMastery {
@@ -100,12 +101,12 @@ export function weakConcepts(p: Progress = getProgress(), limit = 8): ConceptMas
 
 export type LessonState = 'khoa' | 'moi' | 'dang-hoc' | 'da-xong' | 'thanh-thao';
 
-export const LESSON_STATE_LABEL: Record<LessonState, string> = {
-  khoa: 'Cần học bài trước',
-  moi: 'Chưa bắt đầu',
-  'dang-hoc': 'Đang học dở',
-  'da-xong': 'Đã hoàn thành',
-  'thanh-thao': 'Đã thành thạo',
+export const LESSON_STATE_KEY: Record<LessonState, string> = {
+  khoa: 'lessonState.khoa',
+  moi: 'lessonState.moi',
+  'dang-hoc': 'lessonState.dang-hoc',
+  'da-xong': 'lessonState.da-xong',
+  'thanh-thao': 'lessonState.thanh-thao',
 };
 
 /**
@@ -203,7 +204,8 @@ export function nextLesson(p: Progress = getProgress()): Lesson | undefined {
 
 export interface CalibrationBucket {
   conf: number;
-  label: string;
+  /** Khoá dịch cho nhãn mức tự tin. */
+  labelKey: string;
   n: number;
   accuracy: number;
   /** accuracy − conf. Dương = khiêm tốn quá; âm = tự tin quá. */
@@ -216,11 +218,11 @@ export interface CalibrationBucket {
  * bằng chứng về chính họ, thay vì một lời khuyên chung chung.
  */
 export function calibration(p: Progress = getProgress()): CalibrationBucket[] {
-  const buckets: { conf: number; label: string }[] = [
-    { conf: 0.25, label: 'Đoán mò' },
-    { conf: 0.5, label: 'Không chắc' },
-    { conf: 0.75, label: 'Khá chắc' },
-    { conf: 0.95, label: 'Chắc chắn' },
+  const buckets: { conf: number; labelKey: string }[] = [
+    { conf: 0.25, labelKey: 'confidence.guess' },
+    { conf: 0.5, labelKey: 'confidence.unsure' },
+    { conf: 0.75, labelKey: 'confidence.fairly' },
+    { conf: 0.95, labelKey: 'confidence.certain' },
   ];
   return buckets.map((b) => {
     const pts = p.calibration.filter((c) => c.conf === b.conf);
@@ -229,16 +231,16 @@ export function calibration(p: Progress = getProgress()): CalibrationBucket[] {
   });
 }
 
-/** Một câu tóm tắt về xu hướng tự đánh giá — hữu ích hơn cả biểu đồ. */
+/** Khoá dịch cho một câu tóm tắt về xu hướng tự đánh giá — hữu ích hơn cả biểu đồ. */
 export function calibrationVerdict(p: Progress = getProgress()): string | null {
   const bs = calibration(p).filter((b) => b.n >= 5);
   if (bs.length < 2) return null;
   const avgGap = bs.reduce((s, b) => s + b.gap * b.n, 0) / bs.reduce((s, b) => s + b.n, 0);
   if (avgGap < -0.12)
-    return 'Bạn đang TỰ TIN QUÁ MỨC: những câu bạn chắc chắn lại sai nhiều hơn bạn nghĩ. Hãy ôn kỹ hơn trước khi bỏ qua một chủ đề.';
+    return 'calibration.overconfident';
   if (avgGap > 0.12)
-    return 'Bạn đang KHIÊM TỐN QUÁ MỨC: bạn biết nhiều hơn bạn tưởng. Hãy mạnh dạn hơn, và đừng ôn lại những thứ đã chắc.';
-  return 'Khả năng tự đánh giá của bạn khá chuẩn — đây là dấu hiệu của người học trưởng thành.';
+    return 'calibration.underconfident';
+  return 'calibration.wellCalibrated';
 }
 
 /* -------------------------------------------------------------------------- */
@@ -247,9 +249,10 @@ export function calibrationVerdict(p: Progress = getProgress()): string | null {
 
 export interface Badge {
   id: string;
-  icon: string;
-  name: string;
-  desc: string;
+  icon: IconName;
+  /** Khoá dịch cho tên và mô tả — xem `i18n/vi.json` mục `badge`. */
+  nameKey: string;
+  descKey: string;
   earned: (p: Progress) => boolean;
 }
 
@@ -261,51 +264,51 @@ export interface Badge {
 export const BADGES: Badge[] = [
   {
     id: 'first-step',
-    icon: '🌱',
-    name: 'Bước đầu tiên',
-    desc: 'Hoàn thành bài học đầu tiên',
+    icon: 'sprout',
+    nameKey: 'badge.first-step',
+    descKey: 'badge.first-stepDesc',
     earned: (p) => Object.values(p.lessons).some((l) => l.completedAt > 0),
   },
   {
     id: 'streak-3',
-    icon: '🔥',
-    name: 'Ba ngày liền',
-    desc: 'Học 3 ngày liên tiếp',
+    icon: 'flame',
+    nameKey: 'badge.streak-3',
+    descKey: 'badge.streak-3Desc',
     earned: (p) => streakLen(p) >= 3,
   },
   {
     id: 'streak-7',
-    icon: '⚡',
-    name: 'Một tuần đều đặn',
-    desc: 'Học 7 ngày liên tiếp',
+    icon: 'zap',
+    nameKey: 'badge.streak-7',
+    descKey: 'badge.streak-7Desc',
     earned: (p) => streakLen(p) >= 7,
   },
   {
     id: 'streak-30',
-    icon: '💎',
-    name: 'Ba mươi ngày',
-    desc: 'Học 30 ngày liên tiếp — thói quen đã hình thành',
+    icon: 'gem',
+    nameKey: 'badge.streak-30',
+    descKey: 'badge.streak-30Desc',
     earned: (p) => streakLen(p) >= 30,
   },
   {
     id: 'reviewer-100',
-    icon: '🧠',
-    name: 'Trăm lần ôn',
-    desc: 'Hoàn thành 100 lượt ôn thẻ',
+    icon: 'brain',
+    nameKey: 'badge.reviewer-100',
+    descKey: 'badge.reviewer-100Desc',
     earned: (p) => p.days.reduce((s, d) => s + d.reviews, 0) >= 100,
   },
   {
     id: 'reviewer-1000',
-    icon: '🏔️',
-    name: 'Nghìn lần ôn',
-    desc: 'Hoàn thành 1.000 lượt ôn thẻ',
+    icon: 'mountain-snow',
+    nameKey: 'badge.reviewer-1000',
+    descKey: 'badge.reviewer-1000Desc',
     earned: (p) => p.days.reduce((s, d) => s + d.reviews, 0) >= 1000,
   },
   {
     id: 'track-1',
-    icon: '🧭',
-    name: 'Xong chặng đầu',
-    desc: 'Hoàn thành trọn vẹn một chặng học',
+    icon: 'compass',
+    nameKey: 'badge.track-1',
+    descKey: 'badge.track-1Desc',
     earned: (p) =>
       ALL_LESSONS.some((l) => {
         const t = trackProgress(l.trackId, p);
@@ -314,17 +317,17 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'metrics-master',
-    icon: '📊',
-    name: 'Người đo lường',
-    desc: 'Thành thạo toàn bộ khái niệm về đo lường',
+    icon: 'chart',
+    nameKey: 'badge.metrics-master',
+    descKey: 'badge.metrics-masterDesc',
     earned: (p) =>
       ['do-luong', 'base-rate', 'mat-can-bang'].every((c) => conceptMastery(c, p).score >= 0.8),
   },
   {
     id: 'honest',
-    icon: '🎯',
-    name: 'Tự biết mình',
-    desc: 'Đạt khả năng tự đánh giá chuẩn xác qua 40 câu hỏi',
+    icon: 'target',
+    nameKey: 'badge.honest',
+    descKey: 'badge.honestDesc',
     earned: (p) => {
       if (p.calibration.length < 40) return false;
       const bs = calibration(p).filter((b) => b.n >= 5);
@@ -335,23 +338,23 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'lab-rat',
-    icon: '🔬',
-    name: 'Chuột bạch phòng lab',
-    desc: 'Mở và thao tác 10 phòng thí nghiệm khác nhau',
+    icon: 'flask',
+    nameKey: 'badge.lab-rat',
+    descKey: 'badge.lab-ratDesc',
     earned: (p) => Object.keys(p.checks).filter((k) => k.startsWith('lab:')).length >= 10,
   },
   {
     id: 'halfway',
-    icon: '🏕️',
-    name: 'Nửa chặng đường',
-    desc: 'Hoàn thành 50% toàn khoá',
+    icon: 'tent',
+    nameKey: 'badge.halfway',
+    descKey: 'badge.halfwayDesc',
     earned: (p) => courseProgress(p).ratio >= 0.5,
   },
   {
     id: 'graduate',
-    icon: '🎓',
-    name: 'Tốt nghiệp',
-    desc: 'Hoàn thành 100% bài học',
+    icon: 'graduation-cap',
+    nameKey: 'badge.graduate',
+    descKey: 'badge.graduateDesc',
     earned: (p) => courseProgress(p).ratio >= 1,
   },
 ];

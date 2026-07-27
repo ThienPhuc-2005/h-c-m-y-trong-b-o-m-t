@@ -26,13 +26,16 @@ import { ALL_TERMS } from '../content/glossary';
 import { LABS } from '../labs';
 import { navigate } from '../lib/router';
 import { normalize } from '../lib/utils';
+import { Icon } from './Icon';
+import { t, useT, useLang } from '../i18n';
+import type { IconName } from './Icon';
 
 interface Hit {
   kind: 'bai' | 'thuat-ngu' | 'lab';
   id: string;
   title: string;
   sub: string;
-  icon: string;
+  icon: IconName;
   path: string;
   score: number;
 }
@@ -48,8 +51,8 @@ function buildIndex(): { hit: Omit<Hit, 'score'>; hay: string }[] {
         kind: 'bai',
         id: l.id,
         title: l.title,
-        sub: `${track?.icon ?? ''} ${track?.title ?? ''} · ${l.minutes} phút`,
-        icon: '📖',
+        sub: t('search.lessonSub', { track: track?.title ?? '', n: l.minutes }),
+        icon: 'book',
         path: `/hoc/${l.id}`,
       },
       // Gộp cả mục tiêu và phần "vì sao" — người học nhớ vấn đề, không nhớ tiêu đề.
@@ -66,7 +69,7 @@ function buildIndex(): { hit: Omit<Hit, 'score'>; hay: string }[] {
         id: t.id,
         title: `${t.vi} · ${t.en}`,
         sub: t.def,
-        icon: '📚',
+        icon: 'book-a',
         path: `/thuat-ngu`,
       },
       hay: normalize([t.vi, t.en, t.def, t.example ?? '', t.id].join(' ')),
@@ -75,7 +78,7 @@ function buildIndex(): { hit: Omit<Hit, 'score'>; hay: string }[] {
 
   for (const l of LABS) {
     out.push({
-      hit: { kind: 'lab', id: l.id, title: l.title, sub: l.blurb, icon: '🔬', path: `/phong-lab/${l.id}` },
+      hit: { kind: 'lab', id: l.id, title: l.title, sub: l.blurb, icon: 'flask', path: `/phong-lab/${l.id}` },
       hay: normalize([l.title, l.blurb, l.id].join(' ')),
     });
   }
@@ -94,13 +97,15 @@ let INDEX: ReturnType<typeof buildIndex> | null = null;
 const OPEN_EVENT = 'aegis:open-search';
 export const openSearch = () => window.dispatchEvent(new CustomEvent(OPEN_EVENT));
 
-const KIND_LABEL: Record<Hit['kind'], string> = {
-  bai: 'Bài học',
-  'thuat-ngu': 'Thuật ngữ',
-  lab: 'Phòng lab',
+const KIND_KEY: Record<Hit['kind'], string> = {
+  bai: 'search.kindLesson',
+  'thuat-ngu': 'search.kindTerm',
+  lab: 'search.kindLab',
 };
 
 export function SearchPalette() {
+  const tr = useT();
+  const lang = useLang();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
@@ -131,6 +136,12 @@ export function SearchPalette() {
     };
   }, []);
 
+  // Chỉ mục có nhúng chuỗi đã dịch (dòng phụ của bài học), nên đổi ngôn ngữ
+  // phải vứt nó đi — nếu không, kết quả tìm kiếm sẽ kẹt ở ngôn ngữ cũ.
+  useEffect(() => {
+    INDEX = null;
+  }, [lang]);
+
   useEffect(() => {
     if (open) {
       setQ('');
@@ -150,7 +161,7 @@ export function SearchPalette() {
         id: l.id,
         title: l.title,
         sub: l.blurb,
-        icon: '🔬',
+        icon: 'flask',
         path: `/phong-lab/${l.id}`,
         score: 0,
       }));
@@ -215,29 +226,29 @@ export function SearchPalette() {
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Tìm kiếm nhanh"
+        aria-label={tr('nav.searchLabel')}
       >
         <div className="modal-head" style={{ padding: 'var(--s-3) var(--s-4)' }}>
-          <span aria-hidden style={{ fontSize: '1.1rem' }}>🔎</span>
+          <Icon name="search" size={18} />
           <input
             ref={inputRef}
             type="text"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Tìm bài học, thuật ngữ, phòng lab… (không cần gõ dấu)"
+            placeholder={tr('search.placeholder')}
             style={{ border: 'none', background: 'transparent', fontSize: 'var(--fs-md)', padding: 0 }}
-            aria-label="Từ khoá tìm kiếm"
+            aria-label={tr('search.inputLabel')}
             aria-controls="search-results"
           />
           <kbd>Esc</kbd>
         </div>
 
-        <div className="modal-body" style={{ padding: 'var(--s-2)', maxHeight: '58vh', overflowY: 'auto' }} ref={listRef} id="search-results" role="listbox" aria-label="Kết quả tìm kiếm">
+        <div className="modal-body" style={{ padding: 'var(--s-2)', maxHeight: '58vh', overflowY: 'auto' }} ref={listRef} id="search-results" role="listbox" aria-label={tr('search.resultsLabel')}>
           {results.length === 0 ? (
             <div className="empty" style={{ padding: 'var(--s-8) var(--s-4)' }}>
-              <div className="empty-ico" aria-hidden>🤷</div>
-              <div className="faint">Không tìm thấy gì cho “{q}”. Thử từ khoá ngắn hơn.</div>
+              <div className="empty-ico"><Icon name="search-x" size={38} stroke={1.5} /></div>
+              <div className="faint">{tr('search.noResults', { q })}</div>
             </div>
           ) : (
             results.map((h, i) => (
@@ -260,7 +271,7 @@ export function SearchPalette() {
                   borderColor: i === sel ? 'var(--brand-border)' : 'transparent',
                 }}
               >
-                <span aria-hidden style={{ fontSize: '1.05rem', lineHeight: 1.4 }}>{h.icon}</span>
+                <Icon name={h.icon} size={17} className="faint" />
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontWeight: 600, fontSize: 'var(--fs-sm)' }}>{h.title}</span>
                   <span
@@ -270,17 +281,17 @@ export function SearchPalette() {
                     {h.sub}
                   </span>
                 </span>
-                <span className="chip" style={{ flexShrink: 0 }}>{KIND_LABEL[h.kind]}</span>
+                <span className="chip" style={{ flexShrink: 0 }}>{tr(KIND_KEY[h.kind])}</span>
               </button>
             ))
           )}
         </div>
 
         <div className="modal-foot" style={{ justifyContent: 'flex-start', gap: 'var(--s-4)', fontSize: 'var(--fs-xs)' }}>
-          <span className="faint"><kbd>↑</kbd> <kbd>↓</kbd> di chuyển</span>
-          <span className="faint"><kbd>↵</kbd> mở</span>
+          <span className="faint"><kbd>↑</kbd> <kbd>↓</kbd> {tr('search.move')}</span>
+          <span className="faint"><kbd>↵</kbd> {tr('search.open')}</span>
           <span className="spacer" />
-          <span className="faint">{results.length} kết quả</span>
+          <span className="faint">{tr('search.countResults', { n: results.length })}</span>
         </div>
       </div>
     </div>

@@ -23,6 +23,10 @@
  * ============================================================================
  */
 
+// Chỉ nhập KIỂU: TypeScript xoá dòng này khi biên dịch, nên gói nội dung không
+// kéo theo mã của bộ icon — chia chunk theo chặng vẫn nguyên vẹn.
+import type { IconName } from '../components/Icon';
+
 /* -------------------------------------------------------------------------- */
 /*  Định danh                                                                  */
 /* -------------------------------------------------------------------------- */
@@ -36,12 +40,17 @@ export type FigureId = string;
 /** Mức độ khó — dùng để tô màu, lọc, và điều phối thứ tự học. */
 export type Level = 'nen-tang' | 'co-ban' | 'trung-cap' | 'nang-cao' | 'chuyen-gia';
 
-export const LEVEL_LABEL: Record<Level, string> = {
-  'nen-tang': 'Nền tảng',
-  'co-ban': 'Cơ bản',
-  'trung-cap': 'Trung cấp',
-  'nang-cao': 'Nâng cao',
-  'chuyen-gia': 'Chuyên gia',
+/**
+ * Nhãn mức độ nằm trong từ điển song ngữ, không phải ở đây — bảng này chỉ ánh
+ * xạ sang KHOÁ dịch. Giữ chuỗi tiếng Việt cứng trong lược đồ nội dung sẽ khiến
+ * giao diện English lộ ra một mảng tiếng Việt ngay giữa thẻ bài học.
+ */
+export const LEVEL_KEY: Record<Level, string> = {
+  'nen-tang': 'level.nen-tang',
+  'co-ban': 'level.co-ban',
+  'trung-cap': 'level.trung-cap',
+  'nang-cao': 'level.nang-cao',
+  'chuyen-gia': 'level.chuyen-gia',
 };
 
 /** Vai trò nghề nghiệp — giúp người học thấy đường đi tới công việc thật. */
@@ -227,8 +236,8 @@ export interface Track {
   title: string;
   /** Khẩu hiệu ngắn — tạo neo cảm xúc và định vị. */
   tagline: string;
-  /** Ký tự biểu tượng (emoji) — mã hoá kép ở cấp điều hướng. */
-  icon: string;
+  /** Tên biểu tượng trong bộ icon (xem `components/Icon.tsx`) — mã hoá kép ở cấp điều hướng. */
+  icon: IconName;
   /** Tên biến màu chủ đề (xem styles/tokens.css). */
   hue: 'indigo' | 'cyan' | 'teal' | 'lime' | 'amber' | 'orange' | 'rose' | 'violet' | 'slate' | 'emerald';
   blurb: string;

@@ -2,11 +2,14 @@
 
 import type { ReactNode } from 'react';
 import type { Lesson, Level, Track } from '../content/types';
-import { LEVEL_LABEL } from '../content/types';
+import { LEVEL_KEY } from '../content/types';
 import { href } from '../lib/router';
-import { lessonState, LESSON_STATE_LABEL, type LessonState } from '../lib/mastery';
+import { lessonState, LESSON_STATE_KEY, type LessonState } from '../lib/mastery';
 import { useProgress } from '../lib/storage';
 import { cx } from '../lib/utils';
+import { Icon } from './Icon';
+import { useT } from '../i18n';
+import type { IconName } from './Icon';
 
 const LEVEL_RANK: Record<Level, number> = {
   'nen-tang': 1,
@@ -18,15 +21,16 @@ const LEVEL_RANK: Record<Level, number> = {
 
 /** Mức độ hiển thị bằng CẢ chữ lẫn số vạch — không phụ thuộc vào màu. */
 export function LevelBadge({ level }: { level: Level }) {
+  const t = useT();
   const n = LEVEL_RANK[level];
   return (
-    <span className="level" title={`Mức độ: ${LEVEL_LABEL[level]}`}>
+    <span className="level" title={`${t('level.prefix')}: ${t(LEVEL_KEY[level])}`}>
       <span className="level-bars" aria-hidden>
         {[1, 2, 3, 4].map((i) => (
           <i key={i} className={i <= n ? 'on' : ''} />
         ))}
       </span>
-      {LEVEL_LABEL[level]}
+      {t(LEVEL_KEY[level])}
     </span>
   );
 }
@@ -65,15 +69,16 @@ export function Ring({ value, size = 56, stroke = 5, label }: { value: number; s
   );
 }
 
-const STATE_CHIP: Record<LessonState, { cls: string; icon: string }> = {
-  khoa: { cls: '', icon: '🔒' },
-  moi: { cls: '', icon: '' },
-  'dang-hoc': { cls: 'chip-warn', icon: '▸' },
-  'da-xong': { cls: 'chip-info', icon: '✓' },
-  'thanh-thao': { cls: 'chip-ok', icon: '★' },
+const STATE_CHIP: Record<LessonState, { cls: string; icon: IconName | null }> = {
+  khoa: { cls: '', icon: 'lock' },
+  moi: { cls: '', icon: null },
+  'dang-hoc': { cls: 'chip-warn', icon: 'chevron-right' },
+  'da-xong': { cls: 'chip-info', icon: 'check' },
+  'thanh-thao': { cls: 'chip-ok', icon: 'star' },
 };
 
 export function LessonCard({ lesson, track, showTrack }: { lesson: Lesson; track?: Track; showTrack?: boolean }) {
+  const t = useT();
   const p = useProgress();
   const st = lessonState(lesson, p);
   const lp = p.lessons[lesson.id];
@@ -87,13 +92,19 @@ export function LessonCard({ lesson, track, showTrack }: { lesson: Lesson; track
       style={{ textDecoration: 'none', color: 'inherit', display: 'block', opacity: st === 'khoa' ? 0.72 : 1 }}
     >
       <div className="row-wrap" style={{ gap: 'var(--s-2)', marginBottom: 'var(--s-2)' }}>
-        {showTrack && track && <span className="chip chip-hue">{track.icon} {track.title}</span>}
+        {showTrack && track && (
+          <span className="chip chip-hue">
+            <Icon name={track.icon} size={13} />
+            {track.title}
+          </span>
+        )}
         <LevelBadge level={lesson.level} />
         <span className="spacer" />
-        <span className="faint nowrap">{lesson.minutes} phút</span>
+        <span className="faint nowrap">{lesson.minutes} {t('common.minutes')}</span>
         {st !== 'moi' && (
           <span className={cx('chip', chip.cls)}>
-            {chip.icon} {LESSON_STATE_LABEL[st]}
+            {chip.icon && <Icon name={chip.icon} size={13} filled={chip.icon === 'star'} />}
+            {t(LESSON_STATE_KEY[st])}
           </span>
         )}
       </div>
@@ -113,7 +124,7 @@ export function LessonCard({ lesson, track, showTrack }: { lesson: Lesson; track
           gap: 'var(--s-2)',
         }}
       >
-        <span aria-hidden>🎯</span>
+        <Icon name="target" size={15} />
         <span>{lesson.why.short}</span>
       </div>
 
@@ -146,10 +157,10 @@ export function SectionHead({
   );
 }
 
-export function Empty({ icon, title, sub, action }: { icon: string; title: string; sub?: string; action?: ReactNode }) {
+export function Empty({ icon, title, sub, action }: { icon: IconName; title: string; sub?: string; action?: ReactNode }) {
   return (
     <div className="empty">
-      <div className="empty-ico" aria-hidden>{icon}</div>
+      <div className="empty-ico"><Icon name={icon} size={38} stroke={1.5} /></div>
       <h3 style={{ fontSize: 'var(--fs-md)', marginBottom: 'var(--s-2)' }}>{title}</h3>
       {sub && <p className="muted" style={{ maxWidth: '46ch', margin: '0 auto var(--s-4)' }}>{sub}</p>}
       {action}

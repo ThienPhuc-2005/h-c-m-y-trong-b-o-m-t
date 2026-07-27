@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { LabShell, Slider, Readout, Chart, Axes, Line, Dots, mkPlot, px, py, COLORS, Toggle } from './kit';
 import { mulberry32, gaussian, sigmoid, clamp } from '../lib/utils';
 import { retrievability, intervalForRetention } from '../lib/srs';
+import { Icon } from '../components/Icon';
 
 /* ========================================================================== */
 /*  lab-adversarial — Tấn công né tránh                                        */
@@ -66,7 +67,9 @@ export function LabAdversarial() {
               </div>
             </div>
           ))}
-          <button className="btn btn-sm" onClick={() => setVals(MAL_FEATURES.map((f) => f.base))}>↺ Khôi phục mẫu gốc</button>
+          <button className="btn btn-sm" onClick={() => setVals(MAL_FEATURES.map((f) => f.base))}>
+            <Icon name="rotate-ccw" size={14} /> Khôi phục mẫu gốc
+          </button>
         </div>
 
         <div className="stack">
@@ -81,7 +84,7 @@ export function LabAdversarial() {
             <div className="bar-fill" style={{ width: `${score * 100}%`, background: score >= 0.5 ? 'var(--bad)' : 'var(--ok)' }} />
           </div>
           <div className={`callout ${score >= 0.5 ? 'co-pro' : 'co-warn'}`}>
-            <span className="callout-icon" aria-hidden>{score >= 0.5 ? '🛡️' : '⚠️'}</span>
+            <Icon className="callout-icon" name={score >= 0.5 ? 'shield' : 'alert-triangle'} size={18} />
             <div>
               <div className="callout-title">{score >= 0.5 ? 'Mô hình còn giữ được' : 'Né tránh thành công'}</div>
               <div className="callout-body">
@@ -194,7 +197,7 @@ export function LabPoison() {
           <Readout
             items={[
               { k: 'Độ chính xác (dữ liệu sạch)', v: `${(acc * 100).toFixed(1)}%`, tone: acc > 0.9 ? 'ok' : acc > 0.8 ? 'warn' : 'bad', sub: 'chỉ số bạn theo dõi' },
-              { k: 'Cửa hậu đã mở?', v: targeted ? (backdoorHit ? 'CÓ ⚠' : 'chưa') : 'n/a', tone: backdoorHit ? 'bad' : 'ok', sub: 'chỉ số bạn KHÔNG theo dõi' },
+              { k: 'Cửa hậu đã mở?', v: targeted ? (backdoorHit ? 'CÓ' : 'chưa') : 'n/a', tone: backdoorHit ? 'bad' : 'ok', sub: 'chỉ số bạn KHÔNG theo dõi' },
               { k: 'Mẫu độc đã chèn', v: String(data.filter((d) => d.poisoned).length) },
             ]}
           />
@@ -332,13 +335,13 @@ export function LabPromptInjection() {
           <Readout
             items={[
               { k: 'Mức bảo vệ', v: `${(protection * 100).toFixed(0)}%`, tone: protection > 0.6 ? 'ok' : protection > 0.3 ? 'warn' : 'bad' },
-              { k: 'Có công cụ hành động', v: hasActionTool ? 'CÓ ⚠' : 'không', tone: hasActionTool ? 'bad' : 'ok' },
+              { k: 'Có công cụ hành động', v: hasActionTool ? 'CÓ' : 'không', tone: hasActionTool ? 'bad' : 'ok' },
               { k: 'Kết quả', v: compromised ? 'BỊ CHIẾM' : s.injected ? 'Chặn được' : 'An toàn', tone: compromised ? 'bad' : 'ok' },
             ]}
           />
 
           <div className={`callout ${compromised ? 'co-warn' : 'co-pro'}`}>
-            <span className="callout-icon" aria-hidden>{compromised ? '🚨' : '🛡️'}</span>
+            <Icon className="callout-icon" name={compromised ? 'siren' : 'shield'} size={18} />
             <div>
               <div className="callout-title">{compromised ? 'Tác tử đã làm theo kẻ tấn công' : 'Tác tử giữ được hành vi đúng'}</div>
               <div className="callout-body">

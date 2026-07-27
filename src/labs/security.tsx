@@ -7,6 +7,7 @@
 import { useMemo, useState } from 'react';
 import { LabShell, Slider, Readout, Chart, Axes, Line, mkPlot, px, py, COLORS, Bars, Toggle, Reseed, useSeed } from './kit';
 import { shannonEntropy, mulberry32, gaussian, clamp } from '../lib/utils';
+import { Icon } from '../components/Icon';
 
 /* ========================================================================== */
 /*  lab-entropy — Entropy và phát hiện DGA                                     */
@@ -119,7 +120,8 @@ export function LabEntropy() {
                 <td className="mono">{a.score.toFixed(2)}</td>
                 <td>
                   <span className={`chip ${a.score >= thr ? 'chip-bad' : 'chip-ok'}`}>
-                    {a.score >= thr ? '⚠ cảnh báo' : '✓ bỏ qua'}
+                    <Icon name={a.score >= thr ? 'alert-triangle' : 'check'} size={11} />
+                    {a.score >= thr ? 'cảnh báo' : 'bỏ qua'}
                   </span>
                 </td>
               </tr>
@@ -202,7 +204,9 @@ export function LabUrlFeatures() {
           <tbody>
             {f.map((x) => (
               <tr key={x.k} style={x.risk ? { background: 'var(--bad-soft)' } : undefined}>
-                <td>{x.risk ? '⚠ ' : ''}{x.k}</td>
+                <td>
+                  {x.risk && <Icon name="alert-triangle" size={11} />} {x.k}
+                </td>
                 <td className="mono">{x.v}</td>
                 <td className="faint">{x.why}</td>
               </tr>
