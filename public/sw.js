@@ -48,9 +48,23 @@ async function precacheReusing() {
 
   await Promise.all(
     PRECACHE.map(async (url) => {
-      // Tệp có băm nội dung trong tên: cùng tên nghĩa là cùng nội dung, dùng lại
-      // được. index.html KHÔNG có băm nên luôn phải lấy bản mới.
-      const reusable = !/\/index\.html$/.test(url) && url !== './';
+      /**
+       * CHỈ dùng lại tệp mà TÊN bảo đảm nội dung. Vite đặt mọi thứ nó băm vào
+       * `assets/` (xem `rollupOptions.output` trong vite.config.ts); những gì
+       * nằm ở gốc dist — index.html, manifest.webmanifest, icon.svg,
+       * icon-maskable.svg — đều mang tên cố định mà nội dung đổi được.
+       *
+       * Điều kiện cũ là "mọi thứ không phải index.html", đúng vào lúc viết vì
+       * hồi đó dist chỉ có index.html và các chunk băm. Sau khi thêm manifest
+       * cùng hai icon, nó khiến sửa logo hay đổi theme_color không bao giờ tới
+       * được người đã cài PWA: mỗi lần dựng, bản cũ lại được chép nguyên sang
+       * cache mới, vĩnh viễn.
+       *
+       * Không đoán bằng mẫu tên có băm: `icon-maskable.svg` cũng khớp một mẫu
+       * như vậy ("maskable" dài đúng 8 ký tự), và ta lại quay về đúng lỗi cũ.
+       * Vị trí thư mục là thứ trình dựng bảo đảm, tên tệp thì không.
+       */
+      const reusable = url.startsWith('./assets/');
       if (reusable) {
         for (const old of olds) {
           const hit = await old.match(url);

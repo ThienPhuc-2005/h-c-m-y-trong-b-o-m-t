@@ -1488,14 +1488,32 @@ kbd {
    Thích ứng màn hình nhỏ
    -------------------------------------------------------------------------- */
 @media (max-width: 860px) {
+  /* Thanh điều hướng xuống HAI HÀNG.
+
+     Một hàng không đủ chỗ: chỉ riêng bảy mục đã cần 697px, trong khi màn 375px
+     còn 343px sau lề — và còn phải chia cho logo, nút đổi ngôn ngữ, tìm kiếm,
+     cài đặt. Trước đây chúng bị ép vào 36px còn lại, tức là chỉ hai mục tới
+     được, năm mục kia bị cắt mất và không có dấu hiệu nào cho biết chúng tồn
+     tại. Cho .nav-links nguyên một hàng thì nó cuộn ngang tử tế, và vẫn giữ
+     được CHỮ thay vì bắt người dùng đoán bảy biểu tượng. */
   .nav-inner {
-    height: 54px;
+    height: auto;
+    flex-wrap: wrap;
+    padding-block: var(--s-2);
+    row-gap: var(--s-1);
+  }
+  .nav-links {
+    order: 3;
+    width: 100%;
+    /* Vệt mờ ở mép phải là tín hiệu duy nhất cho biết còn mục phía sau —
+       thanh cuộn đã bị ẩn để nó không cắt ngang chữ. */
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   }
   .brand-sub {
     display: none;
   }
   .readbar {
-    top: 54px;
+    top: 96px;
   }
   .grades {
     grid-template-columns: repeat(2, 1fr);

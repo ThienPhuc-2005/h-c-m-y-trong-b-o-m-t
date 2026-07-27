@@ -93,6 +93,46 @@ describe('từ điển song ngữ', () => {
     expect([...unknown], `khoá không có trong từ điển:\n${[...unknown].join('\n')}`).toEqual([]);
   });
 
+  it('không còn chữ tiếng Việt viết thẳng trong phần vỏ giao diện', () => {
+    /**
+     * Bài kiểm tra "mọi khoá được gọi đều tồn tại" ở trên KHÔNG bắt được loại
+     * lỗi này: một chuỗi tiếng Việt nằm thẳng trong JSX thì không có lời gọi
+     * `t()` nào để mà kiểm. Đúng cách đó mà `{plan.due.length} thẻ` lọt lên
+     * production, hiện ra "12 thẻ" cho người đang dùng giao diện English.
+     *
+     * Phạm vi CHỈ là vỏ giao diện. `content/`, `labs/` và `Figures.tsx` là nội
+     * dung giảng dạy — chúng vốn là tiếng Việt theo đúng thiết kế.
+     */
+    const VIET = '[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]';
+    const shell = [
+      join(SRC, 'App.tsx'),
+      ...readdirSync(join(SRC, 'pages')).map((f) => join(SRC, 'pages', f)),
+      ...['Shared.tsx', 'Quiz.tsx', 'Blocks.tsx', 'Search.tsx', 'Markdown.tsx', 'DataGuard.tsx'].map((f) =>
+        join(SRC, 'components', f),
+      ),
+    ];
+
+    const offenders: string[] = [];
+    for (const file of shell) {
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .forEach((line, i) => {
+          const code = line.trim();
+          // Bỏ qua chú thích — mã nguồn viết bằng tiếng Việt là chủ đích.
+          if (/^(\*|\/\/|\/\*|\{\/\*)/.test(code)) return;
+          /**
+           * Chữ hiển thị bắt đầu sau `>` (mở thẻ) HOẶC sau `}` (vừa đóng một
+           * biểu thức). Bỏ sót vế `}` chính là lý do phiên bản đầu của bài kiểm
+           * tra này để lọt `{plan.due.length} thẻ` — chữ nằm ngay sau dấu đóng
+           * ngoặc, nên mẫu chỉ neo vào `>` không bao giờ chạm tới.
+           */
+          const shown = new RegExp(`[>}][^<>{}]*${VIET}|'[^']*${VIET}[^']*'`, 'i');
+          if (shown.test(line)) offenders.push(`${file.slice(SRC.length + 1)}:${i + 1}  ${code.slice(0, 90)}`);
+        });
+    }
+    expect(offenders, `Đưa những chuỗi này vào t():\n${offenders.join('\n')}`).toEqual([]);
+  });
+
   it('t() nội suy biến và rơi về tiếng Việt khi thiếu khoá', () => {
     const before = getLang();
     setLang('vi');

@@ -60,7 +60,7 @@ export function HomePage() {
                 <div style={{ flex: 1 }}>
                   <div className="row" style={{ gap: 'var(--s-2)' }}>
                     <b style={{ fontSize: 'var(--fs-md)' }}>{t('home.reviewFirst')}</b>
-                    <span className="chip chip-brand">{plan.due.length} thẻ</span>
+                    <span className="chip chip-brand">{plan.due.length} {t('common.cards')}</span>
                   </div>
                   <div className="muted" style={{ fontSize: 'var(--fs-sm)' }}>{t('home.reviewFirstSub')}</div>
                 </div>

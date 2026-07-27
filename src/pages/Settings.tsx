@@ -97,7 +97,9 @@ export function SettingsPage() {
               </button>
             ))}
           </div>
-          <div className="field-hint">{t('content.noticeLong')}</div>
+          {/* Câu này nói "giao diện đã chuyển sang English" — hiện nó cho người
+              đang dùng tiếng Việt là nói sai với đúng người đang đọc. */}
+          {lang === 'en' && <div className="field-hint">{t('content.noticeLong')}</div>}
         </div>
 
         <div className="field">

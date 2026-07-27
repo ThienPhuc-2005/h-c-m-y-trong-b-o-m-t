@@ -716,7 +716,10 @@ export function Icon({ name, size = 20, className, style, label, filled, stroke 
       viewBox="0 0 24 24"
       fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
-      strokeWidth={stroke}
+      // Hình đã tô đặc thì nét viền chỉ làm nó phình ra: một ngôi sao vẽ ở
+      // khung 24 với nét 2px, thu xuống 11px, biến thành một cục không còn
+      // nhận ra hình dạng — mà hình dạng mới là thứ phân biệt được khi mất màu.
+      strokeWidth={filled ? 0 : stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={label ? undefined : true}
