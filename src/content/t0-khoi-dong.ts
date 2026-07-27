@@ -362,7 +362,7 @@ export const track0: Track = {
           t: 'table',
           head: ['Đặc tính của bảo mật', 'Điều bạn PHẢI làm khác', 'Bài học sẽ dạy'],
           rows: [
-            ['Mất cân bằng cực đoan', 'Dùng precision/recall và PR-AUC, không dùng accuracy', 'Chặng 4'],
+            ['Mất cân bằng cực đoan', 'Dùng precision/recall và PR-AUC, không dùng accuracy', 'Chặng 2 & 4'],
             ['Đối thủ thích nghi', 'Chọn đặc trưng đắt tiền để né; giả định mô hình sẽ bị tấn công', 'Chặng 5 & 8'],
             ['Chi phí bất đối xứng', 'Chọn ngưỡng theo ma trận chi phí, không dùng 0,5', 'Chặng 4'],
             ['Nhãn muộn và bẩn', 'Chia dữ liệu theo thời gian; đánh giá lại nhãn định kỳ', 'Chặng 2'],
