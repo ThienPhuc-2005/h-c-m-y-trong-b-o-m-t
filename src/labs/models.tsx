@@ -48,54 +48,54 @@ function makeUrlData(seed: number, n = 220): Sample[] {
 export function LabLogistic() {
   const [seed, reseed] = useSeed();
   const [lr, setLr] = useState(0.5);
-  const [w, setW] = useState<number[]>([0, 0, 0, 0]);
-  const [b, setB] = useState(0);
-  const [epoch, setEpoch] = useState(0);
+  // Trọng số, hệ số chặn và số vòng lặp nằm chung MỘT state: nếu tách rời,
+  // vòng huấn luyện sẽ đọc phải giá trị cũ của biến kia và tính sai gradient.
+  const [model, setModel] = useState({ w: [0, 0, 0, 0], b: 0, epoch: 0 });
   const [running, setRunning] = useState(false);
   const data = useMemo(() => makeUrlData(seed), [seed]);
   const timer = useRef<number | null>(null);
+  const { w, b, epoch } = model;
 
   const reset = () => {
-    setW([0, 0, 0, 0]);
-    setB(0);
-    setEpoch(0);
+    setModel({ w: [0, 0, 0, 0], b: 0, epoch: 0 });
     setRunning(false);
   };
   useEffect(reset, [seed]);
 
-  const stepOnce = (wIn: number[], bIn: number) => {
+  /** Một bước hạ gradient trên toàn bộ tập (batch gradient descent). */
+  const stepOnce = (m: { w: number[]; b: number; epoch: number }, rate: number) => {
     const gw = [0, 0, 0, 0];
     let gb = 0;
     for (const s of data) {
-      const z = s.x.reduce((acc, xi, i) => acc + xi * wIn[i], bIn);
+      const z = s.x.reduce((acc, xi, i) => acc + xi * m.w[i], m.b);
       const err = sigmoid(z) - s.y;
       for (let i = 0; i < 4; i++) gw[i] += err * s.x[i];
       gb += err;
     }
-    const m = data.length;
+    const n = data.length;
     return {
-      w: wIn.map((wi, i) => wi - (lr * gw[i]) / m),
-      b: bIn - (lr * gb) / m,
+      w: m.w.map((wi, i) => wi - (rate * gw[i]) / n),
+      b: m.b - (rate * gb) / n,
+      epoch: m.epoch + 1,
     };
   };
 
   useEffect(() => {
     if (!running) return;
     timer.current = window.setInterval(() => {
-      setW((cw) => {
-        setB((cb) => stepOnce(cw, cb).b);
-        return stepOnce(cw, b).w;
-      });
-      setEpoch((e) => {
-        if (e >= 299) setRunning(false);
-        return e + 1;
+      setModel((m) => {
+        if (m.epoch >= 300) {
+          setRunning(false);
+          return m;
+        }
+        return stepOnce(m, lr);
       });
     }, 40);
     return () => {
       if (timer.current) clearInterval(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, lr, data, b]);
+  }, [running, lr, data]);
 
   const { loss, acc } = useMemo(() => {
     let l = 0;
@@ -131,7 +131,7 @@ export function LabLogistic() {
             <button className="btn btn-primary btn-sm" onClick={() => setRunning((r) => !r)}>
               {running ? '⏸ Tạm dừng' : '▶ Huấn luyện'}
             </button>
-            <button className="btn btn-sm" onClick={() => { const r = stepOnce(w, b); setW(r.w); setB(r.b); setEpoch((e) => e + 1); }}>
+            <button className="btn btn-sm" onClick={() => setModel((m) => stepOnce(m, lr))}>
               ⏭ Một bước
             </button>
             <button className="btn btn-sm" onClick={reset}>↺ Đặt lại</button>

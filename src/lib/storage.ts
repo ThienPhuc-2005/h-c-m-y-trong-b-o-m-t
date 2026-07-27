@@ -331,6 +331,14 @@ export const setNote = (lessonId: string, text: string) =>
 export const toggleCheck = (key: string) =>
   update((p) => ({ ...p, checks: { ...p.checks, [key]: !p.checks[key] } }));
 
+/**
+ * Đặt giá trị tường minh thay vì đảo. Cần cho những chỗ gọi từ `useEffect`:
+ * ở chế độ StrictMode của React, effect chạy hai lần, và hai lần đảo liên tiếp
+ * sẽ triệt tiêu nhau — một lỗi chỉ xuất hiện lúc phát triển nhưng vẫn đáng chặn.
+ */
+export const setCheck = (key: string, value: boolean) =>
+  update((p) => (p.checks[key] === value ? p : { ...p, checks: { ...p.checks, [key]: value } }));
+
 export const toggleFlag = (cardId: string) =>
   update((p) => ({
     ...p,

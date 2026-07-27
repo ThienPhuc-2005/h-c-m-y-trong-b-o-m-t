@@ -34,7 +34,7 @@ function Svg({ children, vb = '0 0 600 300', h }: { children: ReactNode; vb?: st
     <svg
       viewBox={vb}
       role="img"
-      style={{ width: '100%', height: h ? undefined : 'auto', maxHeight: h ?? 340 }}
+      style={{ width: '100%', maxWidth: 760, margin: '0 auto', height: h ? undefined : 'auto', maxHeight: h ?? 340 }}
       preserveAspectRatio="xMidYMid meet"
     >
       {children}

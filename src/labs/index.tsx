@@ -31,7 +31,7 @@ export const LABS: LabMeta[] = [
   { id: 'lab-tree', title: 'Cây quyết định', blurb: 'Tự chọn phép chia và so với đáp án máy tìm được.', track: 'ml-cot-loi', icon: '🌳', Component: LabTree },
   { id: 'lab-knn', title: 'k-NN & ranh giới quyết định', blurb: 'Nhìn thấy đánh đổi thiên lệch – phương sai bằng hình ảnh.', track: 'ml-cot-loi', icon: '🎯', Component: LabKnn },
   { id: 'lab-overfit', title: 'Quá khớp', blurb: 'Tăng độ phức tạp và xem mô hình học thuộc nhiễu.', track: 'ml-cot-loi', icon: '🌀', Component: LabOverfit },
-  { id: 'lab-confusion', title: 'Ma trận nhầm lẫn', blurb: 'Kéo ngưỡng, xem bốn con số và bốn hậu quả thay đổi.', track: 'do-luong', icon: '🔲', Component: LabConfusion },
+  { id: 'lab-confusion', title: 'Ma trận nhầm lẫn', blurb: 'Kéo ngưỡng, xem bốn con số và bốn hậu quả thay đổi.', track: 'do-luong', icon: '🧮', Component: LabConfusion },
   { id: 'lab-roc-pr', title: 'ROC và PR cạnh nhau', blurb: 'Chứng kiến ROC-AUC nói dối khi lớp dương hiếm.', track: 'do-luong', icon: '📉', Component: LabRocPr },
   { id: 'lab-cost-threshold', title: 'Ngưỡng theo chi phí', blurb: 'Tìm ngưỡng tối ưu bằng ma trận chi phí thật.', track: 'do-luong', icon: '💰', Component: LabCostThreshold },
   { id: 'lab-calibration', title: 'Hiệu chuẩn xác suất', blurb: 'Điểm 0,9 của mô hình có thật sự nghĩa là 90%?', track: 'do-luong', icon: '🎚️', Component: LabCalibration },

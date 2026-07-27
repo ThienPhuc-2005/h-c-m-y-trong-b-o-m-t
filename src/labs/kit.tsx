@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { toggleCheck } from '../lib/storage';
+import { setCheck } from '../lib/storage';
 
 export function LabShell({
   id,
@@ -22,11 +22,10 @@ export function LabShell({
   takeaway?: ReactNode;
 }) {
   // Ghi nhận lab đã được mở — dùng cho huy hiệu "chuột bạch phòng lab".
+  // Dùng setCheck (đặt giá trị) chứ không phải toggleCheck (đảo): effect có thể
+  // chạy hai lần và hai lần đảo sẽ triệt tiêu nhau.
   useEffect(() => {
-    const key = `lab:${id}`;
-    const p = JSON.parse(localStorage.getItem('aegis.progress.v1') || '{}');
-    if (!p?.checks?.[key]) toggleCheck(key);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setCheck(`lab:${id}`, true);
   }, [id]);
 
   return (
@@ -252,8 +251,17 @@ export function Dots({ p, pts, color, r = 4, shape = 'circle' }: { p: Plot; pts:
 }
 
 export function Chart({ p, children, label }: { p: Plot; children: ReactNode; label?: string }) {
+  // Chặn bề rộng: SVG dùng viewBox nên MỌI thứ bên trong — kể cả chữ — phóng to
+  // theo khung. Trên màn hình rộng, một biểu đồ 460px kéo giãn ra 1800px sẽ có
+  // nhãn trục to bằng tiêu đề trang, phá vỡ hoàn toàn thứ bậc thị giác.
+  // Giới hạn 1,45 lần kích thước thiết kế là mức chữ vẫn còn đúng vai trò.
   return (
-    <svg viewBox={`0 0 ${p.w} ${p.h}`} style={{ width: '100%', height: 'auto' }} role="img" aria-label={label}>
+    <svg
+      viewBox={`0 0 ${p.w} ${p.h}`}
+      style={{ width: '100%', maxWidth: Math.round(p.w * 1.45), height: 'auto', margin: '0 auto' }}
+      role="img"
+      aria-label={label}
+    >
       {children}
     </svg>
   );

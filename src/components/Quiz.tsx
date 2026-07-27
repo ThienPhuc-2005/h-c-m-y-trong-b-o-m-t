@@ -435,9 +435,6 @@ export function QuizSet({
         onAnswered={(c) => {
           const next = [...results, c];
           setResults(next);
-          setTimeout(() => {
-            /* để người học kịp đọc phần giải thích trước khi nút hiện */
-          }, 0);
           if (idx + 1 >= items.length) onDone?.(next.filter(Boolean).length / next.length);
         }}
       />
