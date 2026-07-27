@@ -1,0 +1,528 @@
+/**
+ * Phòng lab về ĐO LƯỜNG.
+ *
+ * Đây là nhóm lab quan trọng nhất của toàn khoá. Lý do: hầu hết thất bại của
+ * ML trong bảo mật không phải do thuật toán kém, mà do người ta đo sai thứ.
+ * Chữ nghĩa khó truyền đạt được cảm giác "0,1% mà lại là 10.000 cảnh báo";
+ * kéo một thanh trượt và thấy con số nhảy thì truyền được ngay.
+ */
+
+import { useMemo, useState } from 'react';
+import { LabShell, Slider, Readout, Chart, Axes, Line, Area, Dots, mkPlot, px, py, COLORS, Bars, Toggle } from './kit';
+import { fmtNum, mulberry32, gaussian, clamp } from '../lib/utils';
+
+/* ========================================================================== */
+/*  lab-base-rate — Nghịch lý tỉ lệ nền                                        */
+/* ========================================================================== */
+
+export function LabBaseRate() {
+  const [prevPer100k, setPrev] = useState(10); // số ca thật trên 100.000
+  const [tpr, setTpr] = useState(95);
+  const [fpr, setFpr] = useState(1);
+  const [volume, setVolume] = useState(1_000_000);
+
+  const positives = (volume * prevPer100k) / 100_000;
+  const negatives = volume - positives;
+  const tp = positives * (tpr / 100);
+  const fn = positives - tp;
+  const fp = negatives * (fpr / 100);
+  const tn = negatives - fp;
+  const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
+  const alerts = tp + fp;
+  const minutesPerAlert = 12;
+  const analystHours = (alerts * minutesPerAlert) / 60;
+
+  return (
+    <LabShell
+      id="lab-base-rate"
+      title="Máy tính nghịch lý tỉ lệ nền"
+      takeaway={
+        <>
+          Kéo <b>tỉ lệ nền</b> xuống thật thấp trong khi giữ bộ dò "rất tốt" (TPR 95%, FPR 1%). Độ chuẩn xác
+          sụp đổ dù mô hình không hề tệ đi. Đây là lý do toán học khiến mọi hệ thống phát hiện xâm nhập ngập
+          báo động giả — và không thuật toán nào sửa được nó ngoài việc <b>hạ FPR xuống mức cực thấp</b> hoặc{' '}
+          <b>thu hẹp phạm vi để tăng tỉ lệ nền</b>.
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <div className="stack">
+          <Slider
+            label="Tỉ lệ nền (số ca thật trên 100.000)"
+            value={prevPer100k}
+            min={1}
+            max={5000}
+            step={1}
+            onChange={setPrev}
+            format={(v) => `${v} / 100k  (${((v / 1000) * 1).toFixed(3)}%)`}
+            hint="Phishing có chủ đích thường dưới 10/100k. Malware thường 50–500/100k."
+          />
+          <Slider
+            label="Tỉ lệ bắt được (TPR / Recall)"
+            value={tpr}
+            min={50}
+            max={100}
+            step={0.5}
+            onChange={setTpr}
+            format={(v) => `${v}%`}
+          />
+          <Slider
+            label="Tỉ lệ báo động giả (FPR)"
+            value={fpr}
+            min={0.001}
+            max={10}
+            step={0.001}
+            onChange={setFpr}
+            format={(v) => `${v}%`}
+            hint="Thử kéo xuống 0,01% để thấy đây mới là núm quan trọng nhất."
+          />
+          <Slider
+            label="Lưu lượng mỗi ngày"
+            value={volume}
+            min={10_000}
+            max={50_000_000}
+            step={10_000}
+            onChange={setVolume}
+            format={(v) => `${fmtNum(v)} sự kiện`}
+          />
+        </div>
+
+        <div className="stack">
+          <Readout
+            items={[
+              {
+                k: 'Độ chuẩn xác',
+                v: `${(precision * 100).toFixed(1)}%`,
+                tone: precision > 0.5 ? 'ok' : precision > 0.15 ? 'warn' : 'bad',
+                sub: `1 cảnh báo thật / ${precision > 0 ? Math.round(1 / precision) : '∞'} cảnh báo`,
+              },
+              { k: 'Cảnh báo mỗi ngày', v: fmtNum(Math.round(alerts)), tone: alerts > 500 ? 'bad' : 'neutral' },
+              { k: 'Bỏ sót mỗi ngày', v: fmtNum(Math.round(fn)), tone: fn > 1 ? 'warn' : 'ok' },
+              {
+                k: 'Giờ analyst / ngày',
+                v: analystHours.toFixed(1),
+                tone: analystHours > 40 ? 'bad' : analystHours > 8 ? 'warn' : 'ok',
+                sub: `≈ ${(analystHours / 8).toFixed(1)} người toàn thời gian`,
+              },
+            ]}
+          />
+          <div className="panel">
+            <div className="faint" style={{ marginBottom: 8 }}>
+              Trong 1.000 cảnh báo mô hình gửi cho analyst:
+            </div>
+            <div style={{ display: 'flex', height: 26, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+              <div style={{ width: `${precision * 100}%`, background: 'var(--ok)', minWidth: precision > 0 ? 2 : 0 }} />
+              <div style={{ flex: 1, background: 'var(--warn)', opacity: 0.75 }} />
+            </div>
+            <div className="row" style={{ marginTop: 8, fontSize: 'var(--fs-xs)' }}>
+              <span className="chip chip-ok">{Math.round(precision * 1000)} thật</span>
+              <span className="chip chip-warn">{1000 - Math.round(precision * 1000)} giả</span>
+            </div>
+          </div>
+          <table className="data">
+            <tbody>
+              <tr><td>Đúng dương (TP)</td><td className="mono">{fmtNum(Math.round(tp))}</td></tr>
+              <tr><td>Sai dương (FP)</td><td className="mono">{fmtNum(Math.round(fp))}</td></tr>
+              <tr><td>Sai âm (FN)</td><td className="mono">{fmtNum(Math.round(fn))}</td></tr>
+              <tr><td>Đúng âm (TN)</td><td className="mono">{fmtNum(Math.round(tn))}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
+/*  lab-confusion — Ma trận nhầm lẫn theo ngưỡng                               */
+/* ========================================================================== */
+
+function makeScores(seed: number, n = 400, sep = 1.6, posRate = 0.2) {
+  const rng = mulberry32(seed);
+  const out: { score: number; y: 0 | 1 }[] = [];
+  for (let i = 0; i < n; i++) {
+    const y: 0 | 1 = rng() < posRate ? 1 : 0;
+    const raw = gaussian(rng, y ? sep : 0, 1);
+    out.push({ score: 1 / (1 + Math.exp(-raw)), y });
+  }
+  return out;
+}
+
+export function LabConfusion() {
+  const [threshold, setThreshold] = useState(0.5);
+  const [sep, setSep] = useState(1.8);
+  const data = useMemo(() => makeScores(2024, 500, sep, 0.2), [sep]);
+
+  const tp = data.filter((d) => d.y === 1 && d.score >= threshold).length;
+  const fn = data.filter((d) => d.y === 1 && d.score < threshold).length;
+  const fp = data.filter((d) => d.y === 0 && d.score >= threshold).length;
+  const tn = data.filter((d) => d.y === 0 && d.score < threshold).length;
+  const precision = tp + fp ? tp / (tp + fp) : 0;
+  const recall = tp + fn ? tp / (tp + fn) : 0;
+  const f1 = precision + recall ? (2 * precision * recall) / (precision + recall) : 0;
+  const acc = (tp + tn) / data.length;
+
+  const p = mkPlot(460, 210, [0, 1], [0, 60], { l: 40, r: 12, t: 12, b: 34 });
+  const hist = (cls: 0 | 1) => {
+    const bins = new Array(24).fill(0);
+    for (const d of data) if (d.y === cls) bins[Math.min(23, Math.floor(d.score * 24))]++;
+    return bins;
+  };
+  const h0 = hist(0);
+  const h1 = hist(1);
+
+  return (
+    <LabShell
+      id="lab-confusion"
+      title="Ma trận nhầm lẫn và ngưỡng quyết định"
+      takeaway={
+        <>
+          Kéo ngưỡng và để ý: <b>không có vị trí nào tốt cho cả hai bên</b>. Mỗi báo động giả bạn cắt được đều
+          đổi bằng một lần bỏ sót. Ngưỡng 0,5 chỉ là mặc định của thư viện, không phải một lựa chọn kỹ thuật —
+          nó chỉ đúng khi hai loại sai có chi phí bằng nhau, điều gần như không bao giờ xảy ra trong bảo mật.
+          Cũng để ý <b>độ chính xác (accuracy)</b> gần như không nhúc nhích dù hệ thống trở nên vô dụng.
+        </>
+      }
+    >
+      <Slider label="Ngưỡng quyết định" value={threshold} min={0.02} max={0.98} step={0.01} onChange={setThreshold} format={(v) => v.toFixed(2)} />
+      <Slider label="Mô hình phân tách tốt đến đâu" value={sep} min={0.3} max={4} step={0.1} onChange={setSep} format={(v) => v.toFixed(1)} hint="Mô hình càng tốt, hai phân phối càng tách xa nhau." />
+
+      <Chart p={p} label="Phân bố điểm số của hai lớp">
+        <Axes p={p} xLabel="Điểm mô hình" yLabel="Số mẫu" yTicks={3} fmtY={(v) => String(Math.round(v))} />
+        {h0.map((v, i) => (
+          <rect key={`a${i}`} x={px(p, i / 24)} y={py(p, v)} width={(p.w - p.pad.l - p.pad.r) / 24 - 1} height={Math.max(0, py(p, 0) - py(p, v))} fill={COLORS.ok} opacity={0.55} />
+        ))}
+        {h1.map((v, i) => (
+          <rect key={`b${i}`} x={px(p, i / 24)} y={py(p, v)} width={(p.w - p.pad.l - p.pad.r) / 24 - 1} height={Math.max(0, py(p, 0) - py(p, v))} fill={COLORS.bad} opacity={0.6} />
+        ))}
+        <line x1={px(p, threshold)} y1={p.pad.t} x2={px(p, threshold)} y2={p.h - p.pad.b} stroke="var(--brand)" strokeWidth={2.5} />
+      </Chart>
+
+      <div className="grid grid-2">
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <div className="card" style={{ background: 'var(--ok-soft)', borderColor: 'var(--ok-border)', padding: 'var(--s-3)' }}>
+              <div className="stat-k">✓ Đúng dương</div>
+              <div className="stat-v" style={{ fontSize: 'var(--fs-xl)', color: 'var(--ok-text)' }}>{tp}</div>
+            </div>
+            <div className="card" style={{ background: 'var(--warn-soft)', borderColor: 'var(--warn-border)', padding: 'var(--s-3)' }}>
+              <div className="stat-k">⚠ Báo động giả</div>
+              <div className="stat-v" style={{ fontSize: 'var(--fs-xl)', color: 'var(--warn-text)' }}>{fp}</div>
+            </div>
+            <div className="card" style={{ background: 'var(--bad-soft)', borderColor: 'var(--bad-border)', padding: 'var(--s-3)' }}>
+              <div className="stat-k">✕ Bỏ sót</div>
+              <div className="stat-v" style={{ fontSize: 'var(--fs-xl)', color: 'var(--bad-text)' }}>{fn}</div>
+            </div>
+            <div className="card" style={{ padding: 'var(--s-3)' }}>
+              <div className="stat-k">· Đúng âm</div>
+              <div className="stat-v" style={{ fontSize: 'var(--fs-xl)' }}>{tn}</div>
+            </div>
+          </div>
+        </div>
+        <Bars
+          color={COLORS.brand}
+          data={[
+            { label: 'Chuẩn xác', v: precision, color: 'var(--brand)' },
+            { label: 'Bao phủ', v: recall, color: 'var(--info)' },
+            { label: 'F1', v: f1, color: 'var(--lab)' },
+            { label: 'Chính xác', v: acc, color: 'var(--text-faint)' },
+          ]}
+          fmt={(v) => `${(v * 100).toFixed(0)}%`}
+        />
+      </div>
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
+/*  lab-roc-pr — ROC và PR cạnh nhau                                           */
+/* ========================================================================== */
+
+export function LabRocPr() {
+  const [posRate, setPosRate] = useState(20);
+  const [sep, setSep] = useState(1.8);
+  const data = useMemo(() => makeScores(777, 4000, sep, posRate / 100), [sep, posRate]);
+
+  const { roc, pr, auc, ap } = useMemo(() => {
+    const sorted = [...data].sort((a, b) => b.score - a.score);
+    const P = sorted.filter((d) => d.y === 1).length || 1;
+    const N = sorted.length - P || 1;
+    let tp = 0;
+    let fp = 0;
+    const roc: [number, number][] = [[0, 0]];
+    const pr: [number, number][] = [];
+    let auc = 0;
+    let ap = 0;
+    let prevFpr = 0;
+    let prevRec = 0;
+    for (const d of sorted) {
+      if (d.y === 1) tp++;
+      else fp++;
+      const rec = tp / P;
+      const fprv = fp / N;
+      const prec = tp / (tp + fp);
+      roc.push([fprv, rec]);
+      pr.push([rec, prec]);
+      auc += (fprv - prevFpr) * rec;
+      ap += (rec - prevRec) * prec;
+      prevFpr = fprv;
+      prevRec = rec;
+    }
+    return { roc, pr, auc, ap };
+  }, [data]);
+
+  const pRoc = mkPlot(300, 250, [0, 1], [0, 1], { l: 40, r: 10, t: 12, b: 36 });
+  const pPr = mkPlot(300, 250, [0, 1], [0, 1], { l: 40, r: 10, t: 12, b: 36 });
+  const baseline = posRate / 100;
+
+  return (
+    <LabShell
+      id="lab-roc-pr"
+      title="ROC và Precision–Recall cạnh nhau"
+      takeaway={
+        <>
+          Giữ nguyên mô hình, chỉ kéo <b>tỉ lệ lớp dương</b> từ 20% xuống 0,5%. ROC-AUC gần như không đổi — nó
+          trông vẫn "xuất sắc". Nhưng PR-AUC sụp thẳng đứng, và đó mới là thứ analyst cảm nhận được. Lý do:
+          mẫu số của FPR là toàn bộ mẫu âm (rất lớn), nên FPR luôn nhỏ; còn mẫu số của precision là số cảnh
+          báo bạn thực sự gửi đi. <b>Khi lớp dương hiếm, hãy báo cáo PR-AUC.</b>
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <Slider label="Tỉ lệ lớp dương (tấn công)" value={posRate} min={0.2} max={40} step={0.1} onChange={setPosRate} format={(v) => `${v}%`} hint="Thực tế trong bảo mật thường dưới 1%." />
+        <Slider label="Chất lượng mô hình" value={sep} min={0.4} max={4} step={0.1} onChange={setSep} format={(v) => v.toFixed(1)} />
+      </div>
+
+      <div className="grid grid-2">
+        <div>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
+            <b style={{ fontSize: 'var(--fs-sm)' }}>Đường ROC</b>
+            <span className="chip chip-info">AUC {auc.toFixed(3)}</span>
+          </div>
+          <Chart p={pRoc} label="Đường ROC">
+            <Axes p={pRoc} xLabel="FPR" yLabel="TPR" xTicks={4} yTicks={4} />
+            <Line p={pRoc} pts={[[0, 0], [1, 1]]} color="var(--border-strong)" width={1.4} dash="5 4" />
+            <Area p={pRoc} pts={roc} color={COLORS.info} />
+            <Line p={pRoc} pts={roc} color={COLORS.info} />
+          </Chart>
+        </div>
+        <div>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
+            <b style={{ fontSize: 'var(--fs-sm)' }}>Đường Precision–Recall</b>
+            <span className={`chip ${ap > 0.5 ? 'chip-ok' : ap > 0.2 ? 'chip-warn' : 'chip-bad'}`}>PR-AUC {ap.toFixed(3)}</span>
+          </div>
+          <Chart p={pPr} label="Đường Precision-Recall">
+            <Axes p={pPr} xLabel="Recall" yLabel="Precision" xTicks={4} yTicks={4} />
+            <Line p={pPr} pts={[[0, baseline], [1, baseline]]} color="var(--border-strong)" width={1.4} dash="5 4" />
+            <Area p={pPr} pts={pr} color={COLORS.brand} />
+            <Line p={pPr} pts={pr} color={COLORS.brand} />
+          </Chart>
+          <div className="faint center">Đường đứt = mức của mô hình đoán mò ({(baseline * 100).toFixed(1)}%)</div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
+/*  lab-cost-threshold — Ngưỡng tối ưu theo chi phí                            */
+/* ========================================================================== */
+
+export function LabCostThreshold() {
+  const [costFN, setCostFN] = useState(50000);
+  const [costFP, setCostFP] = useState(15);
+  const [posRate, setPosRate] = useState(1);
+  const data = useMemo(() => makeScores(4242, 6000, 2.0, posRate / 100), [posRate]);
+
+  const curve = useMemo(() => {
+    const out: { t: number; cost: number; alerts: number; missed: number }[] = [];
+    for (let t = 0.01; t <= 0.99; t += 0.01) {
+      const fn = data.filter((d) => d.y === 1 && d.score < t).length;
+      const fp = data.filter((d) => d.y === 0 && d.score >= t).length;
+      const tp = data.filter((d) => d.y === 1 && d.score >= t).length;
+      out.push({ t, cost: fn * costFN + fp * costFP, alerts: tp + fp, missed: fn });
+    }
+    return out;
+  }, [data, costFN, costFP]);
+
+  const best = curve.reduce((a, b) => (b.cost < a.cost ? b : a), curve[0]);
+  const at05 = curve.find((c) => Math.abs(c.t - 0.5) < 0.006) ?? curve[Math.floor(curve.length / 2)];
+  const maxCost = Math.max(...curve.map((c) => c.cost));
+  const p = mkPlot(460, 240, [0, 1], [0, maxCost || 1], { l: 62, r: 12, t: 12, b: 36 });
+
+  return (
+    <LabShell
+      id="lab-cost-threshold"
+      title="Chọn ngưỡng bằng ma trận chi phí"
+      takeaway={
+        <>
+          Ngưỡng tối ưu <b>hầu như không bao giờ là 0,5</b>. Nó phụ thuộc vào tỉ số chi phí bỏ sót / chi phí
+          báo động giả và vào tỉ lệ nền. Hãy thử đặt chi phí bỏ sót = 50.000 (một vụ ransomware) và chi phí
+          báo động giả = 15 (15 phút analyst): ngưỡng tối ưu tụt xuống rất thấp. Đây là cách bạn biện minh
+          cho một con số trước ban lãnh đạo, thay vì nói "chúng tôi để mặc định".
+        </>
+      }
+    >
+      <div className="grid grid-3">
+        <Slider label="Chi phí một lần BỎ SÓT" value={costFN} min={100} max={200000} step={100} onChange={setCostFN} format={(v) => `${fmtNum(v)} $`} />
+        <Slider label="Chi phí một BÁO ĐỘNG GIẢ" value={costFP} min={1} max={200} step={1} onChange={setCostFP} format={(v) => `${v} $`} hint="≈ giá 12 phút của analyst" />
+        <Slider label="Tỉ lệ nền" value={posRate} min={0.05} max={20} step={0.05} onChange={setPosRate} format={(v) => `${v}%`} />
+      </div>
+
+      <Chart p={p} label="Chi phí kỳ vọng theo ngưỡng">
+        <Axes p={p} xLabel="Ngưỡng" yLabel="Tổng chi phí ($)" yTicks={4} fmtY={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)))} />
+        <Line p={p} pts={curve.map((c) => [c.t, c.cost])} color={COLORS.warn} />
+        <line x1={px(p, 0.5)} y1={p.pad.t} x2={px(p, 0.5)} y2={p.h - p.pad.b} stroke="var(--text-faint)" strokeWidth={1.5} strokeDasharray="4 4" />
+        <text x={px(p, 0.5) + 5} y={p.pad.t + 14} className="svg-label" style={{ fontSize: 10 }}>mặc định 0,5</text>
+        <line x1={px(p, best.t)} y1={p.pad.t} x2={px(p, best.t)} y2={p.h - p.pad.b} stroke="var(--ok)" strokeWidth={2.2} />
+        <circle cx={px(p, best.t)} cy={py(p, best.cost)} r={6} fill="var(--ok)" />
+        <text x={px(p, best.t) + 6} y={py(p, best.cost) - 8} className="svg-label-strong" style={{ fontSize: 11 }}>tối ưu {best.t.toFixed(2)}</text>
+      </Chart>
+
+      <Readout
+        items={[
+          { k: 'Ngưỡng tối ưu', v: best.t.toFixed(2), tone: 'ok' },
+          { k: 'Chi phí ở ngưỡng tối ưu', v: `${fmtNum(Math.round(best.cost))} $`, tone: 'ok' },
+          { k: 'Chi phí nếu để 0,5', v: `${fmtNum(Math.round(at05.cost))} $`, tone: at05.cost > best.cost * 1.2 ? 'bad' : 'neutral' },
+          { k: 'Tiết kiệm được', v: `${fmtNum(Math.round(at05.cost - best.cost))} $`, tone: 'info', sub: 'trên cùng tập dữ liệu' },
+        ]}
+      />
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
+/*  lab-calibration — Hiệu chuẩn xác suất                                      */
+/* ========================================================================== */
+
+export function LabCalibration() {
+  const [skew, setSkew] = useState(1);
+  const pts = useMemo(() => {
+    // skew = 1 → hiệu chuẩn hoàn hảo; > 1 → tự tin quá mức; < 1 → rụt rè.
+    const rng = mulberry32(99);
+    const bins = Array.from({ length: 10 }, () => ({ n: 0, pos: 0 }));
+    for (let i = 0; i < 5000; i++) {
+      const trueP = rng();
+      const shown = clamp(Math.pow(trueP, 1 / skew), 0, 0.999);
+      const y = rng() < trueP ? 1 : 0;
+      const b = Math.min(9, Math.floor(shown * 10));
+      bins[b].n++;
+      bins[b].pos += y;
+    }
+    return bins.map((b, i) => ({ x: i / 10 + 0.05, y: b.n ? b.pos / b.n : 0, n: b.n }));
+  }, [skew]);
+
+  const p = mkPlot(440, 280, [0, 1], [0, 1], { l: 48, r: 14, t: 14, b: 38 });
+  const ece = pts.reduce((s, b) => s + (b.n / 5000) * Math.abs(b.y - b.x), 0);
+
+  return (
+    <LabShell
+      id="lab-calibration"
+      title="Biểu đồ độ tin cậy (reliability diagram)"
+      takeaway={
+        <>
+          Một mô hình có thể xếp hạng rất tốt (AUC cao) mà điểm số vẫn <b>vô nghĩa</b> về mặt xác suất. Khi
+          analyst thấy "0,9" họ hiểu là "90% khả năng thật" — nếu thực tế chỉ 40% thì bạn đang nói dối họ một
+          cách có hệ thống. Đường cong nằm dưới đường chéo = tự tin quá mức, dạng phổ biến nhất ở mô hình cây
+          tăng cường và mạng nơ-ron. Sửa bằng Platt scaling hoặc isotonic regression trên tập kiểm định riêng.
+        </>
+      }
+    >
+      <Slider
+        label="Xu hướng mô hình"
+        value={skew}
+        min={0.4}
+        max={2.5}
+        step={0.05}
+        onChange={setSkew}
+        format={(v) => (v > 1.08 ? 'tự tin quá mức' : v < 0.92 ? 'rụt rè quá mức' : 'hiệu chuẩn tốt')}
+      />
+      <Chart p={p} label="Biểu đồ độ tin cậy">
+        <Axes p={p} xLabel="Điểm mô hình đưa ra" yLabel="Tỉ lệ thực sự dương" />
+        <Line p={p} pts={[[0, 0], [1, 1]]} color="var(--ok)" width={2} dash="6 4" />
+        <Line p={p} pts={pts.map((b) => [b.x, b.y] as [number, number])} color={COLORS.brand} />
+        <Dots p={p} pts={pts.map((b) => [b.x, b.y] as [number, number])} color={COLORS.brand} r={5} />
+      </Chart>
+      <Readout
+        items={[
+          { k: 'Sai số hiệu chuẩn kỳ vọng (ECE)', v: ece.toFixed(3), tone: ece < 0.05 ? 'ok' : ece < 0.12 ? 'warn' : 'bad', sub: 'càng gần 0 càng tốt' },
+          { k: 'Diễn giải', v: skew > 1.08 ? 'Nói quá' : skew < 0.92 ? 'Nói giảm' : 'Đáng tin', tone: Math.abs(skew - 1) < 0.09 ? 'ok' : 'warn' },
+        ]}
+      />
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
+/*  lab-alert-load — Tải cảnh báo của SOC                                      */
+/* ========================================================================== */
+
+export function LabAlertLoad() {
+  const [events, setEvents] = useState(5_000_000);
+  const [fpr, setFpr] = useState(0.1);
+  const [analysts, setAnalysts] = useState(4);
+  const [minutes, setMinutes] = useState(12);
+  const [grouping, setGrouping] = useState(true);
+
+  const rawAlerts = (events * fpr) / 100;
+  const alerts = grouping ? rawAlerts / 8 : rawAlerts;
+  const capacity = analysts * 8 * (60 / minutes);
+  const ratio = alerts / (capacity || 1);
+  const backlogPerDay = Math.max(0, alerts - capacity);
+
+  return (
+    <LabShell
+      id="lab-alert-load"
+      title="Đội SOC của bạn có sống sót không?"
+      takeaway={
+        <>
+          Con số quan trọng nhất không phải FPR mà là <b>tỉ lệ tải / năng lực</b>. Khi vượt 1,0, hàng đợi phình
+          ra mỗi ngày và mọi thứ sụp trong vài tuần — analyst bắt đầu đóng cảnh báo hàng loạt mà không điều tra,
+          và lúc đó cảnh báo thật cũng bị đóng cùng. Để ý rằng <b>gom nhóm cảnh báo</b> thường mang lại cải
+          thiện lớn hơn nhiều so với việc chỉnh mô hình thêm vài phần trăm.
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <div className="stack">
+          <Slider label="Sự kiện mỗi ngày" value={events} min={100_000} max={100_000_000} step={100_000} onChange={setEvents} format={(v) => fmtNum(v)} />
+          <Slider label="Tỉ lệ báo động giả" value={fpr} min={0.001} max={2} step={0.001} onChange={setFpr} format={(v) => `${v}%`} />
+          <Slider label="Số analyst trực" value={analysts} min={1} max={40} step={1} onChange={setAnalysts} />
+          <Slider label="Phút xử lý mỗi cảnh báo" value={minutes} min={2} max={60} step={1} onChange={setMinutes} format={(v) => `${v} phút`} />
+          <Toggle label="Bật gom nhóm cảnh báo (giảm ~8 lần)" checked={grouping} onChange={setGrouping} />
+        </div>
+        <div className="stack">
+          <Readout
+            items={[
+              { k: 'Cảnh báo/ngày', v: fmtNum(Math.round(alerts)), tone: ratio > 1 ? 'bad' : 'neutral' },
+              { k: 'Năng lực xử lý', v: fmtNum(Math.round(capacity)), tone: 'info' },
+              { k: 'Tải / năng lực', v: `${ratio.toFixed(2)}×`, tone: ratio > 1 ? 'bad' : ratio > 0.75 ? 'warn' : 'ok' },
+              { k: 'Tồn đọng mỗi ngày', v: fmtNum(Math.round(backlogPerDay)), tone: backlogPerDay > 0 ? 'bad' : 'ok' },
+            ]}
+          />
+          <div className="panel">
+            <div className="bar bar-lg" style={{ marginBottom: 8 }}>
+              <div
+                className="bar-fill"
+                style={{ width: `${Math.min(100, ratio * 100)}%`, background: ratio > 1 ? 'var(--bad)' : ratio > 0.75 ? 'var(--warn)' : 'var(--ok)' }}
+              />
+            </div>
+            <div style={{ fontSize: 'var(--fs-sm)' }}>
+              {ratio > 1.5
+                ? '🔴 Sụp đổ. Đội sẽ bỏ qua cảnh báo hàng loạt trong vòng vài tuần.'
+                : ratio > 1
+                  ? '🟠 Quá tải. Hàng đợi tăng mỗi ngày, thời gian phát hiện kéo dài.'
+                  : ratio > 0.75
+                    ? '🟡 Sát ngưỡng. Không còn dư địa cho ngày cao điểm hay sự cố.'
+                    : '🟢 Bền vững. Còn chỗ cho điều tra chủ động và săn tìm mối đe doạ.'}
+            </div>
+            <div className="faint" style={{ marginTop: 8 }}>
+              Cần thêm {Math.max(0, Math.ceil((alerts - capacity) / (8 * (60 / minutes))))} analyst để cân bằng,
+              hoặc hạ FPR xuống {((capacity * 100) / (events / (grouping ? 8 : 1))).toFixed(4)}%.
+            </div>
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}

@@ -1,0 +1,312 @@
+/* ==========================================================================
+   AEGIS — Hệ thống thiết kế (design tokens)
+   --------------------------------------------------------------------------
+   Nguyên tắc màu sắc phục vụ việc học (không phải để "cho đẹp"):
+
+   1. NỀN TRUNG TÍNH, ĐỘ BÃO HOÀ THẤP.
+      Đọc lâu trên nền bão hoà cao gây mỏi mắt và giảm khả năng duy trì chú ý.
+      Mọi bề mặt (surface) đều dưới ~8% chroma. Màu rực chỉ dành cho THÔNG TIN.
+
+   2. MÀU LÀ TÍN HIỆU, KHÔNG PHẢI TRANG TRÍ.
+      Mỗi hue được gán một ý nghĩa cố định trong toàn app. Người học học bảng
+      màu này một lần rồi dùng lại mãi → giảm tải nhận thức ngoại lai.
+        indigo  = điều hướng / thương hiệu
+        emerald = đúng, đã thành thạo, an toàn
+        rose    = sai, nguy hiểm, tấn công
+        amber   = cảnh báo, bẫy, cần chú ý
+        cyan    = trực giác / "aha", khái niệm mới
+        violet  = phòng thí nghiệm, tương tác
+        slate   = trung tính, siêu dữ liệu
+
+   3. KHÔNG BAO GIỜ CHỈ DÙNG MÀU ĐỂ TRUYỀN TIN.
+      ~8% nam giới bị mù màu đỏ-lục — cặp "đúng/sai" nguy hiểm nhất. Vì vậy mọi
+      trạng thái đều kèm biểu tượng + hình dạng + nhãn chữ.
+
+   4. TƯƠNG PHẢN ĐẠT WCAG 2.2 AA.
+      Chữ nội dung ≥ 4.5:1, chữ lớn & thành phần giao diện ≥ 3:1, ở CẢ hai chế độ.
+
+   5. MÀU SAI KHÔNG "LA HÉT".
+      Đỏ chói khi trả lời sai kích hoạt phản ứng đe doạ, thu hẹp chú ý và làm
+      giảm khả năng tiếp thu phản hồi. Ta dùng rose dịu, nhấn bằng viền trái,
+      và luôn đi kèm lời giải thích — sai là dữ liệu học tập, không phải hình phạt.
+   ========================================================================== */
+
+:root {
+  /* ---- Bậc chữ (Major Third 1.2 — đủ tương phản, không nhảy vọt) --------- */
+  --fs-2xs: 0.6875rem;
+  --fs-xs: 0.78125rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 1.875rem;
+  --fs-3xl: 2.25rem;
+  --fs-4xl: 3rem;
+
+  /* Nhịp đọc: 1.7 cho văn bản dài (nghiên cứu về tốc độ đọc màn hình),
+     1.25 cho tiêu đề để giữ khối tiêu đề gọn. */
+  --lh-body: 1.72;
+  --lh-tight: 1.25;
+  --lh-snug: 1.45;
+
+  /* Bề rộng dòng tối ưu ~ 60–75 ký tự. Dài hơn → mất dòng khi quét mắt. */
+  --measure: 68ch;
+  --measure-wide: 82ch;
+
+  --ff-sans: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Roboto', 'Helvetica Neue', system-ui, sans-serif;
+  --ff-mono: 'JetBrains Mono', 'SFMono-Regular', 'Cascadia Code', Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  /* ---- Nhịp khoảng cách (thang 4px) ------------------------------------- */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.25rem;
+  --s-6: 1.5rem;
+  --s-8: 2rem;
+  --s-10: 2.5rem;
+  --s-12: 3rem;
+  --s-16: 4rem;
+  --s-20: 5rem;
+
+  /* ---- Bo góc ------------------------------------------------------------ */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-full: 999px;
+
+  /* ---- Chuyển động ------------------------------------------------------- */
+  /* Nhanh vừa đủ để thấy quan hệ nhân-quả (~150–250ms), không đủ lâu để chờ. */
+  --t-fast: 120ms;
+  --t-base: 190ms;
+  --t-slow: 320ms;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-sticky: 40;
+  --z-drawer: 60;
+  --z-modal: 80;
+  --z-toast: 100;
+
+  /* ---- Hệ số cỡ chữ do người học điều chỉnh ----------------------------- */
+  --user-scale: 1;
+}
+
+/* ==========================================================================
+   CHẾ ĐỘ SÁNG
+   Nền không phải trắng tinh (#fff): trắng tinh trên màn hình sáng tạo chói
+   và tăng mỏi mắt. Dùng trắng ngà rất nhạt ám xanh (giảm nhiệt độ màu).
+   ========================================================================== */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f7f8fb;
+  --bg-elev: #ffffff;
+  --bg-sunken: #eef0f6;
+  --bg-hover: #f0f2f8;
+  --bg-active: #e7eaf3;
+
+  --border: #dfe3ec;
+  --border-strong: #c6ccdb;
+  --border-subtle: #ebeef5;
+
+  --text: #16192a; /* 15.8:1 trên --bg */
+  --text-muted: #4d5570; /* 7.4:1  — vẫn đạt AA cho chữ thường */
+  --text-faint: #6b7490; /* 4.7:1  — ngưỡng tối thiểu, chỉ cho siêu dữ liệu */
+  --text-inverse: #ffffff;
+
+  --brand: #4f46e5;
+  --brand-strong: #4338ca;
+  --brand-soft: #eef0fe;
+  --brand-border: #c7cbfb;
+  --brand-text: #3730a3;
+
+  --ok: #047857;
+  --ok-strong: #065f46;
+  --ok-soft: #e6f6ef;
+  --ok-border: #a7dcc5;
+  --ok-text: #065f46;
+
+  --bad: #be123c;
+  --bad-strong: #9f1239;
+  --bad-soft: #fdeef2;
+  --bad-border: #f5c2cf;
+  --bad-text: #9f1239;
+
+  --warn: #b45309;
+  --warn-strong: #92400e;
+  --warn-soft: #fdf3e3;
+  --warn-border: #f0d5a8;
+  --warn-text: #92400e;
+
+  --info: #0e7490;
+  --info-strong: #155e75;
+  --info-soft: #e5f5f9;
+  --info-border: #a8d9e6;
+  --info-text: #155e75;
+
+  --lab: #7c3aed;
+  --lab-soft: #f3edfe;
+  --lab-border: #d5c4fb;
+  --lab-text: #5b21b6;
+
+  --shadow-sm: 0 1px 2px rgb(19 23 38 / 0.06), 0 1px 3px rgb(19 23 38 / 0.04);
+  --shadow-md: 0 2px 4px rgb(19 23 38 / 0.05), 0 8px 20px -6px rgb(19 23 38 / 0.1);
+  --shadow-lg: 0 4px 8px rgb(19 23 38 / 0.05), 0 24px 48px -12px rgb(19 23 38 / 0.18);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--brand) 32%, transparent);
+
+  --grid-line: #e3e7f0;
+  --code-bg: #f6f7fb;
+}
+
+/* ==========================================================================
+   CHẾ ĐỘ TỐI
+   Không dùng đen tuyệt đối (#000): tương phản cực đại gây "halation" (chữ
+   trắng loang trên nền đen), đặc biệt với người loạn thị. Nền #12141c.
+   Chữ cũng không trắng tinh mà #e7e9f2 để giảm chói.
+   ========================================================================== */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0f1117;
+  --bg-elev: #171a23;
+  --bg-sunken: #0b0d12;
+  --bg-hover: #1e2230;
+  --bg-active: #262b3b;
+
+  --border: #262b3a;
+  --border-strong: #3a4256;
+  --border-subtle: #1d2130;
+
+  --text: #e8eaf2;
+  --text-muted: #a3abc2;
+  --text-faint: #7d859c;
+  --text-inverse: #0f1117;
+
+  --brand: #8b8cf9;
+  --brand-strong: #a5a6ff;
+  --brand-soft: #1c1e3a;
+  --brand-border: #383a६e;
+  --brand-border: #383a6e;
+  --brand-text: #b9baff;
+
+  --ok: #34d399;
+  --ok-strong: #6ee7b7;
+  --ok-soft: #10261f;
+  --ok-border: #1f5545;
+  --ok-text: #6ee7b7;
+
+  --bad: #fb7185;
+  --bad-strong: #fda4af;
+  --bad-soft: #2a1219;
+  --bad-border: #6b2434;
+  --bad-text: #fda4af;
+
+  --warn: #fbbf24;
+  --warn-strong: #fcd34d;
+  --warn-soft: #2a1f0c;
+  --warn-border: #6b4c15;
+  --warn-text: #fcd34d;
+
+  --info: #38bdf8;
+  --info-strong: #7dd3fc;
+  --info-soft: #0c2130;
+  --info-border: #14506e;
+  --info-text: #7dd3fc;
+
+  --lab: #a78bfa;
+  --lab-soft: #1e1733;
+  --lab-border: #4a3585;
+  --lab-text: #c4b5fd;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 2px 6px rgb(0 0 0 / 0.4), 0 12px 28px -10px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 8px 40px -8px rgb(0 0 0 / 0.7);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--brand) 45%, transparent);
+
+  --grid-line: #232838;
+  --code-bg: #12151d;
+}
+
+/* ==========================================================================
+   Màu chủ đề cho từng chặng học
+   Mỗi chặng có một hue riêng → người học xây dựng "bản đồ màu" trong đầu và
+   nhận ra mình đang ở đâu chỉ bằng thị giác ngoại vi (peripheral vision).
+   ========================================================================== */
+[data-hue='indigo']  { --hue: #4f46e5; --hue-soft: #eef0fe; --hue-text: #3730a3; }
+[data-hue='cyan']    { --hue: #0891b2; --hue-soft: #e3f5f9; --hue-text: #155e75; }
+[data-hue='teal']    { --hue: #0d9488; --hue-soft: #e0f5f2; --hue-text: #115e59; }
+[data-hue='emerald'] { --hue: #059669; --hue-soft: #e4f6ee; --hue-text: #065f46; }
+[data-hue='lime']    { --hue: #4d7c0f; --hue-soft: #eef6e0; --hue-text: #3f6212; }
+[data-hue='amber']   { --hue: #b45309; --hue-soft: #fdf3e3; --hue-text: #92400e; }
+[data-hue='orange']  { --hue: #c2410c; --hue-soft: #fdeee5; --hue-text: #9a3412; }
+[data-hue='rose']    { --hue: #be123c; --hue-soft: #fdeef2; --hue-text: #9f1239; }
+[data-hue='violet']  { --hue: #7c3aed; --hue-soft: #f3edfe; --hue-text: #5b21b6; }
+[data-hue='slate']   { --hue: #475569; --hue-soft: #eef1f6; --hue-text: #334155; }
+
+[data-theme='dark'] [data-hue='indigo']  { --hue: #8b8cf9; --hue-soft: #1c1e3a; --hue-text: #b9baff; }
+[data-theme='dark'] [data-hue='cyan']    { --hue: #38bdf8; --hue-soft: #0c2130; --hue-text: #7dd3fc; }
+[data-theme='dark'] [data-hue='teal']    { --hue: #2dd4bf; --hue-soft: #0c2622; --hue-text: #5eead4; }
+[data-theme='dark'] [data-hue='emerald'] { --hue: #34d399; --hue-soft: #10261f; --hue-text: #6ee7b7; }
+[data-theme='dark'] [data-hue='lime']    { --hue: #a3e635; --hue-soft: #1c2410; --hue-text: #bef264; }
+[data-theme='dark'] [data-hue='amber']   { --hue: #fbbf24; --hue-soft: #2a1f0c; --hue-text: #fcd34d; }
+[data-theme='dark'] [data-hue='orange']  { --hue: #fb923c; --hue-soft: #2b1a0e; --hue-text: #fdba74; }
+[data-theme='dark'] [data-hue='rose']    { --hue: #fb7185; --hue-soft: #2a1219; --hue-text: #fda4af; }
+[data-theme='dark'] [data-hue='violet']  { --hue: #a78bfa; --hue-soft: #1e1733; --hue-text: #c4b5fd; }
+[data-theme='dark'] [data-hue='slate']   { --hue: #94a3b8; --hue-soft: #1a1f2b; --hue-text: #cbd5e1; }
+
+/* ==========================================================================
+   Chế độ tập trung — người học bật khi cần đọc sâu.
+   Ẩn mọi thứ không phải nội dung, giảm chroma, giãn dòng.
+   ========================================================================== */
+[data-focus='on'] {
+  --measure: 62ch;
+  --lh-body: 1.8;
+}
+
+/* ==========================================================================
+   Tôn trọng người dùng nhạy cảm với chuyển động (tiền đình, đau nửa đầu).
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 1ms;
+    --t-base: 1ms;
+    --t-slow: 1ms;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-motion='off'] *,
+[data-motion='off'] *::before,
+[data-motion='off'] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+
+/* Tăng tương phản cho người dùng bật chế độ tương phản cao của hệ điều hành. */
+@media (prefers-contrast: more) {
+  :root {
+    --text-muted: #333a52;
+    --text-faint: #3f4761;
+    --border: #9aa2b8;
+  }
+  [data-theme='dark'] {
+    --text-muted: #cfd5e6;
+    --text-faint: #b3bacf;
+    --border: #4c5570;
+  }
+}
