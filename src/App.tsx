@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { useRoute, segments, href, navigate } from './lib/router';
-import { useProgress } from './lib/storage';
+import { useProgress, awardBadge } from './lib/storage';
 import { buildPlan } from './lib/plan';
+import { syncBadges } from './lib/mastery';
 import { HomePage } from './pages/Home';
 import { RoadmapPage } from './pages/Roadmap';
 import { TrackPage } from './pages/Track';
@@ -57,6 +58,15 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  /**
+   * Chốt lại những huy hiệu vừa đạt. Phải là một effect chứ không phải tính
+   * trong lúc vẽ: `awardBadge` ghi vào kho dữ liệu, và ghi giữa chừng một lần
+   * render là cách chắc chắn để tạo vòng lặp vô hạn.
+   */
+  useEffect(() => {
+    for (const id of syncBadges(progress)) awardBadge(id);
+  }, [progress]);
 
   useEffect(() => {
     const root = document.documentElement;

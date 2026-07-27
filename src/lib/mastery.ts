@@ -375,4 +375,28 @@ function streakLen(p: Progress): number {
   return n;
 }
 
-export const earnedBadges = (p: Progress = getProgress()) => BADGES.filter((b) => b.earned(p));
+/**
+ * Huy hiệu là ghi nhận một việc ĐÃ XẢY RA, không phải trạng thái hiện tại.
+ *
+ * Trước đây hàm này chỉ trả về `BADGES.filter((b) => b.earned(p))`, tính lại
+ * từ đầu mỗi lần vẽ. Hệ quả: người học chạm mốc 30 ngày liên tiếp, ốm một hôm,
+ * và app THU HỒI huy hiệu — trong khi chính app viết "Nghỉ một hôm không xoá đi
+ * thứ bạn đã học". Đó là mẫu thiết kế tối, dù là vô ý.
+ *
+ * Nay hợp nhất hai nguồn: những huy hiệu đã được ghi vĩnh viễn vào `p.badges`,
+ * và những huy hiệu đang đạt điều kiện ngay lúc này. `p.badges` được ghi bởi
+ * `syncBadges()` bên dưới.
+ */
+export const earnedBadges = (p: Progress = getProgress()): Badge[] =>
+  BADGES.filter((b) => p.badges.includes(b.id) || b.earned(p));
+
+/**
+ * Ghi vĩnh viễn những huy hiệu vừa đạt. Trả về danh sách id MỚI đạt để nơi gọi
+ * quyết định có chúc mừng hay không.
+ *
+ * Tách khỏi `earnedBadges` vì đây là hàm CÓ TÁC DỤNG PHỤ: gọi nó trong lúc vẽ
+ * sẽ ghi vào kho dữ liệu giữa chừng một lần render.
+ */
+export function syncBadges(p: Progress = getProgress()): string[] {
+  return BADGES.filter((b) => !p.badges.includes(b.id) && b.earned(p)).map((b) => b.id);
+}
