@@ -1734,6 +1734,366 @@ export const track5: Track = {
         },
       ],
     },
-    /* === CHÈN TIẾP === */
+    /* ====================================================================== */
+    {
+      id: 't5-l6',
+      trackId: 'dac-trung',
+      title: 'Từ TF-IDF tới embedding cho log và dòng lệnh',
+      subtitle: 'Cách biến văn bản không phải tiếng người thành số — và cách biết khi nào bạn đang dùng dao mổ trâu',
+      minutes: 22,
+      level: 'nang-cao',
+      prereqs: ['t5-l1', 't3-l2', 't1-l5'],
+      why: {
+        short:
+          'Phần lớn dữ liệu bảo mật là văn bản có cấu trúc lạ — dòng lệnh, đường dẫn, chuỗi truy vấn, thông điệp log — và cách bạn vector hoá chúng quyết định mô hình có bắt được mã bị làm rối hay không.',
+        scenario:
+          'Bạn có 2 triệu dòng lệnh tiến trình từ EDR trong 90 ngày và khoảng 400 dòng đã được xác nhận là độc hại. Sếp hỏi có nên gọi API embedding của một mô hình ngôn ngữ lớn cho từng dòng không — mỗi ngày 25.000 dòng mới. Bạn cần một câu trả lời có căn cứ, kèm chi phí.',
+        roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer', 'Threat Hunter'],
+        costOfNotKnowing:
+          'Bạn hoặc là dùng tách từ theo khoảng trắng và tạo ra một từ điển 4 triệu token vô dụng, hoặc là đốt ngân sách cho embedding của mô hình ngôn ngữ trong khi TF-IDF n-gram ký tự cho kết quả tương đương với chi phí bằng một phần nghìn.',
+      },
+      objectives: [
+        'Giải thích vì sao n-gram ký tự thắng tách từ trên dòng lệnh và log',
+        'Tính TF-IDF theo đúng công thức scikit-learn dùng và biết khi nào hashing trick thay thế được từ điển',
+        'Ra quyết định có căn cứ giữa TF-IDF, fastText và embedding từ mô hình ngôn ngữ dựa trên bốn tiêu chí',
+      ],
+      blocks: [
+        {
+          t: 'p',
+          md: 'Đây là một dòng lệnh thật, kiểu bạn gặp trong log EDR mỗi tuần:\n\n`powershell.exe -nop -w hidden -ep bypass -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQA...`\n\nVà đây là một dòng lành tính hoàn toàn:\n\n`powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\Scripts\\BackupDaily.ps1`\n\nHai dòng dùng chung phần lớn từ khoá. Việc của bài này là tìm cách biểu diễn để mô hình phân biệt được chúng.',
+        },
+        { t: 'h', text: 'Vì sao tách từ theo khoảng trắng sai ngay từ bước đầu', level: 2 },
+        {
+          t: 'predict',
+          question:
+            'Bạn chạy `TfidfVectorizer()` với thiết lập mặc định (tách theo từ) trên 2 triệu dòng lệnh thu thập trong 90 ngày. Từ điển sẽ có khoảng bao nhiêu token, và bao nhiêu phần trăm trong đó chỉ xuất hiện đúng một lần?',
+          reveal:
+            'Từ điển sẽ có **hàng triệu** token, và thường **70–90% chỉ xuất hiện đúng một lần**. Nguồn gốc: mỗi GUID là một token duy nhất; mỗi tên tệp tạm `tmp3f9a2c.dat` là một token duy nhất; mỗi khối base64 dài là một token duy nhất; mỗi đường dẫn có tên người dùng là một token duy nhất.\n\nĐây là phân phối đuôi dài kiểu Zipf, và hậu quả rất cụ thể:\n\n- **Ma trận khổng lồ nhưng rỗng thông tin.** Token xuất hiện một lần không dạy mô hình được gì, nó chỉ ghi nhớ một hàng.\n- **Vỡ hoàn toàn khi gặp dữ liệu mới.** Ngày mai sinh ra token mới, và `TfidfVectorizer` bỏ qua mọi token không có trong từ điển — nghĩa là chính phần đáng ngờ nhất của dòng lệnh bị vứt đi.\n- **Làm rối là né miễn phí.** Chèn dấu nháy vào giữa từ khoá (`p"ow"ershell`) tạo ra một token hoàn toàn mới mà mô hình chưa từng thấy.\n\nĐặt `min_df=5` sẽ cắt phần lớn đuôi và thường là bước sửa đầu tiên. Nhưng cách sửa gốc rễ nằm ở chỗ khác: **đừng tách theo từ.**',
+        },
+        {
+          t: 'compare',
+          title: 'Hai cách cắt cùng một dòng lệnh',
+          left: {
+            title: '📝 Token theo từ',
+            items: [
+              'Mỗi khoảng trắng là ranh giới',
+              'Từ điển phình vô hạn theo thời gian: GUID, tên tệp tạm, base64',
+              'Token chưa thấy bao giờ bị bỏ qua hoàn toàn (OOV)',
+              'Chèn một ký tự vào giữa từ khoá là né được',
+              'Có ưu điểm: đọc được, giải thích được cho analyst',
+            ],
+          },
+          right: {
+            title: '🔤 N-gram ký tự (3–5)',
+            items: [
+              'Cắt mọi chuỗi con 3, 4, 5 ký tự liên tiếp',
+              'Từ điển bị chặn tự nhiên vì số tổ hợp ký tự có hạn trong thực tế',
+              'Không có khái niệm OOV: chuỗi lạ vẫn phân rã thành n-gram quen thuộc',
+              'Bền với làm rối: `p"ow"ershell` vẫn chia sẻ nhiều n-gram với `powershell`',
+              'Bắt được cả cấu trúc bên trong token: `-enc`, `.ps1`, `xn--`',
+            ],
+          },
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Vì sao dùng analyzer char_wb chứ không phải char',
+          md: 'Trong scikit-learn, `analyzer="char"` cắt n-gram xuyên qua cả khoảng trắng, tạo ra những n-gram vô nghĩa nối đuôi từ này với đầu từ kia. `analyzer="char_wb"` chỉ cắt **trong phạm vi từng từ** (word boundary) và đệm khoảng trắng ở hai đầu, nên các n-gram ở đầu và cuối token mang thông tin về vị trí. Với dòng lệnh và đường dẫn, `char_wb` với `ngram_range=(3, 5)` là điểm khởi đầu tốt trong hầu hết trường hợp.',
+        },
+        { t: 'h', text: 'TF-IDF: hai con số và một phép chuẩn hoá', level: 2 },
+        {
+          t: 'p',
+          md: '**TF** (term frequency) là số lần một đặc trưng xuất hiện trong một tài liệu. **IDF** (inverse document frequency) hạ trọng số của những đặc trưng xuất hiện ở khắp nơi. Công thức mà scikit-learn dùng mặc định (`smooth_idf=True`) là: `idf(t) = ln((1 + N) / (1 + df(t))) + 1`, trong đó `N` là số tài liệu và `df(t)` là số tài liệu chứa `t`. Sau khi nhân `tf × idf`, mỗi hàng được chuẩn hoá L2 về độ dài 1.',
+        },
+        {
+          t: 'steps',
+          title: 'Tính bằng tay trên 5 dòng lệnh',
+          steps: [
+            {
+              title: 'Bước 1 — Dữ liệu',
+              md: 'Giả sử `N = 5` dòng lệnh. N-gram `pow` xuất hiện trong cả 5 dòng (`df = 5`). N-gram `enc` xuất hiện trong đúng 1 dòng (`df = 1`).',
+            },
+            {
+              title: 'Bước 2 — IDF của n-gram phổ biến',
+              md: '`idf(pow) = ln((1 + 5) / (1 + 5)) + 1 = ln(1) + 1 = 1,00`. Xuất hiện ở mọi nơi nên gần như không mang thông tin phân biệt — trọng số về mức sàn.',
+            },
+            {
+              title: 'Bước 3 — IDF của n-gram hiếm',
+              md: '`idf(enc) = ln((1 + 5) / (1 + 1)) + 1 = ln(3) + 1 ≈ 2,10`. Cao hơn gấp đôi. Đây chính là cơ chế làm TF-IDF hữu ích: nó tự động đề cao thứ hiếm.',
+            },
+            {
+              title: 'Bước 4 — Nhân với TF rồi chuẩn hoá L2',
+              md: 'Nếu dòng chứa `enc` có 2 lần `enc` và 3 lần `pow`, vector thô là `[3×1,00 ; 2×2,10] = [3,00 ; 4,20]`. Chuẩn hoá L2 chia cho `√(3,00² + 4,20²) ≈ 5,16`, cho `[0,58 ; 0,81]`.',
+            },
+            {
+              title: 'Bước 5 — Vì sao chuẩn hoá L2 quan trọng',
+              md: 'Không có nó, một dòng lệnh dài 4.000 ký tự sẽ có mọi giá trị lớn hơn một dòng 60 ký tự, và mô hình tuyến tính sẽ chủ yếu học độ dài. Nếu bạn muốn độ dài là đặc trưng, hãy thêm nó thành **một cột riêng, có ý thức** — chứ đừng để nó lẻn vào qua cửa sau.',
+            },
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Fit vectorizer trên toàn bộ dữ liệu rồi mới chia tập',
+          md: 'Đây là dạng rò rỉ phổ biến nhất trong ML văn bản, và trong bảo mật nó đặc biệt tai hại. Hai thứ bị rò:\n\n**(1) IDF** được tính từ `df` trên cả tập, gồm cả phần tương lai. **(2) Từ điển** chứa các token chỉ xuất hiện trong tập kiểm tra — ví dụ tên máy chủ của một chiến dịch tấn công tháng sau. Kết quả: tập kiểm tra trông dễ hơn thực tế.\n\nCách đúng: `fit_transform` **chỉ trên tập huấn luyện** (là phần sớm hơn theo thời gian, xem bài t2-l6), rồi `transform` trên tập kiểm tra. Trong scikit-learn, gói vectorizer vào `Pipeline` cùng bộ phân loại là cách rẻ nhất để không bao giờ quên.',
+        },
+        {
+          t: 'code',
+          lang: 'python',
+          caption: 'Đường cơ sở phân loại dòng lệnh: n-gram ký tự + vài đặc trưng thủ công',
+          code:
+            "import numpy as np\n" +
+            "from scipy.sparse import hstack, csr_matrix\n" +
+            "from sklearn.feature_extraction.text import TfidfVectorizer\n" +
+            "from sklearn.linear_model import LogisticRegression\n" +
+            "\n" +
+            "vec = TfidfVectorizer(analyzer='char_wb', ngram_range=(3, 5),\n" +
+            "                      min_df=5, max_features=200000,\n" +
+            "                      sublinear_tf=True, lowercase=True)\n" +
+            "\n" +
+            "# CHỈ fit trên tập huấn luyện (phần SỚM HƠN theo thời gian)\n" +
+            "X_tr = vec.fit_transform(cmd_train)\n" +
+            "X_te = vec.transform(cmd_test)\n" +
+            "\n" +
+            "def thu_cong(xs):\n" +
+            "    # Vài tín hiệu mà n-gram không diễn đạt gọn được\n" +
+            "    return csr_matrix(np.array([[\n" +
+            "        len(x),\n" +
+            "        sum(c.isdigit() for c in x) / max(len(x), 1),\n" +
+            "        sum(not c.isalnum() for c in x) / max(len(x), 1),\n" +
+            "        int('-enc' in x.lower() or '-e ' in x.lower()),\n" +
+            "    ] for x in xs], dtype=float))\n" +
+            "\n" +
+            "X_tr = hstack([X_tr, thu_cong(cmd_train)]).tocsr()\n" +
+            "X_te = hstack([X_te, thu_cong(cmd_test)]).tocsr()\n" +
+            "\n" +
+            "clf = LogisticRegression(C=1.0, class_weight='balanced', max_iter=3000)\n" +
+            "clf.fit(X_tr, y_train)\n",
+        },
+        { t: 'lab', id: 'lab-tfidf', intro: 'Gõ vào vài dòng log, đổi giữa token theo từ và n-gram ký tự, đổi ngram_range và min_df, rồi xem trực tiếp ma trận thưa cùng trọng số IDF thay đổi ra sao.' },
+        { t: 'h', text: 'Hashing trick: khi từ điển không nằm vừa bộ nhớ', level: 2 },
+        {
+          t: 'p',
+          md: 'Ý tưởng: bỏ hẳn từ điển. Với mỗi đặc trưng (một n-gram, một tên hàm import, một tên máy chủ), tính `h = hash(dac_trung) mod m` và cộng giá trị vào cột `h`. `m` là số cột bạn chọn trước — mặc định của `HashingVectorizer` trong scikit-learn là `2^20 = 1.048.576`.',
+        },
+        {
+          t: 'table',
+          caption: 'Được và mất khi bỏ từ điển.',
+          head: ['Khía cạnh', 'TfidfVectorizer (có từ điển)', 'HashingVectorizer (hashing trick)'],
+          rows: [
+            ['Bộ nhớ khi huấn luyện', 'Phải giữ toàn bộ từ điển, có thể hàng GB', 'Không lưu gì cả, hoàn toàn không trạng thái'],
+            ['Xử lý luồng dữ liệu', 'Phải quét hết dữ liệu một lượt để dựng từ điển', 'Biến đổi được từng dòng ngay lập tức'],
+            ['Đặc trưng chưa từng thấy', 'Bị bỏ qua hoàn toàn', 'Rơi vào một cột nào đó, vẫn đóng góp'],
+            ['Rò rỉ khi fit', 'Có nguy cơ nếu fit trên cả tập', 'Không thể rò rỉ vì không có bước fit'],
+            ['Giải thích được', 'Truy ngược cột về đúng n-gram', 'Không truy ngược được — mất khả năng giải thích'],
+            ['Va chạm', 'Không có', 'Có; với 2^20 cột và 200.000 đặc trưng, khoảng 17% đặc trưng chia ô với ít nhất một đặc trưng khác'],
+            ['IDF', 'Có sẵn', 'Phải ghép thêm TfidfTransformer nếu muốn'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'insight',
+          title: 'Vì sao va chạm ít gây hại hơn bạn nghĩ',
+          md: 'Trực giác đầu tiên là "17% va chạm chắc phá hỏng mô hình". Trong thực tế thì không, vì hai lý do.\n\n**(1) Phần lớn đặc trưng bị va chạm là đặc trưng hiếm** — chúng vốn đóng góp rất ít. Xác suất hai đặc trưng *quan trọng* (tần suất cao) va nhau là rất nhỏ vì chúng chỉ chiếm một phần nhỏ của tập.\n\n**(2) `alternate_sign=True`** (mặc định) gán ngẫu nhiên dấu cộng hoặc trừ cho mỗi đặc trưng khi cộng vào ô. Nhờ đó, đóng góp của các đặc trưng va chạm có xu hướng triệt tiêu lẫn nhau thay vì cộng dồn thành nhiễu một chiều.\n\nCái mất thật sự không phải độ chính xác — mà là **khả năng giải thích**. Khi analyst hỏi "vì sao dòng lệnh này bị chấm 0,91", với TF-IDF bạn chỉ ra được `-enc` và `hidden`; với hashing bạn chỉ ra được "cột 748213". Trong SOC, đó thường là lý do quyết định.',
+        },
+        {
+          t: 'checkpoint',
+          questions: [
+            {
+              id: 't5l6-cp1',
+              kind: 'mcq',
+              tags: ['tf-idf', 'n-gram'],
+              q: 'Vì sao n-gram ký tự bền với làm rối hơn hẳn token theo từ?',
+              options: [
+                'Vì n-gram ký tự luôn tạo ít đặc trưng hơn',
+                'Vì chèn ký tự lạ vào giữa từ khoá chỉ phá vài n-gram, phần lớn các n-gram còn lại vẫn trùng với chuỗi gốc',
+                'Vì n-gram ký tự bỏ qua ký tự đặc biệt',
+                'Vì n-gram ký tự tự động giải mã base64',
+              ],
+              answer: 1,
+              why: 'Với token theo từ, `powershell` và `p"ow"ershell` là hai token hoàn toàn khác nhau — mô hình không thấy mối liên hệ nào. Với n-gram 3 ký tự, chuỗi thứ hai vẫn chứa `ers`, `rsh`, `she`, `hel`, `ell` giống hệt chuỗi gốc; chỉ vài n-gram quanh chỗ chèn bị hỏng. Sự chồng lấn đó chính là thứ giữ cho mô hình nhận ra. Đây là lý do các công cụ làm rối như Invoke-Obfuscation làm mô hình dựa trên từ sụp đổ mà ít ảnh hưởng tới mô hình n-gram ký tự.',
+              distractorWhy: [
+                'Ngược lại — n-gram ký tự thường tạo NHIỀU đặc trưng hơn, đó là cái giá phải trả.',
+                '',
+                'Nó không bỏ qua ký tự đặc biệt; ngược lại, ký tự đặc biệt là tín hiệu quý.',
+                'Không có bước giải mã nào; n-gram chỉ cắt chuỗi con.',
+              ],
+            },
+            {
+              id: 't5l6-cp2',
+              kind: 'truefalse',
+              tags: ['tf-idf', 'ro-ri-du-lieu'],
+              q: 'Dùng HashingVectorizer thay TfidfVectorizer loại bỏ được một nguồn rò rỉ dữ liệu.',
+              answer: true,
+              why: 'Đúng: `HashingVectorizer` không có bước `fit`, nên không có từ điển và không có IDF nào được học từ dữ liệu. Nghĩa là bạn không thể vô tình để thông tin từ tập kiểm tra lọt vào biểu diễn. Đây là một ưu điểm ít được nhắc tới nhưng rất thực tế trong hệ thống chạy liên tục. Cái giá là mất khả năng truy ngược cột về đặc trưng gốc — và nếu bạn ghép thêm `TfidfTransformer` phía sau thì bước fit lại xuất hiện, cùng với nguy cơ rò rỉ.',
+            },
+          ],
+        },
+        { t: 'h', text: 'Embedding: khi nào đáng và khi nào thừa', level: 2 },
+        {
+          t: 'p',
+          md: '**word2vec** (Mikolov và cộng sự, 2013) học vector cho từng từ sao cho từ xuất hiện trong ngữ cảnh giống nhau có vector gần nhau. Nhược điểm chí mạng cho bảo mật: từ chưa từng thấy trong lúc huấn luyện thì không có vector — mà mỗi ngày dữ liệu bảo mật sinh ra hàng nghìn token mới.',
+        },
+        {
+          t: 'p',
+          md: '**fastText** (Facebook AI, 2016) sửa đúng điểm đó: nó biểu diễn mỗi từ như tổng các vector của n-gram ký tự con bên trong nó (mặc định 3 tới 6 ký tự). Nhờ vậy một token chưa từng thấy vẫn nhận được vector hợp lý từ các phần con quen thuộc. Với dữ liệu bảo mật, đây là lý do fastText thường là lựa chọn embedding đầu tiên đáng thử.',
+        },
+        {
+          t: 'p',
+          md: '**Embedding từ mô hình ngôn ngữ** (ví dụ `all-MiniLM-L6-v2` của sentence-transformers, 384 chiều, khoảng 22 triệu tham số) mã hoá cả câu thành một vector mang ngữ nghĩa. Chúng rất mạnh khi dữ liệu của bạn thực sự là **ngôn ngữ tự nhiên**: mô tả cảnh báo, ghi chú điều tra, nội dung email, báo cáo threat intel, mô tả CVE. Chúng ít hữu ích hơn nhiều với dòng lệnh — vì mô hình nền được huấn luyện trên văn bản người viết, và nó không có khái niệm gì đặc biệt về `rundll32.exe` hay `-ep bypass`.',
+        },
+        {
+          t: 'table',
+          caption: 'Bảng quyết định — dán vào tài liệu thiết kế của bạn.',
+          head: ['Phương pháp', 'Số chiều điển hình', 'Chi phí suy luận', 'Xử lý token mới', 'Giải thích được', 'Dùng khi'],
+          rows: [
+            ['Bag of words theo từ', 'Hàng triệu, thưa', 'Rất rẻ', 'Bỏ qua hoàn toàn', 'Tốt', 'Log có từ vựng cố định và hẹp'],
+            ['TF-IDF n-gram ký tự', '50k–500k, thưa', 'Rẻ (micro-giây/dòng)', 'Rất tốt, phân rã thành n-gram con', 'Tốt', 'Mặc định cho dòng lệnh, URL, đường dẫn'],
+            ['Hashing trick', 'Cố định, ví dụ 2^20', 'Rẻ, không trạng thái', 'Rất tốt', 'Không', 'Luồng thời gian thực, bộ nhớ hạn chế'],
+            ['fastText', '100–300, đặc', 'Rẻ', 'Tốt nhờ n-gram con', 'Kém', 'Cần vector đặc để phân cụm hoặc tìm tương tự'],
+            ['Embedding từ mô hình ngôn ngữ', '384–1536, đặc', 'Bậc mili-giây/dòng trên CPU', 'Tốt', 'Kém', 'Văn bản là ngôn ngữ tự nhiên thật: ghi chú, email, báo cáo'],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Bốn câu hỏi trước khi gọi API embedding',
+          md: '**(1) Dữ liệu của tôi có phải ngôn ngữ tự nhiên không?** Dòng lệnh, đường dẫn, chuỗi truy vấn thì không. Ghi chú của analyst và nội dung email thì có.\n\n**(2) Tôi đã đo đường cơ sở TF-IDF chưa?** Nếu chưa, mọi so sánh đều vô nghĩa. Rất thường xuyên, TF-IDF n-gram ký tự cộng vài đặc trưng thủ công đạt trong khoảng 1–2 điểm PR-AUC so với embedding, với chi phí thấp hơn ba bậc.\n\n**(3) Tôi có ngân sách độ trễ và ngân sách tiền không?** 25.000 dòng mỗi ngày qua API bên ngoài là một hoá đơn định kỳ và một phụ thuộc mạng trong đường xử lý bảo mật.\n\n**(4) Tôi có được phép gửi dữ liệu này ra ngoài không?** Dòng lệnh chứa tên máy, tên người dùng, đôi khi cả mật khẩu gõ nhầm vào tham số. Gửi chúng tới API bên thứ ba là một quyết định về quyền riêng tư và tuân thủ, không phải một quyết định kỹ thuật. Nếu vẫn cần embedding, hãy chạy mô hình nhỏ tại chỗ.',
+        },
+        {
+          t: 'callout',
+          kind: 'pitfall',
+          title: 'Trôi từ vựng: kẻ giết mô hình văn bản một cách âm thầm',
+          md: 'Từ điển của bạn đóng băng tại ngày huấn luyện. Ba tháng sau, công ty triển khai một công cụ quản trị mới, đổi quy ước đặt tên máy chủ, hoặc chuyển sang PowerShell 7. Tỉ lệ n-gram không có trong từ điển tăng dần, và mô hình mất tín hiệu mà không có bất kỳ lỗi nào được ghi lại.\n\nHãy giám sát một chỉ số cực rẻ: **tỉ lệ đặc trưng ngoài từ điển (OOV) mỗi ngày**. Nó tăng từ 2% lên 11% là tín hiệu phải huấn luyện lại, và bạn biết điều đó trước khi nhãn về hàng tuần. Đây chính là biến thể của PSI ở bài t5-l1, áp dụng cho dữ liệu văn bản.',
+        },
+        {
+          t: 'p',
+          md: 'Kết luận thực dụng của cả bài: trong đa số bài toán văn bản bảo mật, phương án thắng là **TF-IDF trên n-gram ký tự, ghép thêm một nhúm đặc trưng thủ công** (độ dài, tỉ lệ chữ số, tỉ lệ ký tự đặc biệt, entropy, có phải base64 không, tiến trình cha là gì). Nó rẻ, giải thích được, bền với làm rối, và là đường cơ sở mà mọi thứ phức tạp hơn phải chứng minh mình xứng đáng vượt qua.',
+        },
+        { t: 'terms', ids: ['embedding', 'entropy', 'dac-trung', 'ro-ri-du-lieu', 'hoi-quy-logistic'] },
+      ],
+      keyTakeaways: [
+        'Tách từ theo khoảng trắng tạo từ điển hàng triệu token với 70–90% chỉ xuất hiện một lần, và vỡ hoàn toàn trước làm rối và token mới.',
+        'N-gram ký tự (char_wb, 3–5) là mặc định đúng cho dòng lệnh, URL và đường dẫn: không có OOV và bền với làm rối vì các n-gram vẫn chồng lấn.',
+        'IDF trong scikit-learn là ln((1+N)/(1+df)) + 1, và chuẩn hoá L2 sau đó ngăn mô hình vô tình học độ dài tài liệu.',
+        'Luôn fit vectorizer chỉ trên tập huấn luyện sớm hơn theo thời gian; gói vào Pipeline là cách rẻ nhất để không quên.',
+        'Hashing trick bỏ từ điển nên chạy được trên luồng và không thể rò rỉ, nhưng đánh đổi bằng khả năng giải thích — thứ thường quyết định trong SOC.',
+        'Embedding của mô hình ngôn ngữ chỉ đáng dùng khi dữ liệu là ngôn ngữ tự nhiên thật; với dòng lệnh, TF-IDF n-gram ký tự cộng đặc trưng thủ công thường ngang bằng với chi phí thấp hơn ba bậc.',
+      ],
+      cards: [
+        {
+          id: 't5l6-c1',
+          front: 'Vì sao n-gram ký tự bền với làm rối hơn token theo từ?',
+          back: 'Vì chèn ký tự vào giữa từ khoá chỉ phá vài n-gram quanh chỗ chèn; phần lớn n-gram còn lại vẫn trùng với chuỗi gốc nên mô hình vẫn thấy sự tương đồng.',
+          tags: ['n-gram', 'tf-idf'],
+        },
+        {
+          id: 't5l6-c2',
+          front: 'Khác biệt giữa analyzer char và char_wb trong scikit-learn là gì?',
+          back: 'char cắt n-gram xuyên qua khoảng trắng, tạo n-gram vô nghĩa nối hai từ. char_wb chỉ cắt trong phạm vi từng từ và đệm khoảng trắng ở hai đầu.',
+          tags: ['tf-idf'],
+        },
+        {
+          id: 't5l6-c3',
+          front: 'Hashing trick được gì và mất gì so với từ điển?',
+          back: 'Được: không trạng thái, chạy trên luồng, không thể rò rỉ khi fit, xử lý được đặc trưng mới. Mất: không truy ngược cột về đặc trưng gốc, tức mất khả năng giải thích.',
+          tags: ['hashing-trick'],
+        },
+        {
+          id: 't5l6-c4',
+          front: 'fastText giải quyết điểm yếu nào của word2vec cho dữ liệu bảo mật?',
+          back: 'Vấn đề token chưa từng thấy: fastText biểu diễn mỗi từ bằng tổng vector các n-gram ký tự con, nên token mới vẫn nhận được vector hợp lý.',
+          tags: ['embedding'],
+        },
+        {
+          id: 't5l6-c5',
+          front: 'Chỉ số rẻ nào cảnh báo sớm rằng mô hình văn bản của bạn đang mất tín hiệu?',
+          back: 'Tỉ lệ đặc trưng ngoài từ điển (OOV) mỗi ngày. Nó tăng dần khi từ vựng trong môi trường thay đổi, và biết được trước khi nhãn về hàng tuần.',
+          tags: ['troi-du-lieu', 'tf-idf'],
+        },
+      ],
+      quiz: [
+        {
+          id: 't5l6-q1',
+          kind: 'mcq',
+          tags: ['tf-idf', 'thuc-chien'],
+          q: 'Bạn có 2 triệu dòng lệnh, 400 nhãn độc hại, cần chạy suy luận trên 25.000 dòng mới mỗi ngày và analyst phải hiểu vì sao mỗi dòng bị chấm điểm. Chọn biểu diễn nào ĐẦU TIÊN?',
+          options: [
+            'Gọi API embedding của một mô hình ngôn ngữ lớn cho từng dòng',
+            'TF-IDF n-gram ký tự (char_wb, 3–5) ghép thêm vài đặc trưng thủ công',
+            'HashingVectorizer với 2^20 cột',
+            'Huấn luyện một transformer từ đầu trên 2 triệu dòng lệnh',
+          ],
+          answer: 1,
+          why: 'Ba ràng buộc trong đề bài loại dần các phương án. **Giải thích được** loại hashing và embedding, vì cả hai không truy ngược được về chuỗi gốc. **Chi phí và độ trễ** cùng với việc dữ liệu chứa tên máy, tên người dùng loại API bên ngoài. **400 nhãn** là quá ít để huấn luyện transformer từ đầu — với số nhãn đó, một mô hình tuyến tính trên đặc trưng thưa gần như luôn là lựa chọn hợp lý hơn. TF-IDF n-gram ký tự thoả cả ba, và nó cũng là đường cơ sở bắt buộc trước khi thử bất cứ thứ gì đắt hơn.',
+          distractorWhy: [
+            'Đắt, phụ thuộc mạng, không giải thích được, và có vấn đề quyền riêng tư với dữ liệu dòng lệnh.',
+            '',
+            'Tốt về vận hành nhưng vi phạm yêu cầu analyst phải hiểu lý do chấm điểm.',
+            '400 nhãn dương là quá ít để huấn luyện transformer từ đầu một cách có ý nghĩa.',
+          ],
+        },
+        {
+          id: 't5l6-q2',
+          kind: 'multi',
+          tags: ['tf-idf', 'ro-ri-du-lieu'],
+          q: 'Điều gì bị rò rỉ khi bạn gọi `fit_transform` của TfidfVectorizer trên toàn bộ dữ liệu rồi mới chia train/test? (Chọn tất cả đáp án đúng)',
+          options: [
+            'Giá trị IDF, vì df được đếm trên cả phần dữ liệu tương lai',
+            'Từ điển, vì nó chứa cả token chỉ xuất hiện trong tập kiểm tra',
+            'Nhãn của tập kiểm tra',
+            'Trọng số của bộ phân loại',
+          ],
+          answers: [0, 1],
+          why: 'Vectorizer không nhìn thấy nhãn, nên nhãn không bị rò trực tiếp — nhưng cả IDF lẫn từ điển đều được học từ dữ liệu và cả hai đều mượn thông tin từ phần tương lai. Từ điển là phần nguy hiểm hơn trong bảo mật: nó có thể chứa tên máy chủ, tên tệp hoặc chuỗi đặc thù của một chiến dịch tấn công chỉ xuất hiện trong tập kiểm tra, khiến các mẫu đó trông dễ nhận ra hơn thực tế. Trọng số bộ phân loại được học sau, ở bước riêng.',
+        },
+        {
+          id: 't5l6-q3',
+          kind: 'input',
+          tags: ['tf-idf'],
+          q: 'Trong scikit-learn, tham số `analyzer` nào cắt n-gram ký tự nhưng chỉ trong phạm vi từng từ, có đệm khoảng trắng ở hai đầu?',
+          accept: ['char_wb', 'char wb', 'charwb', 'analyzer char_wb'],
+          placeholder: 'Gõ giá trị tham số…',
+          hint: 'Bảy ký tự, có dấu gạch dưới, wb là viết tắt của word boundary.',
+          why: '`analyzer="char_wb"`. Khác biệt so với `"char"` nghe nhỏ nhưng có ảnh hưởng thật: `"char"` tạo ra các n-gram vắt ngang khoảng trắng, nối đuôi từ này với đầu từ kia, phần lớn là nhiễu. `"char_wb"` giữ n-gram trong từng token và đệm khoảng trắng nên n-gram ở đầu và cuối token mang thông tin vị trí — điều rất có ích với đường dẫn, cờ dòng lệnh và phần mở rộng tệp.',
+        },
+        {
+          id: 't5l6-q4',
+          kind: 'truefalse',
+          tags: ['hashing-trick'],
+          q: 'Với 2^20 cột và khoảng 200.000 đặc trưng phân biệt, tỉ lệ va chạm của hashing trick lớn đến mức làm hỏng mô hình.',
+          answer: false,
+          why: 'Khoảng 17% đặc trưng sẽ chia ô với ít nhất một đặc trưng khác, nhưng ảnh hưởng tới độ chính xác thường rất nhỏ vì hai lý do: phần lớn đặc trưng bị va chạm là đặc trưng hiếm vốn đóng góp ít, và `alternate_sign=True` gán dấu ngẫu nhiên nên đóng góp của các đặc trưng va chạm có xu hướng triệt tiêu nhau thay vì cộng dồn. Cái mất thật sự không phải độ chính xác mà là khả năng giải thích: bạn không truy ngược được từ cột 748213 về n-gram nào.',
+        },
+        {
+          id: 't5l6-q5',
+          kind: 'match',
+          tags: ['embedding', 'tf-idf'],
+          q: 'Nối mỗi loại dữ liệu với cách biểu diễn hợp lý nhất.',
+          pairs: [
+            ['Dòng lệnh tiến trình từ EDR', 'TF-IDF n-gram ký tự cộng đặc trưng thủ công'],
+            ['Ghi chú điều tra do analyst viết bằng tiếng Việt', 'Embedding câu từ mô hình ngôn ngữ'],
+            ['Luồng log 500.000 dòng/giây cần chấm điểm tức thời', 'Hashing trick, không trạng thái'],
+            ['Tập hàm import của tệp PE, không giới hạn và luôn tăng', 'Băm về không gian chiều cố định như EMBER làm'],
+          ],
+          why: 'Bốn cặp này tóm tắt toàn bộ bài học. Điểm chung của cả bốn quyết định không phải là "cái nào hiện đại nhất" mà là ba ràng buộc thực tế: dữ liệu có phải ngôn ngữ tự nhiên không, ngân sách độ trễ là bao nhiêu, và có cần giải thích cho con người không. Nếu bạn trả lời được ba câu đó, việc chọn biểu diễn gần như tự hiện ra.',
+        },
+      ],
+      terms: ['embedding', 'entropy', 'dac-trung', 'ro-ri-du-lieu', 'tf-idf', 'hashing-trick', 'n-gram'],
+      further: [
+        {
+          title: 'scikit-learn — Text feature extraction',
+          note: 'Đọc mục về analyzer char_wb và về HashingVectorizer. Tài liệu này giải thích rõ công thức IDF chính xác mà thư viện dùng, thường khác với công thức trong sách giáo khoa.',
+        },
+        {
+          title: 'Enriching Word Vectors with Subword Information — Bojanowski, Grave, Joulin, Mikolov (2017)',
+          note: 'Bài báo gốc của fastText. Ý tưởng n-gram ký tự con giải quyết vấn đề token mới là điều bạn cần hiểu để áp dụng đúng cho dữ liệu bảo mật.',
+        },
+        {
+          title: 'Feature Hashing for Large Scale Multitask Learning — Weinberger và cộng sự (2009)',
+          note: 'Nguồn gốc của hashing trick, kèm phân tích vì sao va chạm ít gây hại. Đọc phần về dấu ngẫu nhiên để hiểu alternate_sign.',
+        },
+      ],
+    },
   ],
 };
