@@ -14,7 +14,7 @@ export const track5: Track = {
   title: 'Kỹ thuật đặc trưng cho bảo mật',
   tagline: 'Nơi kiến thức bảo mật đánh bại kiến thức thuật toán',
   icon: 'dna',
-  hue: 'lime',
+  hue: 't5',
   blurb:
     'Sáu bài về phần quyết định thành bại nhiều hơn cả việc chọn thuật toán: bạn đưa gì vào mô hình. Đây cũng là chặng duy nhất mà hiểu biết về kẻ tấn công quan trọng hơn hiểu biết về toán — người biết mã độc PHẢI làm gì để sống sót sẽ thiết kế đặc trưng tốt hơn người thuộc lòng mười thuật toán.',
   outcomes: [

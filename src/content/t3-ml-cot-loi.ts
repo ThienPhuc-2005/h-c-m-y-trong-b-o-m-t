@@ -18,7 +18,7 @@ export const track3: Track = {
   title: 'Học máy cốt lõi',
   tagline: 'Những thuật toán bạn sẽ dùng 90% thời gian',
   icon: 'brain',
-  hue: 'emerald',
+  hue: 't3',
   blurb:
     'Tám bài về nhóm thuật toán chiếm gần như toàn bộ công việc ML bảo mật thực tế: hồi quy logistic, Naive Bayes, cây quyết định, rừng ngẫu nhiên và gradient boosting, cùng k-NN và SVM. Bạn sẽ hiểu từng mô hình đủ sâu để chọn đúng, chỉnh đúng và biết nó hỏng ở đâu — chứ không phải chỉ gọi được hàm fit.',
   outcomes: [

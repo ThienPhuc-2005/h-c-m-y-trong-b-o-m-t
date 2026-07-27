@@ -18,6 +18,10 @@
         violet  = phòng thí nghiệm, tương tác
         slate   = trung tính, siêu dữ liệu
 
+      Bảy hue trên là KHÔNG GIAN RIÊNG của trạng thái. Chặng học có bảng màu
+      tách hẳn (t0…t10, xem cuối tệp) và không được mượn lại bất kỳ hue nào ở
+      đây — nếu không, một chặng chưa học sẽ hiện màu "đã thành thạo".
+
    3. KHÔNG BAO GIỜ CHỈ DÙNG MÀU ĐỂ TRUYỀN TIN.
       ~8% nam giới bị mù màu đỏ-lục — cặp "đúng/sai" nguy hiểm nhất. Vì vậy mọi
       trạng thái đều kèm biểu tượng + hình dạng + nhãn chữ.
@@ -238,27 +242,51 @@
    Mỗi chặng có một hue riêng → người học xây dựng "bản đồ màu" trong đầu và
    nhận ra mình đang ở đâu chỉ bằng thị giác ngoại vi (peripheral vision).
    ========================================================================== */
-[data-hue='indigo']  { --hue: #4f46e5; --hue-soft: #eef0fe; --hue-text: #3730a3; }
-[data-hue='cyan']    { --hue: #0891b2; --hue-soft: #e3f5f9; --hue-text: #155e75; }
-[data-hue='teal']    { --hue: #0d9488; --hue-soft: #e0f5f2; --hue-text: #115e59; }
-[data-hue='emerald'] { --hue: #059669; --hue-soft: #e4f6ee; --hue-text: #065f46; }
-[data-hue='lime']    { --hue: #4d7c0f; --hue-soft: #eef6e0; --hue-text: #3f6212; }
-[data-hue='amber']   { --hue: #b45309; --hue-soft: #fdf3e3; --hue-text: #92400e; }
-[data-hue='orange']  { --hue: #c2410c; --hue-soft: #fdeee5; --hue-text: #9a3412; }
-[data-hue='rose']    { --hue: #be123c; --hue-soft: #fdeef2; --hue-text: #9f1239; }
-[data-hue='violet']  { --hue: #7c3aed; --hue-soft: #f3edfe; --hue-text: #5b21b6; }
-[data-hue='slate']   { --hue: #475569; --hue-soft: #eef1f6; --hue-text: #334155; }
+/* --------------------------------------------------------------------------
+   Bảng màu CHẶNG HỌC — tách hẳn khỏi màu ngữ nghĩa ở trên.
 
-[data-theme='dark'] [data-hue='indigo']  { --hue: #8b8cf9; --hue-soft: #1c1e3a; --hue-text: #b9baff; }
-[data-theme='dark'] [data-hue='cyan']    { --hue: #38bdf8; --hue-soft: #0c2130; --hue-text: #7dd3fc; }
-[data-theme='dark'] [data-hue='teal']    { --hue: #2dd4bf; --hue-soft: #0c2622; --hue-text: #5eead4; }
-[data-theme='dark'] [data-hue='emerald'] { --hue: #34d399; --hue-soft: #10261f; --hue-text: #6ee7b7; }
-[data-theme='dark'] [data-hue='lime']    { --hue: #a3e635; --hue-soft: #1c2410; --hue-text: #bef264; }
-[data-theme='dark'] [data-hue='amber']   { --hue: #fbbf24; --hue-soft: #2a1f0c; --hue-text: #fcd34d; }
-[data-theme='dark'] [data-hue='orange']  { --hue: #fb923c; --hue-soft: #2b1a0e; --hue-text: #fdba74; }
-[data-theme='dark'] [data-hue='rose']    { --hue: #fb7185; --hue-soft: #2a1219; --hue-text: #fda4af; }
-[data-theme='dark'] [data-hue='violet']  { --hue: #a78bfa; --hue-soft: #1e1733; --hue-text: #c4b5fd; }
-[data-theme='dark'] [data-hue='slate']   { --hue: #94a3b8; --hue-soft: #1a1f2b; --hue-text: #cbd5e1; }
+   VÌ SAO TÁCH: trước đây chặng 3 dùng emerald và chặng 4 dùng amber, tức là
+   một chặng CHƯA HỌC vẫn hiện chấm xanh "đã thành thạo" trên bản đồ lộ trình,
+   còn cả chặng Đo lường thì bị nhuộm màu cảnh báo vô cớ. Biến --hue chảy vào
+   .bar-fill, .rm-dot, .card-accent, .readbar, .level-bars — nên màu "đúng/sai"
+   xuất hiện ở hàng chục chỗ chẳng liên quan gì tới đúng hay sai.
+
+   CÁCH TÁCH: dải này quét từ lam (205°) tới tím (288°), KHÔNG chạm vào lục, đỏ
+   hay hổ phách — ba hue đã có nghĩa cố định. Nó cũng không cố mã hoá danh tính
+   từng chặng: mười một hue lam-tím thì không ai phân biệt nổi bằng mắt, và đó
+   không phải việc của màu. Màu ở đây mã hoá VỊ TRÍ trong khoá học — càng về
+   cuối càng ngả tím — còn danh tính do HÌNH ICON trong .rm-dot gánh, thứ vốn
+   đã có sẵn và trước giờ chưa được khai thác.
+
+   Tên token là t0…t10 chứ không phải tên màu, để không ai vô tình gán lại một
+   hue ngữ nghĩa cho chặng học lần nữa.
+
+   Tương phản đã kiểm bằng số cho cả 11 bậc ở cả hai chế độ: thấp nhất 5,13:1
+   cho chữ (ngưỡng AA 4,5) và 4,53:1 cho màu nhấn (ngưỡng 3,0).
+   -------------------------------------------------------------------------- */
+[data-hue='t0']  { --hue: #2771a5; --hue-soft: #edf5fa; --hue-text: #205479; }
+[data-hue='t1']  { --hue: #275fa5; --hue-soft: #edf3fa; --hue-text: #204879; }
+[data-hue='t2']  { --hue: #274ea5; --hue-soft: #edf1fa; --hue-text: #203b79; }
+[data-hue='t3']  { --hue: #273ca5; --hue-soft: #edeffa; --hue-text: #202f79; }
+[data-hue='t4']  { --hue: #272ba5; --hue-soft: #edeefa; --hue-text: #202379; }
+[data-hue='t5']  { --hue: #3427a5; --hue-soft: #efedfa; --hue-text: #2a2079; }
+[data-hue='t6']  { --hue: #4627a5; --hue-soft: #f0edfa; --hue-text: #362079; }
+[data-hue='t7']  { --hue: #5727a5; --hue-soft: #f2edfa; --hue-text: #422079; }
+[data-hue='t8']  { --hue: #6927a5; --hue-soft: #f4edfa; --hue-text: #4f2079; }
+[data-hue='t9']  { --hue: #7a27a5; --hue-soft: #f6edfa; --hue-text: #5b2079; }
+[data-hue='t10'] { --hue: #8c27a5; --hue-soft: #f7edfa; --hue-text: #672079; }
+
+[data-theme='dark'] [data-hue='t0']  { --hue: #6cb2e5; --hue-soft: #121f29; --hue-text: #96c9ee; }
+[data-theme='dark'] [data-hue='t1']  { --hue: #6ca2e5; --hue-soft: #121c29; --hue-text: #96bdee; }
+[data-theme='dark'] [data-hue='t2']  { --hue: #6c91e5; --hue-soft: #121929; --hue-text: #96b1ee; }
+[data-theme='dark'] [data-hue='t3']  { --hue: #6c80e5; --hue-soft: #121629; --hue-text: #96a5ee; }
+[data-theme='dark'] [data-hue='t4']  { --hue: #6c6fe5; --hue-soft: #121229; --hue-text: #9698ee; }
+[data-theme='dark'] [data-hue='t5']  { --hue: #796ce5; --hue-soft: #141229; --hue-text: #9f96ee; }
+[data-theme='dark'] [data-hue='t6']  { --hue: #8a6ce5; --hue-soft: #171229; --hue-text: #ab96ee; }
+[data-theme='dark'] [data-hue='t7']  { --hue: #9a6ce5; --hue-soft: #1b1229; --hue-text: #b896ee; }
+[data-theme='dark'] [data-hue='t8']  { --hue: #ab6ce5; --hue-soft: #1e1229; --hue-text: #c496ee; }
+[data-theme='dark'] [data-hue='t9']  { --hue: #bc6ce5; --hue-soft: #211229; --hue-text: #d096ee; }
+[data-theme='dark'] [data-hue='t10'] { --hue: #cd6ce5; --hue-soft: #241229; --hue-text: #dc96ee; }
 
 /* ==========================================================================
    Chế độ tập trung — người học bật khi cần đọc sâu.

@@ -14,7 +14,7 @@ export const track10: Track = {
   title: 'Vận hành, quản trị và sự nghiệp',
   tagline: 'Mô hình chạy được trong notebook không phải là sản phẩm',
   icon: 'rocket',
-  hue: 'slate',
+  hue: 't10',
   blurb:
     'Bảy bài về quãng đường từ "mô hình có AUC đẹp" tới "hệ thống trực 24/7 mà analyst tin tưởng". Bạn sẽ học kiến trúc suy luận và ngân sách độ trễ, cách phát hiện trôi trước khi nó thành sự cố, cách gói cảnh báo để analyst quyết định trong 30 giây, và khung quản trị mà kiểm toán viên sẽ hỏi tới. Chặng khép lại bằng năm dự án làm được với dữ liệu công khai và bản đồ nghề nghiệp thật.',
   outcomes: [

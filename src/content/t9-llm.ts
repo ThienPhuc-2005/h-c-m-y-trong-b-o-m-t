@@ -16,7 +16,7 @@ export const track9: Track = {
   title: 'An ninh LLM và GenAI',
   tagline: 'Bề mặt tấn công mới nhất, và bạn đang ở tuyến đầu',
   icon: 'bot',
-  hue: 'indigo',
+  hue: 't9',
   blurb:
     'Bảy bài về lớp hệ thống mà tổ chức nào cũng đang vội vàng triển khai và gần như không ai kịp bảo vệ. Bạn sẽ hiểu gốc rễ kỹ thuật của prompt injection, dựng được mô hình mối đe doạ cho RAG và tác tử, đọc thông OWASP Top 10 for LLM Applications bản 2025, và biết chính xác biện pháp nào thật sự mua được cái gì. Kèm cả mặt phòng thủ: dùng LLM trong SOC sao cho không tự bắn vào chân mình.',
   outcomes: [

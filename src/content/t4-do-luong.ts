@@ -20,7 +20,7 @@ export const track4: Track = {
   title: 'Đo lường và ra quyết định',
   tagline: 'Chặng quyết định bạn là kỹ sư hay người chạy thư viện',
   icon: 'chart',
-  hue: 'amber',
+  hue: 't4',
   blurb:
     'Bảy bài về câu hỏi khó nhất trong ML bảo mật: mô hình này tốt hay không, và tốt theo nghĩa nào. Bạn sẽ học đọc bốn con số của ma trận nhầm lẫn, chọn đúng chỉ số cho bài toán mất cân bằng, đặt ngưỡng bằng chi phí thật thay vì con số 0,5 mặc định, và quy mọi thứ về đơn vị mà tổ chức thực sự chi trả: giờ analyst và số vụ bị bỏ lọt. Đây là chặng phân biệt người hiểu bài toán với người chỉ biết gọi thư viện.',
   outcomes: [

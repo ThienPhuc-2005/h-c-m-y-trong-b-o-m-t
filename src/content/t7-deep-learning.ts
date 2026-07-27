@@ -16,7 +16,7 @@ export const track7: Track = {
   title: 'Học sâu cho bảo mật',
   tagline: 'Mạnh mẽ, đắt đỏ, và thường không cần thiết',
   icon: 'network',
-  hue: 'violet',
+  hue: 't7',
   blurb:
     'Sáu bài mổ xẻ deep learning từ một nơ-ron tới Transformer, luôn gắn với dữ liệu bảo mật thật: byte của tệp PE, chuỗi lời gọi API, dòng log. Bạn sẽ xây được trực giác đủ để đọc kiến trúc và gỡ lỗi huấn luyện — và quan trọng hơn, đủ để nói không khi LightGBM đang thắng.',
   outcomes: [

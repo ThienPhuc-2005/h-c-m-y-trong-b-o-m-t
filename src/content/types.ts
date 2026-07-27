@@ -239,7 +239,12 @@ export interface Track {
   /** Tên biểu tượng trong bộ icon (xem `components/Icon.tsx`) — mã hoá kép ở cấp điều hướng. */
   icon: IconName;
   /** Tên biến màu chủ đề (xem styles/tokens.css). */
-  hue: 'indigo' | 'cyan' | 'teal' | 'lime' | 'amber' | 'orange' | 'rose' | 'violet' | 'slate' | 'emerald';
+  /**
+   * Màu nhận diện chặng. Dải RIÊNG t0…t10 (xem cuối `styles/tokens.css`) — cố ý
+   * KHÔNG dùng tên hue ngữ nghĩa, để không chặng nào vô tình mang màu "đúng",
+   * "sai" hay "cảnh báo".
+   */
+  hue: 't0' | 't1' | 't2' | 't3' | 't4' | 't5' | 't6' | 't7' | 't8' | 't9' | 't10';
   blurb: string;
   /** Sau chặng này bạn LÀM ĐƯỢC gì (outcome, không phải "biết về"). */
   outcomes: string[];
