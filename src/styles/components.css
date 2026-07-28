@@ -59,7 +59,6 @@
   z-index: var(--z-sticky);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
   border-bottom: 1px solid var(--border);
 }
 .nav-inner {
@@ -1686,7 +1685,6 @@ kbd {
 [data-theme='gold'] .modal {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
   box-shadow: inset 0 1px 0 var(--glass-edge), var(--shadow-sm);
 }
 [data-theme='gold'] .modal {
@@ -1718,13 +1716,17 @@ kbd {
     background: var(--bg-elev);
     background-image: none;
     backdrop-filter: none;
-    -webkit-backdrop-filter: none;
   }
   [data-theme='gold'] .nav {
     background: var(--bg);
   }
 }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+/* KHÔNG viết thêm bản `-webkit-backdrop-filter` ở bất cứ đâu trong tệp này.
+   Khi một luật có cả hai khai báo, bộ rút gọn CSS gộp chúng lại và giữ dạng CÓ
+   TIỀN TỐ — mà Chrome 148 đã bỏ hỗ trợ dạng đó, nên hiệu ứng mờ biến mất ở bản
+   build thật trong khi bản dev vẫn đúng. Safari dưới 18 sẽ rơi vào khối
+   @supports bên dưới và nhận nền đục, đó là suy giảm chấp nhận được. */
+@supports not (backdrop-filter: blur(1px)) {
   [data-theme='gold'] .card,
   [data-theme='gold'] .panel,
   [data-theme='gold'] .lab,

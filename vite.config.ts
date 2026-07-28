@@ -12,6 +12,19 @@ export default defineConfig({
   plugins: [react()],
   build: {
     target: 'es2022',
+    /**
+     * `cssTarget` PHẢI đặt riêng. Nếu bỏ trống, Vite lấy nó theo `build.target`
+     * — mà 'es2022' là phiên bản ngôn ngữ JavaScript, không phải một trình
+     * duyệt, nên bộ biến đổi CSS coi như đang nhắm trình duyệt rất cũ: nó thay
+     * `backdrop-filter` bằng MỖI `-webkit-backdrop-filter` và bỏ luôn tên chuẩn.
+     *
+     * Hậu quả đo được trên bản đã triển khai: Chrome 148 không còn hiểu dạng có
+     * tiền tố, nên `getComputedStyle(...).backdropFilter` trả về `none` — toàn
+     * bộ hiệu ứng mờ của thanh điều hướng và của bề mặt kính đều mất, dù bản
+     * chạy bằng máy chủ phát triển thì vẫn đúng. Đây là loại lỗi chỉ lộ ra ở
+     * bản build thật, nên phải kiểm bằng `npm run preview`, không chỉ `npm run dev`.
+     */
+    cssTarget: ['chrome111', 'edge111', 'firefox121', 'safari18'],
     // Nội dung khoá học rất lớn; tách nó khỏi mã ứng dụng để lần tải sau chỉ
     // phải lấy phần thay đổi.
     rollupOptions: {
