@@ -19,7 +19,20 @@ npm run lint      # oxlint
 npx tsc -b --noEmit
 node scripts/calibrate-minutes.mjs        # hiệu chỉnh lại thời lượng bài học
 node scripts/calibrate-minutes.mjs --dry  # xem thay đổi, không ghi
+npm run check:contrast                    # WCAG + khoảng cách hue cho ba bảng màu
+npm run check:figures                     # đo hình vẽ trong trình duyệt thật
 ```
+
+`check:figures` mở Chrome (hoặc Edge) đã cài sẵn ở chế độ không giao diện, duyệt
+48 hình và 33 phòng lab, rồi trượt nếu có phần tử nào vượt khỏi `viewBox` hoặc
+hai hộp chữ đè nhau quá 2 đơn vị theo cả hai chiều. Nó không tải trình duyệt về
+và không thêm dependency: Node đã có `WebSocket` và `fetch`, đủ để nói thẳng
+giao thức DevTools. Chạy nó sau khi sửa bất cứ hình nào hoặc bất cứ biểu đồ nào
+trong `src/labs/`. Không nằm trong CI vì CI không có trình duyệt.
+
+Khi nó báo tràn, **nới `viewBox` không phải cách sửa**. Trên màn hẹp
+`.figure svg` được vẽ ở 620px, nên viewBox rộng hơn nghĩa là tỉ lệ co giãn nhỏ
+đi và chữ trên điện thoại nhỏ theo. Rút ngắn thứ đang tràn, hoặc dời nó.
 
 Trước khi commit, chạy đủ ba thứ: `npx tsc -b --noEmit`, `npm run lint`, `npm test`.
 CI chạy đúng ba lệnh đó cộng thêm `npm run build`.
@@ -58,6 +71,8 @@ public/sw.js          Service worker: nạp sẵn, cache-first, tái dùng chunk
 public/manifest.webmanifest + icon.svg + icon-maskable.svg
 scripts/build-sw.mjs  Nhúng danh sách tệp thật + phiên bản băm sau mỗi lần build
 scripts/calibrate-minutes.mjs  Hiệu chỉnh minutes/practiceMinutes từ nội dung thật
+scripts/check-contrast.mjs     Đọc tokens.css, đo WCAG và khoảng cách hue
+scripts/check-figures.mjs      Đo hình bằng Chrome không giao diện, qua CDP
 ```
 
 ## Ba quy ước dễ vi phạm

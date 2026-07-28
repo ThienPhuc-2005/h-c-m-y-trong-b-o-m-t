@@ -185,7 +185,6 @@ export function LabConfusion() {
   const f1 = precision + recall ? (2 * precision * recall) / (precision + recall) : 0;
   const acc = (tp + tn) / data.length;
 
-  const p = mkPlot(460, 210, [0, 1], [0, 60], { l: 40, r: 12, t: 12, b: 34 });
   const hist = (cls: 0 | 1) => {
     const bins = new Array(24).fill(0);
     for (const d of data) if (d.y === cls) bins[Math.min(23, Math.floor(d.score * 24))]++;
@@ -193,6 +192,20 @@ export function LabConfusion() {
   };
   const h0 = hist(0);
   const h1 = hist(1);
+
+  /**
+   * Trần trục y phải tính từ dữ liệu, KHÔNG được chốt cứng.
+   *
+   * Trước đây nó là [0; 60] — đúng hồi `makeScores` còn chạy với 400 mẫu. Khi
+   * số mẫu lên 4.000, cột cao nhất chạm 264 và mọi cột đều bị mép trên của SVG
+   * cắt phẳng: biểu đồ mang tên "Phân bố điểm số của hai lớp" không còn cho
+   * thấy một phân bố nào, chỉ còn hai khối chữ nhật đặc. Trục vẫn ghi 0…60 nên
+   * người học không có cách nào biết mình đang nhìn một hình bị cắt.
+   *
+   * Làm tròn lên bội của 30 để ba vạch chia đều luôn rơi vào số nguyên.
+   */
+  const yMax = Math.max(30, Math.ceil(Math.max(...h0, ...h1) / 30) * 30);
+  const p = mkPlot(460, 210, [0, 1], [0, yMax], { l: 44, r: 12, t: 12, b: 34 });
 
   return (
     <LabShell

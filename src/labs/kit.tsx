@@ -195,6 +195,8 @@ export function Axes({
   yLabel,
   xTicks = 5,
   yTicks = 5,
+  xTickVals,
+  yTickVals,
   fmtX = (v: number) => String(Math.round(v * 100) / 100),
   fmtY = (v: number) => String(Math.round(v * 100) / 100),
 }: {
@@ -203,11 +205,22 @@ export function Axes({
   yLabel?: string;
   xTicks?: number;
   yTicks?: number;
+  /**
+   * Vạch chia đặt tay, cho biểu đồ có miền nới rộng thêm một khoảng đệm.
+   *
+   * Chia đều một miền như [-0,08; 1,08] cho ra những con số không ai muốn đọc,
+   * và tệ hơn: nhãn "-0,08" ở gốc toạ độ dài tới mức nhãn trục ngang và nhãn
+   * trục dọc đè lên nhau ngay tại góc — `scripts/check-figures.mjs` bắt được
+   * đúng chỗ này ở biểu đồ perceptron. Miền vẽ vẫn nới rộng để điểm dữ liệu ở
+   * 0 và 1 không bị cắt đôi, còn vạch chia thì đặt đúng vào 0 / 0,5 / 1.
+   */
+  xTickVals?: number[];
+  yTickVals?: number[];
   fmtX?: (v: number) => string;
   fmtY?: (v: number) => string;
 }) {
-  const xs = Array.from({ length: xTicks + 1 }, (_, i) => p.xr[0] + ((p.xr[1] - p.xr[0]) * i) / xTicks);
-  const ys = Array.from({ length: yTicks + 1 }, (_, i) => p.yr[0] + ((p.yr[1] - p.yr[0]) * i) / yTicks);
+  const xs = xTickVals ?? Array.from({ length: xTicks + 1 }, (_, i) => p.xr[0] + ((p.xr[1] - p.xr[0]) * i) / xTicks);
+  const ys = yTickVals ?? Array.from({ length: yTicks + 1 }, (_, i) => p.yr[0] + ((p.yr[1] - p.yr[0]) * i) / yTicks);
   return (
     <g>
       {ys.map((v, i) => (
@@ -232,7 +245,14 @@ export function Axes({
       )}
       {/* Tâm quay của nhãn trục dọc ở 14, không phải 11: chữ quay 90° có hộp cao
           bằng cả ascender + descender, nên tâm ở 11 đẩy khoảng 3 đơn vị ra ngoài
-          mép trái viewBox. Đo bằng getBBox nhân getCTM trên bốn góc hộp. */}
+          mép trái viewBox. Đo bằng getBBox nhân getCTM trên bốn góc hộp.
+
+          Hệ quả cần nhớ khi đặt `pad.l`: nhãn này chiếm dải x từ ~6 tới ~22, còn
+          nhãn số kết thúc ở `pad.l - 6`. Một nhãn số bốn ký tự kiểu "0,25" rộng
+          khoảng 26 đơn vị, nên `pad.l` phải từ 54 trở lên thì hai thứ mới không
+          đè nhau. Dưới mức đó, biểu đồ nào có nhãn trục dọc DÀI sẽ đè — nhãn
+          ngắn thoát chỉ vì nó không vươn tới hàng số đó, tức là thoát may chứ
+          không phải thoát đúng. `scripts/check-figures.mjs` đo và chặn. */}
       {yLabel && (
         <text transform={`rotate(-90 14 ${(p.pad.t + p.h - p.pad.b) / 2})`} x={14} y={(p.pad.t + p.h - p.pad.b) / 2} textAnchor="middle" className="svg-label-strong">
           {yLabel}

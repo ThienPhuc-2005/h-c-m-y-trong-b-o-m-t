@@ -697,7 +697,8 @@ export function LabGradient() {
   const f = gradSurface;
   const { path } = useMemo(() => gradientPath(lr, start, steps), [lr, start, steps]);
 
-  const p = mkPlot(460, 280, [0, 1], [0, 1.1], { l: 44, r: 14, t: 14, b: 36 });
+  // l: 54 chứ không phải 44 — nhãn "0,55" trên trục dọc đè lên chữ "Hàm mất mát".
+  const p = mkPlot(460, 280, [0, 1], [0, 1.1], { l: 54, r: 14, t: 14, b: 36 });
   const curve: [number, number][] = Array.from({ length: 200 }, (_, i) => [i / 199, f(i / 199)]);
   const { final, status } = gradientPath(lr, start, steps);
   const diverged = status !== 'hoi-tu';
@@ -875,7 +876,7 @@ export function LabPerceptron() {
             <rect key={i} x={px(p, x) - cw / 2} y={py(p, y) - cw / 2} width={cw + 0.8} height={cw + 0.8}
               fill={v > 0.5 ? COLORS.bad : COLORS.ok} opacity={0.08 + Math.abs(v - 0.5) * 0.5} />
           ))}
-          <Axes p={p} xLabel="x₁" yLabel="x₂" xTicks={2} yTicks={2} />
+          <Axes p={p} xLabel="x₁" yLabel="x₂" xTickVals={[0, 0.5, 1]} yTickVals={[0, 0.5, 1]} />
           {data.map((d, i) => (
             <g key={i}>
               <circle cx={px(p, d.x[0])} cy={py(p, d.x[1])} r={11} fill={d.y ? COLORS.bad : COLORS.ok} stroke="var(--bg-elev)" strokeWidth={2.5} />
@@ -954,7 +955,8 @@ export function LabKmeans() {
   const dists = pts.map((p, i) => Math.hypot(p[0] - cents[assign[i]][0], p[1] - cents[assign[i]][1]));
   const cutoff = [...dists].sort((a, b) => a - b)[Math.floor(dists.length * 0.94)];
   const palette = [COLORS.info, COLORS.lab, COLORS.warn, COLORS.ok, COLORS.brand, COLORS.bad];
-  const p = mkPlot(430, 330, [0, 1], [0, 1], { l: 40, r: 12, t: 12, b: 34 });
+  // l: 54 chứ không phải 40 — nhãn "0,25" đè lên chữ "Số kết nối (chuẩn hoá)".
+  const p = mkPlot(430, 330, [0, 1], [0, 1], { l: 54, r: 12, t: 12, b: 34 });
 
   return (
     <LabShell

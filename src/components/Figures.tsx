@@ -301,14 +301,17 @@ const ImbalanceFig = () => (
   <Svg vb="0 0 600 200">
     <T x={300} y={20} strong>Cùng FPR = 0,1%, khối lượng cảnh báo giả thay đổi theo lưu lượng</T>
     {/* Thanh dài nhất PHẢI để chừa chỗ cho nhãn nằm bên phải nó: cột nhãn bắt
-        đầu ở 150, nhãn dài nhất đo được ~141px, nên bề rộng tối đa là 290 để
-        150 + 290 + 8 + 141 vẫn nhỏ hơn 600. Bản trước đặt thanh ở x=200 rộng
-        420 — tức chính thanh đó đã vượt khung, và nhãn "10.000 cảnh báo giả —
-        bất khả thi" bị cắt mất gần hết. */}
+        đầu ở 150, nên bề rộng tối đa là 150 + w + 8 + (bề rộng nhãn) < 600.
+        Bản trước đặt thanh ở x=200 rộng 420 — tức chính thanh đó đã vượt khung.
+        Bản sau đó rút về 290 dựa trên một phép ƯỚC LƯỢNG bề rộng nhãn là 141,
+        và ước lượng đó sai: đo trong trình duyệt bằng
+        `node scripts/check-figures.mjs` thì nhãn "10.000 cảnh báo giả — bất khả
+        thi" rộng 166 đơn vị, nên đuôi nó vẫn thò ra ngoài 14. Đừng ước lượng
+        bề rộng chữ bằng đầu — chạy script. */}
     {[
       { l: '10 nghìn sự kiện/ngày', w: 18, n: '10 cảnh báo giả', c: C.ok },
       { l: '1 triệu sự kiện/ngày', w: 96, n: '1.000 cảnh báo giả', c: C.warn },
-      { l: '10 triệu sự kiện/ngày', w: 290, n: '10.000 cảnh báo giả — bất khả thi', c: C.bad },
+      { l: '10 triệu sự kiện/ngày', w: 270, n: '10.000 cảnh báo giả — bất khả thi', c: C.bad },
     ].map((r, i) => (
       <g key={i}>
         <T x={12} y={62 + i * 46} anchor="start" size={11}>{r.l}</T>
