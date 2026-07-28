@@ -290,3 +290,24 @@ hr {
 .anim-in {
   animation: fadeUp var(--t-slow) var(--ease-out) both;
 }
+
+/* --------------------------------------------------------------------------
+   Nền môi trường cho chủ đề "Vàng ấm"
+   --------------------------------------------------------------------------
+   Kính chỉ ra kính khi CÓ GÌ PHÍA SAU để làm mờ. Trên một nền phẳng tuyệt đối,
+   backdrop-filter không có gì để xử lý và bề mặt chỉ còn là hộp hơi trong suốt
+   — tốn hiệu năng mà không được gì. Hai vũng sáng ấm rất nhạt dưới đây là thứ
+   lớp mờ có thể bắt được: đi qua kính, chúng nhoè thành một chuyển sắc mềm và
+   mép thẻ mới hiện ra khỏi nền.
+
+   `fixed` để vũng sáng không trượt theo trang (kính đứng yên, cảnh vật đứng
+   yên), và KHÔNG hoạt ảnh: một nền nhấp nháy sau lớp mờ buộc trình duyệt vẽ
+   lại vùng blur mỗi khung hình.
+   -------------------------------------------------------------------------- */
+[data-theme='gold'] body {
+  background-image:
+    radial-gradient(60rem 40rem at 12% -8%, rgb(224 178 92 / 0.10), transparent 65%),
+    radial-gradient(48rem 34rem at 92% 4%, rgb(224 103 60 / 0.07), transparent 62%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}

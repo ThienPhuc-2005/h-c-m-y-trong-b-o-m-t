@@ -165,12 +165,12 @@
   },
   "grade": {
     "1": "Quên rồi",
-    "1desc": "Không nhớ nổi, cần học lại",
     "2": "Khó",
-    "2desc": "Nhớ ra nhưng phải vật lộn",
     "3": "Được",
-    "3desc": "Nhớ ra sau vài giây",
     "4": "Dễ",
+    "1desc": "Không nhớ nổi, cần học lại",
+    "2desc": "Nhớ ra nhưng phải vật lộn",
+    "3desc": "Nhớ ra sau vài giây",
     "4desc": "Bật ra ngay lập tức"
   },
   "interval": {
@@ -343,7 +343,8 @@
     "themeAuto": "Theo hệ thống",
     "themeLight": "Sáng",
     "themeDark": "Tối",
-    "themeHint": "Chế độ tối dùng nền #0f1117 thay vì đen tuyệt đối — tương phản cực đại làm chữ trắng bị loang, đặc biệt khó chịu với người loạn thị.",
+    "themeGold": "Vàng ấm",
+    "themeHint": "Chế độ tối dùng nền #0f1117 thay vì đen tuyệt đối — tương phản cực đại làm chữ trắng bị loang, đặc biệt khó chịu với người loạn thị. Vàng ấm là chủ đề tối nền ấm với bề mặt kính — nó tự trở về nền đục nếu hệ thống của bạn đặt giảm độ trong suốt.",
     "fontSize": "Cỡ chữ",
     "fontSizeHint": "Nếu bạn phải nheo mắt hoặc ngả người về phía màn hình, hãy tăng lên. Mỏi mắt làm giảm khả năng tiếp thu rõ rệt.",
     "reduceMotion": "Giảm hoạt ảnh",

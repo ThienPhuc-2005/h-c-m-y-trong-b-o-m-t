@@ -28,7 +28,8 @@ const SCHEMA_VERSION = 1;
 /* -------------------------------------------------------------------------- */
 
 export interface Settings {
-  theme: 'auto' | 'light' | 'dark';
+  /** 'gold' là chủ đề tối nền ấm kèm bề mặt kính — xem khối cuối tokens.css. */
+  theme: 'auto' | 'light' | 'dark' | 'gold';
   /** Hệ số cỡ chữ 0.9–1.3 — người học có thị lực khác nhau. */
   fontScale: number;
   /** Tắt hoạt ảnh (tiền đình, đau nửa đầu, hoặc chỉ là thích yên tĩnh). */
@@ -315,7 +316,9 @@ function coerceSettings(v: unknown): Settings {
   if (!isObj(v)) return { ...d };
   const theme = str(v.theme, d.theme);
   return {
-    theme: (theme === 'light' || theme === 'dark' || theme === 'auto' ? theme : d.theme) as Settings['theme'],
+    theme: (theme === 'light' || theme === 'dark' || theme === 'gold' || theme === 'auto'
+      ? theme
+      : d.theme) as Settings['theme'],
     // Kẹp đúng khoảng mà giao diện cho phép. Không kẹp thì `fontScale: 900`
     // trong một tệp nhập làm chữ phồng tới mức không mở nổi trang Cài đặt để sửa.
     fontScale: Math.min(1.4, Math.max(0.85, num(v.fontScale, d.fontScale))),

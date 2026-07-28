@@ -14,6 +14,10 @@ import { ErrorBoundary } from './components/ErrorBoundary';
   try {
     const raw = localStorage.getItem('aegis.progress.v1');
     const theme = raw ? JSON.parse(raw)?.settings?.theme : 'auto';
+    if (theme === 'gold') {
+      document.documentElement.dataset.theme = 'gold';
+      return;
+    }
     const dark =
       theme === 'dark' ||
       ((theme === 'auto' || !theme) && window.matchMedia('(prefers-color-scheme: dark)').matches);

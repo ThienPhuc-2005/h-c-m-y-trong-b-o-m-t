@@ -41,7 +41,28 @@ export default function App() {
   /* ---- Áp dụng tuỳ chỉnh của người học lên toàn tài liệu ------------------ */
   useEffect(() => {
     const root = document.documentElement;
+    /**
+     * Màu thanh địa chỉ trên di động. index.html khai báo hai thẻ theme-color
+     * gắn media sáng/tối, nên chủ đề vàng sẽ mượn màu của chế độ tối và viền
+     * trình duyệt lệch tông so với trang. Ghi đè trực tiếp, giữ giá trị gốc
+     * trong data-base để trả lại nguyên trạng khi người học đổi chủ đề.
+     */
+    const metaColor = (c: string | null) => {
+      document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
+        if (!m.dataset.base) m.dataset.base = m.content;
+        m.content = c ?? m.dataset.base;
+      });
+    };
+
     const apply = () => {
+      // 'gold' là lựa chọn tường minh, không đi qua phép dò sáng/tối của hệ điều
+      // hành: người đã chọn nó là đã chọn một chủ đề tối cụ thể.
+      if (settings.theme === 'gold') {
+        root.dataset.theme = 'gold';
+        metaColor('#12100b');
+        return;
+      }
+      metaColor(null);
       const dark =
         settings.theme === 'dark' ||
         (settings.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);

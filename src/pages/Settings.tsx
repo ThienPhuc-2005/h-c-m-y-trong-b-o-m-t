@@ -109,6 +109,7 @@ export function SettingsPage() {
               ['auto', 'monitor', 'settings.themeAuto'],
               ['light', 'sun', 'settings.themeLight'],
               ['dark', 'moon', 'settings.themeDark'],
+              ['gold', 'gem', 'settings.themeGold'],
             ] as const).map(([v, ico, k]) => (
               <button key={v} className={`chip ${s.theme === v ? 'chip-brand' : ''}`} onClick={() => setSettings({ theme: v })}>
                 <Icon name={ico} size={13} /> {t(k)}

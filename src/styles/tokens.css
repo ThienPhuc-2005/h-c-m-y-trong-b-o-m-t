@@ -356,3 +356,112 @@
     --border: #4c5570;
   }
 }
+
+/* ==========================================================================
+   CHỦ ĐỀ "VÀNG ẤM" — nền tối ấm, nhấn vàng kim, bề mặt kính
+   --------------------------------------------------------------------------
+   VÌ SAO LÀ CHỦ ĐỀ TỐI, KHÔNG PHẢI SÁNG: vàng là màu phụ thuộc độ sáng. Nó chỉ
+   đọc ra "kim loại" khi là thứ sáng nhất và đậm màu nhất trên một nền trung
+   tính sâu. Trên nền sáng, cùng mã màu đó thành mù tạt, và chữ vàng trên trắng
+   không bao giờ đạt AA. Nên nền ở đây là nâu-than ấm (hue ~35°) chứ không phải
+   xám trung tính: xám trung tính cạnh vàng làm vàng ngả xanh.
+
+   VÌ SAO --warn KHÔNG CÒN LÀ AMBER: ở chế độ tối, --warn là #fbbf24 — gần như
+   trùng với vàng kim. Để brand vàng cạnh warn amber là lặp lại đúng lỗi mà
+   khối chú thích màu chặng học ở trên kể: hai thứ mang nghĩa khác nhau trông
+   giống nhau, và người học mất luôn thứ đang phân biệt chúng. Ở đây warn được
+   đẩy sang ĐỒNG/ĐẤT (hue ~18°), còn ok/info/lab giữ lạnh, nên năm màu ngữ
+   nghĩa vẫn tách nhau cả về hue lẫn về sắc độ.
+
+   Mọi cặp chữ/nền dưới đây đã được đo bằng scripts/check-contrast.mjs.
+   ========================================================================== */
+[data-theme='gold'] {
+  color-scheme: dark;
+
+  --bg: #12100b;
+  --bg-elev: #1b1710;
+  --bg-sunken: #0d0b07;
+  --bg-hover: #241f15;
+  --bg-active: #2e2719;
+
+  --border: #322a1b;
+  --border-strong: #4d4229;
+  --border-subtle: #241f14;
+
+  --text: #f3ede1;
+  --text-muted: #c3b8a2;
+  --text-faint: #a89c85;
+  --text-inverse: #12100b;
+
+  --brand: #e0b25c;
+  --brand-strong: #f2c97c;
+  --brand-soft: #2a2110;
+  --brand-border: #5c4720;
+  --brand-text: #f2cd88;
+
+  --ok: #4ecfa0;
+  --ok-strong: #80e2bd;
+  --ok-soft: #0f2620;
+  --ok-border: #235a49;
+  --ok-text: #80e2bd;
+
+  --bad: #f2556b;
+  --bad-strong: #f88f9d;
+  --bad-soft: #2b1216;
+  --bad-border: #6f2531;
+  --bad-text: #f88f9d;
+
+  --warn: #e0673c;
+  --warn-strong: #f2916b;
+  --warn-soft: #2b1710;
+  --warn-border: #6d3520;
+  --warn-text: #f2916b;
+
+  --info: #5cb8e8;
+  --info-strong: #93d2f3;
+  --info-soft: #0f2028;
+  --info-border: #1f5170;
+  --info-text: #93d2f3;
+
+  --lab: #b79af7;
+  --lab-soft: #201830;
+  --lab-border: #4d3a82;
+  --lab-text: #ccb8fb;
+
+  /* Bóng đổ nhuốm ấm: bóng xám lạnh trên nền nâu trông như bụi bẩn. */
+  --shadow-sm: 0 1px 2px rgb(8 5 0 / 0.5);
+  --shadow-md: 0 2px 6px rgb(8 5 0 / 0.45), 0 12px 28px -10px rgb(8 5 0 / 0.65);
+  --shadow-lg: 0 8px 40px -8px rgb(8 5 0 / 0.75);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--brand) 45%, transparent);
+
+  --grid-line: #2a2317;
+  --code-bg: #15120c;
+
+  /* ---- Kính: chỉ chủ đề này bật, xem components.css ---------------------- */
+  --glass-bg: color-mix(in srgb, var(--bg-elev) 62%, transparent);
+  --glass-bg-strong: color-mix(in srgb, var(--bg-elev) 82%, transparent);
+  --glass-blur: 16px;
+  /* Vạch sáng mảnh ở mép trên: thứ làm bề mặt trông như có độ dày, thay vì chỉ
+     là một hình chữ nhật mờ. Vàng nhạt chứ không phải trắng, để không lạnh. */
+  --glass-edge: rgb(255 231 186 / 0.14);
+  --glass-edge-strong: rgb(255 231 186 / 0.22);
+}
+
+/* Màu chặng học cho chủ đề vàng: GIỮ dải lam→tím lạnh của chế độ tối, không
+   chuyển sang dải vàng-đồng. Lý do đúng như khối chú thích ở trên: --hue chảy
+   vào thanh tiến độ, chấm lộ trình, viền thẻ và vạch đọc, nên nếu nhuộm vàng
+   thì mọi thanh tiến độ trông y như màu brand và người học mất tín hiệu vị trí.
+   Cái ĐỔI là nền nhạt: pha thẳng từ --bg ấm bằng color-mix, để một vệt lạnh
+   không nằm chỏng chơ trên nền nâu. */
+[data-theme='gold'] [data-hue='t0']  { --hue: #6cb2e5; --hue-text: #96c9ee; }
+[data-theme='gold'] [data-hue='t1']  { --hue: #6ca2e5; --hue-text: #96bdee; }
+[data-theme='gold'] [data-hue='t2']  { --hue: #6c91e5; --hue-text: #96b1ee; }
+[data-theme='gold'] [data-hue='t3']  { --hue: #6c80e5; --hue-text: #96a5ee; }
+[data-theme='gold'] [data-hue='t4']  { --hue: #6c6fe5; --hue-text: #9698ee; }
+[data-theme='gold'] [data-hue='t5']  { --hue: #796ce5; --hue-text: #9f96ee; }
+[data-theme='gold'] [data-hue='t6']  { --hue: #8a6ce5; --hue-text: #ab96ee; }
+[data-theme='gold'] [data-hue='t7']  { --hue: #9a6ce5; --hue-text: #b896ee; }
+[data-theme='gold'] [data-hue='t8']  { --hue: #ab6ce5; --hue-text: #c496ee; }
+[data-theme='gold'] [data-hue='t9']  { --hue: #bc6ce5; --hue-text: #d096ee; }
+[data-theme='gold'] [data-hue='t10'] { --hue: #cd6ce5; --hue-text: #dc96ee; }
+[data-theme='gold'] [data-hue] { --hue-soft: color-mix(in srgb, var(--hue) 13%, var(--bg)); }

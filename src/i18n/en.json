@@ -165,12 +165,12 @@
   },
   "grade": {
     "1": "Forgot",
-    "1desc": "Could not recall, needs relearning",
     "2": "Hard",
-    "2desc": "Recalled, but it was a struggle",
     "3": "Good",
-    "3desc": "Recalled after a few seconds",
     "4": "Easy",
+    "1desc": "Could not recall, needs relearning",
+    "2desc": "Recalled, but it was a struggle",
+    "3desc": "Recalled after a few seconds",
     "4desc": "Came instantly"
   },
   "interval": {
@@ -343,7 +343,8 @@
     "themeAuto": "Match system",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "themeHint": "Dark mode uses #0f1117 rather than pure black — maximum contrast makes white text bloom, which is especially harsh for readers with astigmatism.",
+    "themeGold": "Warm gold",
+    "themeHint": "Dark mode uses #0f1117 rather than pure black — maximum contrast makes white text bloom, which is especially harsh for readers with astigmatism. Warm gold is a warm-toned dark theme with glass surfaces — it falls back to opaque surfaces if your system asks for reduced transparency.",
     "fontSize": "Text size",
     "fontSizeHint": "If you are squinting or leaning toward the screen, turn this up. Eye strain measurably reduces how much you take in.",
     "reduceMotion": "Reduce motion",
