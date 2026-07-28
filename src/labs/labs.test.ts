@@ -18,10 +18,20 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { poisonModel, malScore, MAL_BASE } from './adversarial';
-import { makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve } from './metrics';
-import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison, entityRun, labelRun } from './security';
-import { trainPerceptron, gradientPath, overfitErrors, explainRun, JUNK, tabularRun } from './models';
+import { poisonModel, malScore, MAL_BASE, injectionRun, INJECTION_SAFE } from './adversarial';
+import {
+  makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve,
+  calibrationRun, alertLoad, GROUPING_FACTOR,
+} from './metrics';
+import {
+  seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison, entityRun, labelRun,
+  urlFeatures, splitHost, peFeatures, PE_ENTROPY_PACKED, tfidfRun,
+  anomalyRun, ANOMALY_ATTACKS, driftSeries,
+} from './security';
+import {
+  trainPerceptron, gradientPath, overfitErrors, explainRun, JUNK, tabularRun,
+  logisticRun, naiveBayesScore, treeSplit, bestTreeSplit, knnRun, kmeansRun,
+} from './models';
 import { intervalForRetention } from '../lib/srs';
 
 describe('lab-poison — cửa hậu ẩn được nhờ dung lượng mô hình', () => {
@@ -627,5 +637,427 @@ describe('lab-forgetting — mục tiêu ghi nhớ có điểm tối ưu, không
     // Bản trước kẹp lần ôn cuối vào đúng ngày 120 nên mọi mục tiêu thấp đều
     // hiện 100%, ngầm dạy "càng thấp càng tốt".
     expect(finalRetention(4, 0.9)).toBeGreaterThan(finalRetention(4, 0.75));
+  });
+});
+/* ==========================================================================
+   Mười ba phòng lab còn lại
+   --------------------------------------------------------------------------
+   Bốn trong số chúng hứa những điều mà chính con số của chúng bác bỏ. Mỗi bài
+   test dưới đây khoá lại một câu cụ thể trong lời kết luận, để lần sau ai sửa
+   dữ liệu giả hay chỉnh một tham số là biết ngay mình vừa làm lời hứa nào
+   thành lời nói dối.
+   ========================================================================== */
+
+describe('lab-calibration — chiều lệch của đường cong, không chỉ con số ECE', () => {
+  it('hiệu chuẩn tốt thì đường cong bám đường chéo', () => {
+    const r = calibrationRun(1);
+    expect(r.ece).toBeLessThan(0.03);
+    expect(Math.abs(r.bias)).toBeLessThan(0.01);
+  });
+
+  it('tự tin quá mức đẩy đường cong xuống DƯỚI đường chéo — đúng dạng lời kết luận nêu', () => {
+    // bias > 0 nghĩa là điểm mô hình đưa ra cao hơn tỉ lệ dương thật.
+    expect(calibrationRun(2.5).bias).toBeGreaterThan(0.2);
+    expect(calibrationRun(1.5).bias).toBeGreaterThan(0.09);
+  });
+
+  it('rụt rè quá mức đẩy nó lên TRÊN', () => {
+    expect(calibrationRun(0.4).bias).toBeLessThan(-0.2);
+  });
+
+  it('chiều lệch đơn điệu theo xu hướng mô hình, không phải một điểm lẻ', () => {
+    const b = [0.4, 0.7, 1, 1.5, 2, 2.5].map((s) => calibrationRun(s).bias);
+    for (let i = 1; i < b.length; i++) expect(b[i]).toBeGreaterThan(b[i - 1]);
+  });
+});
+
+describe('lab-alert-load — gom nhóm thắng xa việc chỉnh mô hình vài phần trăm', () => {
+  const base = {
+    events: 5_000_000,
+    fpr: 0.1,
+    analysts: 4,
+    minutes: 12,
+    grouping: true,
+  };
+
+  it('trạng thái mở đầu là một đội đã sụp: 625 cảnh báo cho năng lực 160', () => {
+    const r = alertLoad(base);
+    expect(r.alerts).toBe(625);
+    expect(r.capacity).toBe(160);
+    expect(r.ratio).toBeCloseTo(3.906, 3);
+    expect(r.backlogPerDay).toBe(465);
+  });
+
+  it('từ cùng một mốc: bật gom nhóm đỡ được 8 lần, cắt FPR 20% chỉ đỡ được 20%', () => {
+    // Mốc xuất phát phải là đội CHƯA gom nhóm — đó mới là chỗ hai lựa chọn
+    // cạnh tranh nhau. So với mốc đã bật sẵn gom nhóm thì đo nhầm câu hỏi.
+    const start = alertLoad({ ...base, grouping: false }).ratio;
+    const withGrouping = alertLoad(base).ratio;
+    const withBetterModel = alertLoad({ ...base, grouping: false, fpr: 0.08 }).ratio;
+    expect(start / withGrouping).toBeCloseTo(GROUPING_FACTOR, 6);
+    expect(withBetterModel / start).toBeCloseTo(0.8, 6);
+    // Đây là toàn bộ luận điểm: một nút bật/tắt mạnh hơn nhiều tháng chỉnh mô hình.
+    expect(withGrouping).toBeLessThan(withBetterModel);
+  });
+
+  it('hai lối thoát mà lab in ra đều thật sự đưa tải về đúng 1,0', () => {
+    const r = alertLoad(base);
+    expect(
+      alertLoad({ ...base, analysts: base.analysts + r.extraAnalysts }).ratio,
+    ).toBeLessThanOrEqual(1);
+    expect(alertLoad({ ...base, fpr: r.fprNeeded }).ratio).toBeCloseTo(1, 9);
+  });
+});
+
+describe('lab-logistic — dấu của trọng số là thứ lời kết luận hứa', () => {
+  it('khởi tạo bằng 0 thì chưa học được gì', () => {
+    const r = logisticRun(0.5, 0);
+    expect(r.w).toEqual([0, 0, 0, 0]);
+    expect(r.loss).toBeCloseTo(Math.log(2), 4);
+  });
+
+  it('số dấu chấm và entropy nhận trọng số DƯƠNG, tuổi tên miền nhận trọng số ÂM', () => {
+    const r = logisticRun(0.5, 50);
+    expect(r.w[1]).toBeGreaterThan(0); // Số dấu chấm
+    expect(r.w[2]).toBeGreaterThan(0); // Entropy tên miền
+    expect(r.w[3]).toBeLessThan(0); // Tuổi tên miền
+    // Tuổi tên miền là tín hiệu MẠNH nhất, và mô hình tìm ra điều đó một mình.
+    expect(Math.abs(r.w[3])).toBeGreaterThan(Math.max(r.w[0], r.w[1], r.w[2]));
+    expect(r.acc).toBeGreaterThan(0.99);
+  });
+
+  it('tốc độ học kịch trần KHÔNG làm nó nổ tung — lời kết luận cũ hứa sai chỗ này', () => {
+    const fast = logisticRun(8, 300);
+    const slow = logisticRun(0.5, 300);
+    expect(Number.isFinite(fast.loss)).toBe(true);
+    expect(fast.loss).toBeLessThan(slow.loss);
+    expect(fast.acc).toBeCloseTo(slow.acc, 6);
+  });
+
+  it('cái giá thật của tốc độ học cao là trọng số phình to mà không đổi được dự đoán', () => {
+    const fast = Math.max(...logisticRun(8, 300).w.map(Math.abs));
+    const slow = Math.max(...logisticRun(0.5, 300).w.map(Math.abs));
+    expect(slow).toBeCloseTo(5.7, 1);
+    expect(fast).toBeCloseTo(11.9, 1);
+  });
+});
+
+describe('lab-naive-bayes — và ca α = 0 mà chính lời kết luận mời người học thử', () => {
+  it('thư lừa đảo mặc định bị chặn, thư công việc thì không', () => {
+    expect(
+      naiveBayesScore('tài khoản của bạn bị khoá xác minh ngay', 1).p!,
+    ).toBeGreaterThan(0.99);
+    expect(naiveBayesScore('họp nhóm lúc 3 giờ chiều', 1).p!).toBeLessThan(
+      0.05,
+    );
+  });
+
+  it('làm mượt Laplace giữ cho một từ lạ không giết cả câu', () => {
+    const r = naiveBayesScore('tài khoản blockchainzzz', 1);
+    expect(r.degenerate).toBe(false);
+    expect(Number.isFinite(r.p!)).toBe(true);
+  });
+
+  it('α = 0 cộng từ lạ cho 0/0, và lab phải GỌI TÊN nó thay vì in NaN', () => {
+    const r = naiveBayesScore('tài khoản blockchainzzz', 0);
+    expect(r.degenerate).toBe(true);
+    expect(r.p).toBeNull();
+    expect(r.unknownWords).toEqual(['blockchainzzz']);
+    // Không một con số nào in ra được phép là NaN — kể cả trong bảng đóng góp
+    // từng từ, nơi log(0) − log(0) từng lọt ra màn hình.
+    expect(r.contrib.find((c) => c.w === 'blockchainzzz')!.d).toBeNull();
+    expect(r.contrib.every((c) => c.d == null || !Number.isNaN(c.d))).toBe(true);
+  });
+
+  it('α = 0 còn cho ±∞ với từ chỉ có ở MỘT lớp, và đó là con số đúng', () => {
+    // "tài" và "khoản" chỉ xuất hiện trong thư rác. Với α = 0 thì log-odds của
+    // chúng là +∞ — một từ tự nó quyết định cả câu. Giao diện phải vẽ ra điều
+    // đó, chứ không in chuỗi "Infinity".
+    const r = naiveBayesScore('tài khoản blockchainzzz', 0);
+    const inf = r.contrib.filter((c) => c.d != null && !Number.isFinite(c.d));
+    expect(inf.map((c) => c.w).sort()).toEqual(['khoản', 'tài']);
+    expect(inf.every((c) => c.d! > 0)).toBe(true);
+  });
+
+  it('α = 0 với từ CHỈ có ở một lớp thì vẫn kết luận được — đó mới là bài học gốc', () => {
+    const r = naiveBayesScore('trúng thưởng', 0);
+    expect(r.degenerate).toBe(false);
+    expect(r.p).toBe(1);
+  });
+});
+
+describe('lab-tree — đáp án máy tìm được phải thật sự là tốt nhất', () => {
+  it('tồn tại phép chia hoàn hảo, và máy tìm ra nó', () => {
+    const best = bestTreeSplit();
+    expect(best.rootEntropy).toBeCloseTo(1, 9);
+    expect(best.gain).toBeCloseTo(1, 9);
+    expect(best.feature).toBe('age');
+    expect(best.thr).toBe(215);
+  });
+
+  it('không phép chia nào vượt được đáp án đó', () => {
+    const best = bestTreeSplit().gain;
+    for (const f of ['ent', 'age', 'dots'] as const) {
+      for (let t = -50; t <= 2100; t += 7)
+        expect(treeSplit(f, t).gain).toBeLessThanOrEqual(best + 1e-9);
+    }
+  });
+
+  it('phép chia mặc định còn cách đáp án rất xa — lab có chỗ để người học đi tìm', () => {
+    expect(treeSplit('ent', 0.65).gain).toBeCloseTo(0.35, 2);
+  });
+
+  it('số dấu chấm cũng chia hoàn hảo: hai lời giải, đúng như "thử MỌI đặc trưng"', () => {
+    expect(treeSplit('dots', 2.5).gain).toBeCloseTo(1, 9);
+  });
+});
+
+describe('lab-knn — răng cưa co lại theo k, còn đảo thì phải kéo nhiễu mới thấy', () => {
+  it('ở nhiễu mặc định, chu vi ranh giới rụng gần nửa khi k đi từ 1 lên 5', () => {
+    expect(knnRun(1, 0.16).roughness).toBe(118);
+    expect(knnRun(5, 0.16).roughness).toBe(63);
+    expect(knnRun(3, 0.16).roughness).toBeLessThan(knnRun(1, 0.16).roughness);
+    expect(knnRun(5, 0.16).roughness).toBeLessThan(knnRun(3, 0.16).roughness);
+  });
+
+  it('nhưng ở nhiễu mặc định thì k = 1 KHÔNG sinh đảo nào — nên lời kết luận phải chỉ sang thanh nhiễu', () => {
+    expect(knnRun(1, 0.16).islands).toBe(2);
+  });
+
+  it('kéo nhiễu lên 0,22 thì đảo hiện ra, và k lớn dọn sạch chúng', () => {
+    expect(knnRun(1, 0.22).islands).toBe(7);
+    expect(knnRun(15, 0.22).islands).toBe(2);
+  });
+
+  it('nhiễu thấp nhất: k mất hết ý nghĩa, mọi giá trị cho cùng một ranh giới', () => {
+    const r = [1, 3, 5, 15, 25].map((k) => knnRun(k, 0.06));
+    expect(r.every((x) => x.islands === 2)).toBe(true);
+    const rough = r.map((x) => x.roughness);
+    expect(Math.max(...rough) - Math.min(...rough)).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('lab-kmeans — vòng đỏ đúng là 6%, nhưng "xa" không đồng nghĩa "được rắc vào"', () => {
+  it('95 điểm, 6 vòng đỏ — đúng con số ghi dưới biểu đồ', () => {
+    const r = kmeansRun(3, 8);
+    expect(r.pts.length).toBe(95);
+    expect(r.flaggedCount).toBe(6);
+    expect((r.flaggedCount / r.pts.length) * 100).toBeCloseTo(6.3, 1);
+  });
+
+  it('chỉ 2 trong 5 điểm rắc ngẫu nhiên lọt vào hàng đợi — "xa ≠ độc hại" cũng đúng chiều ngược lại', () => {
+    const r = kmeansRun(3, 8);
+    expect(r.outlierIndexes.filter((i) => r.flagged[i]).length).toBe(2);
+    // Ba điểm còn lại rơi ngay giữa một cụm, nên chúng KHÔNG xa chút nào.
+    expect(r.outlierRanks[0]).toBe(0);
+    expect(r.outlierRanks[4]).toBeGreaterThan(30);
+  });
+
+  it('phân vị cắt nên số vòng đỏ không đổi theo k', () => {
+    for (const k of [1, 2, 3, 4, 5, 6])
+      expect(kmeansRun(k, 8).flaggedCount).toBe(6);
+  });
+});
+
+describe('lab-url-features — tên miền thật của ngân hàng phải KHÔNG bị tố giả mạo', () => {
+  const risky = (u: string) =>
+    urlFeatures(u)
+      .filter((x) => x.risk)
+      .map((x) => x.k);
+
+  it('URL giả mạo mặc định gắn cờ đúng chỗ đáng gắn', () => {
+    const r = risky(
+      'http://secure-vietcombank.verify-account.xyz/login?id=8821',
+    );
+    expect(r).toContain('Thương hiệu ở sai vị trí');
+    expect(r).toContain('TLD');
+    expect(r).toContain('Có dấu gạch ngang');
+    expect(r.length).toBe(6);
+  });
+
+  it('vietcombank.com.vn KHÔNG phải giả mạo — hậu tố hai cấp phải được hiểu đúng', () => {
+    // Lời kết luận mời người học "dán một URL thật của ngân hàng bạn dùng", nên
+    // đây là URL đầu tiên họ thử. Bản trước đọc `com` là nhãn gốc rồi kết luận
+    // `vietcombank` nằm sai chỗ, tức là tố oan đúng ngân hàng lab lấy làm ví dụ.
+    expect(risky('https://vietcombank.com.vn/')).toEqual([]);
+    expect(risky('https://www.vietcombank.com.vn/login')).toEqual([
+      'Từ khoá nhạy cảm',
+    ]);
+  });
+
+  it('và đó chính là điều lời kết luận nói: trang thật cũng có chữ "login"', () => {
+    expect(risky('https://www.google.com/search?q=x')).toEqual([]);
+  });
+
+  it('tách host: nhãn đăng ký được nằm trước hậu tố, dù hậu tố có một hay hai cấp', () => {
+    expect(splitHost('www.vietcombank.com.vn')).toEqual({
+      registrable: 'vietcombank',
+      suffix: 'com.vn',
+      subdomains: ['www'],
+    });
+    expect(splitHost('secure-vietcombank.verify-account.xyz').registrable).toBe(
+      'verify-account',
+    );
+    expect(splitHost('google.com')).toEqual({
+      registrable: 'google',
+      suffix: 'com',
+      subdomains: [],
+    });
+  });
+
+  it('IP trần vẫn bị bắt', () => {
+    expect(risky('http://192.168.1.9/admin/login')).toContain(
+      'Dùng IP thay tên miền',
+    );
+  });
+});
+
+describe('lab-pe-features — cái bẫy "nén = độc" phải hiện ra bằng số', () => {
+  it('tệp sạch không chạm ngưỡng nào', () => {
+    const r = peFeatures(0);
+    expect(r.packedBySection).toBe(false);
+    expect(r.flaggedApis).toEqual([]);
+    expect(r.sample.signed).toBe(true);
+  });
+
+  it('mẫu nén UPX bị gắn cờ vì NÉN, không vì hành vi — đúng cái bẫy lời kết luận nêu', () => {
+    const r = peFeatures(1);
+    expect(r.maxSectionEnt).toBeGreaterThan(PE_ENTROPY_PACKED);
+    expect(r.fewImports).toBe(true);
+    expect(r.flaggedApis.length).toBeLessThan(peFeatures(2).flaggedApis.length);
+  });
+
+  it('còn mẫu mã độc thật lại KHÔNG vượt ngưỡng entropy — bắt bằng API mới đúng', () => {
+    const r = peFeatures(2);
+    expect(r.packedBySection).toBe(false);
+    expect(r.flaggedApis).toEqual([
+      'CryptEncrypt',
+      'CryptGenKey',
+      'DeleteFileW',
+    ]);
+  });
+});
+
+describe('lab-tfidf — IDF chỉ đổi thứ gì đó khi truy vấn có từ phổ biến', () => {
+  it('những từ lời kết luận nêu xuất hiện ở PHẦN LỚN dòng log, không phải mọi dòng', () => {
+    const { df } = tfidfRun('x', true);
+    expect(df.get('for')).toBe(5);
+    expect(df.get('from')).toBe(4);
+    expect(df.get('port')).toBe(4);
+    expect(df.get('powershell')).toBe(1);
+  });
+
+  it('truy vấn mặc định toàn từ hiếm, nên bật tắt IDF gần như không đổi gì', () => {
+    const q = 'powershell EncodedCommand downloadstring';
+    const on = tfidfRun(q, true);
+    const off = tfidfRun(q, false);
+    expect(on.sims[0].l).toContain('powershell');
+    expect(off.sims[0].l).toContain('powershell');
+    expect(on.sims[0].s).toBeCloseTo(off.sims[0].s, 6);
+  });
+
+  it('với truy vấn nhiều từ phổ biến thì IDF mới lộ tác dụng — đúng ba con số lab in ra', () => {
+    const q = 'failed password for root from port';
+    const on = tfidfRun(q, true).weights;
+    const off = tfidfRun(q, false).weights;
+    expect(on.get('root')!).toBeCloseTo(0.417, 3);
+    expect(on.get('for')!).toBeCloseTo(0.234, 3);
+    expect(on.get('root')!).toBeGreaterThan(on.get('for')!);
+    // Tắt IDF: cả sáu từ nặng y hệt nhau, từ hiếm mất sạch ưu thế.
+    expect([...off.values()].every((v) => Math.abs(v - 1 / 6) < 1e-9)).toBe(
+      true,
+    );
+  });
+});
+
+describe('lab-anomaly — ở cùng ngân sách cảnh báo, ba phương pháp gần như không khác nhau', () => {
+  const METHODS = ['iforest', 'zscore', 'percentile'] as const;
+
+  it('ngân sách mặc định 5: cả ba bắt đủ 3 vụ, và cả ba kéo theo đúng một điểm lành tính', () => {
+    for (const m of METHODS) {
+      const r = anomalyRun(m, 5);
+      expect(r.caught).toBe(ANOMALY_ATTACKS);
+      expect(r.benignAnomaliesFlagged).toBe(1);
+      expect(r.flagged.length).toBe(5);
+    }
+  });
+
+  it('và điều đó đúng trên cả dải ngân sách, không phải trùng hợp ở một điểm', () => {
+    for (const budget of [3, 5, 8, 12, 20]) {
+      const caught = METHODS.map((m) => anomalyRun(m, budget).caught);
+      expect(new Set(caught).size).toBe(1);
+    }
+  });
+
+  it('điểm "múi giờ khác" không phương pháp nào đưa vào top 5 — giới hạn nằm ở DỮ LIỆU', () => {
+    for (const m of METHODS) {
+      const r = anomalyRun(m, 5);
+      expect(r.flagged.some((x) => x.who.includes('múi giờ'))).toBe(false);
+    }
+    // Nới ngân sách lên 8 thì nó vào, kèm cả điểm "deadline" — vẫn không tách
+    // được khỏi tấn công thật, vì thông tin để tách không có trong dữ liệu.
+    for (const m of METHODS)
+      expect(anomalyRun(m, 8).benignAnomaliesFlagged).toBe(2);
+  });
+
+  it('ngân sách chính là thứ điều khiển kết quả, không phải tên thuật toán', () => {
+    for (const m of METHODS) {
+      expect(anomalyRun(m, 3).caught).toBe(2);
+      expect(anomalyRun(m, 5).caught).toBe(3);
+    }
+  });
+});
+
+describe('lab-drift — "chỉ sau vài tháng" là mấy tháng', () => {
+  it('trạng thái mặc định: chạm ngưỡng ngừng dùng ở tháng 5 và tụt tiếp', () => {
+    const r = driftSeries(1.4, 0, 24);
+    expect(r.retireMonth).toBe(5);
+    expect(r.finalF1).toBeCloseTo(0.116, 3);
+  });
+
+  it('đối thủ tích cực: hai tháng', () => {
+    expect(driftSeries(4, 0, 24).retireMonth).toBe(2);
+  });
+
+  it('huấn luyện lại mỗi 3 tháng là đủ giữ mô hình khỏi ngưỡng hỏng', () => {
+    const r = driftSeries(1.4, 3, 24);
+    expect(r.retireMonth).toBeNull();
+    expect(r.retrains).toBe(8);
+  });
+
+  it('trôi chậm thì hai năm vẫn sống, nhưng đã mất một phần tư điểm', () => {
+    const r = driftSeries(0.2, 0, 24);
+    expect(r.retireMonth).toBeNull();
+    expect(r.finalF1).toBeCloseTo(0.677, 3);
+  });
+});
+
+describe('lab-prompt-injection — kiến trúc chặn được, lọc chuỗi thì không', () => {
+  it('không phòng thủ thì agent bị chiếm quyền ở cả ba kịch bản có chèn', () => {
+    for (const i of [0, 1, 2])
+      expect(injectionRun(i, []).compromised).toBe(true);
+  });
+
+  it('nội dung sạch thì không bao giờ bị chiếm, dù có công cụ hành động', () => {
+    expect(injectionRun(3, []).compromised).toBe(false);
+    expect(injectionRun(3, []).hasActionTool).toBe(true);
+  });
+
+  it('tách đặc quyền + con người xác nhận: 0,67 — vượt ngưỡng an toàn', () => {
+    const r = injectionRun(0, ['privsep', 'humanloop']);
+    expect(r.protection).toBeCloseTo(0.67, 6);
+    expect(r.protection).toBeGreaterThan(INJECTION_SAFE);
+    expect(r.compromised).toBe(false);
+  });
+
+  it('gộp CẢ BA biện pháp lọc chuỗi vẫn không tới ngưỡng — đúng câu lời kết luận nói', () => {
+    const r = injectionRun(0, ['delim', 'outfilter', 'allowlist']);
+    expect(r.protection).toBeCloseTo(0.558, 3);
+    expect(r.compromised).toBe(true);
+  });
+
+  it('mỗi biện pháp kiến trúc một mình cũng chưa đủ — phải là hai lớp', () => {
+    expect(injectionRun(0, ['privsep']).compromised).toBe(true);
+    expect(injectionRun(0, ['humanloop']).compromised).toBe(true);
   });
 });

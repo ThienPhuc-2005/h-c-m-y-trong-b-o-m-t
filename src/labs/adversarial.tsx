@@ -366,17 +366,38 @@ const DEFENCES = [
   { id: 'allowlist', name: 'Danh sách trắng cho đích đến', power: 0.35, note: 'Chỉ gửi mail/gọi API tới địa chỉ đã duyệt trước.' },
 ];
 
-export function LabPromptInjection() {
-  const [scenario, setScenario] = useState(0);
-  const [on, setOn] = useState<string[]>([]);
-  const s = SCENARIOS[scenario];
+/** Trên mức này thì kiến trúc đủ chặt để chỉ dẫn chèn vào không đi tới đâu. */
+export const INJECTION_SAFE = 0.6;
 
-  const protection = on.reduce((acc, id) => {
+const ACTION_TOOLS = ['gửi_email', 'chạy_lệnh', 'đóng_phiếu', 'cập_nhật_phiếu'];
+
+/**
+ * Cộng dồn các lớp phòng thủ theo phần rủi ro CÒN LẠI, chứ không cộng thẳng —
+ * hai lớp 0,4 không cho 0,8 mà cho 0,64, đúng cách rủi ro thật chồng lên nhau.
+ *
+ * Tách khỏi component vì lời kết luận đưa ra một khẳng định so sánh được: hai
+ * biện pháp KIẾN TRÚC (tách đặc quyền + con người xác nhận) chặn được, còn cả
+ * ba biện pháp LỌC CHUỖI gộp lại thì không. Đó là con số, và nó phải trượt nếu
+ * ai đó chỉnh `power` cho tới khi lời kết luận thành sai.
+ */
+export function injectionRun(scenarioIdx: number, onIds: string[]) {
+  const s = SCENARIOS[scenarioIdx];
+  const protection = onIds.reduce((acc, id) => {
     const d = DEFENCES.find((x) => x.id === id);
     return d ? acc + (1 - acc) * d.power : acc;
   }, 0);
-  const compromised = s.injected && protection < 0.6;
-  const hasActionTool = s.tools.some((t) => ['gửi_email', 'chạy_lệnh', 'đóng_phiếu', 'cập_nhật_phiếu'].includes(t));
+  return {
+    scenario: s,
+    protection,
+    compromised: s.injected && protection < INJECTION_SAFE,
+    hasActionTool: s.tools.some((t) => ACTION_TOOLS.includes(t)),
+  };
+}
+
+export function LabPromptInjection() {
+  const [scenario, setScenario] = useState(0);
+  const [on, setOn] = useState<string[]>([]);
+  const { scenario: s, protection, compromised, hasActionTool } = injectionRun(scenario, on);
 
   return (
     <LabShell

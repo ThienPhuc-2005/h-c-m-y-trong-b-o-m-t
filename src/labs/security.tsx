@@ -160,41 +160,79 @@ export function LabEntropy() {
 /*  lab-url-features — Trích xuất đặc trưng URL                                */
 /* ========================================================================== */
 
+/**
+ * Hậu tố hai cấp: những chỗ mà nhãn ĐĂNG KÝ ĐƯỢC nằm ở vị trí thứ ba từ phải
+ * sang, không phải thứ hai.
+ *
+ * Không có danh sách này thì `vietcombank.com.vn` — tên miền thật của đúng
+ * ngân hàng mà lab lấy làm ví dụ — bị đọc thành "nhãn gốc là `com`, còn
+ * `vietcombank` chỉ là tên miền con", tức là bị gắn cờ giả mạo. Lời kết luận
+ * mời người học "dán một URL thật của ngân hàng bạn dùng", nên đây không phải
+ * ca hiếm: đó là ca đầu tiên người học sẽ thử.
+ */
+const MULTI_TLD = ['com.vn', 'net.vn', 'org.vn', 'edu.vn', 'gov.vn', 'co.uk', 'com.au', 'co.jp', 'com.br', 'com.cn'];
+
+const BRAND_WORDS = ['vietcombank', 'paypal', 'microsoft', 'apple', 'google', 'facebook', 'techcombank', 'momo'];
+const SUSPICIOUS_TLD = ['xyz', 'top', 'tk', 'ml', 'ga', 'cf', 'gq', 'buzz', 'click', 'zip', 'mov'];
+const URGENT_WORDS = /login|verify|secure|account|update|confirm|signin/i;
+
+/** Tách host thành nhãn đăng ký được, hậu tố, và các nhãn con phía trước nó. */
+export function splitHost(host: string) {
+  const parts = host.toLowerCase().split('.').filter(Boolean);
+  if (parts.length < 2) return { registrable: parts[0] ?? '', suffix: '', subdomains: [] as string[] };
+  const lastTwo = parts.slice(-2).join('.');
+  const suffixLen = MULTI_TLD.includes(lastTwo) && parts.length >= 3 ? 2 : 1;
+  return {
+    registrable: parts[parts.length - suffixLen - 1] ?? '',
+    suffix: parts.slice(-suffixLen).join('.'),
+    subdomains: parts.slice(0, Math.max(0, parts.length - suffixLen - 1)),
+  };
+}
+
+export interface UrlFeature {
+  k: string;
+  v: string;
+  risk: boolean;
+  why: string;
+}
+
+export function urlFeatures(url: string): UrlFeature[] {
+  const u = url.trim();
+  let host = u;
+  try {
+    host = new URL(u.includes('://') ? u : `http://${u}`).hostname;
+  } catch {
+    host = u.split('/')[0];
+  }
+  const path = u.split(host)[1] ?? '';
+  const { registrable, suffix, subdomains } = splitHost(host);
+  const tld = suffix.split('.').pop() ?? '';
+  const lower = host.toLowerCase();
+  // Giả mạo = thương hiệu CÓ trong host nhưng KHÔNG phải là nhãn đăng ký được.
+  const brandMisplaced = BRAND_WORDS.find((b) => lower.includes(b) && registrable !== b);
+  const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+  const dashes = (host.match(/-/g) ?? []).length;
+  const ent = shannonEntropy(registrable);
+
+  return [
+    { k: 'Độ dài URL', v: String(u.length), risk: u.length > 75, why: 'URL dài che giấu tên miền thật trên di động' },
+    { k: 'Số tên miền con', v: String(subdomains.length), risk: subdomains.length >= 2, why: 'Nhiều cấp con là mẹo tạo cảm giác chính thống' },
+    { k: 'Entropy tên miền', v: ent.toFixed(2), risk: ent > 3.6, why: 'Entropy cao gợi ý sinh tự động' },
+    { k: 'TLD', v: suffix || '—', risk: SUSPICIOUS_TLD.includes(tld), why: 'Một số TLD giá rẻ bị lạm dụng nhiều' },
+    { k: 'Dùng IP thay tên miền', v: isIp ? 'CÓ' : 'không', risk: isIp, why: 'Trang hợp pháp gần như không bao giờ dùng IP trần' },
+    { k: 'Có dấu gạch ngang', v: String(dashes), risk: dashes >= 2, why: 'Kỹ thuật ghép từ khoá thương hiệu' },
+    { k: 'Thương hiệu ở sai vị trí', v: brandMisplaced ?? 'không', risk: !!brandMisplaced, why: 'Tên thương hiệu nằm ngoài tên miền gốc = giả mạo' },
+    { k: 'Punycode', v: host.includes('xn--') ? 'CÓ' : 'không', risk: host.includes('xn--'), why: 'Chữ cái nhìn giống nhau từ bảng mã khác' },
+    { k: 'Từ khoá nhạy cảm', v: URGENT_WORDS.test(u) ? 'CÓ' : 'không', risk: URGENT_WORDS.test(u), why: 'Từ khoá tạo cảm giác cấp bách' },
+    { k: 'HTTPS', v: u.startsWith('https') ? 'có' : 'KHÔNG', risk: !u.startsWith('https'), why: 'Ngày nay HTTPS gần như miễn phí — thiếu nó là bất thường' },
+    { k: 'Độ dài đường dẫn', v: String(path.length), risk: path.length > 40, why: 'Đường dẫn dài chứa tham số theo dõi nạn nhân' },
+  ];
+}
+
 export function LabUrlFeatures() {
   const [url, setUrl] = useState('http://secure-vietcombank.verify-account.xyz/login?id=8821');
 
-  const f = useMemo(() => {
-    const u = url.trim();
-    let host = u;
-    try {
-      host = new URL(u.includes('://') ? u : `http://${u}`).hostname;
-    } catch {
-      host = u.split('/')[0];
-    }
-    const path = u.split(host)[1] ?? '';
-    const parts = host.split('.');
-    const tld = parts[parts.length - 1] ?? '';
-    const suspiciousTld = ['xyz', 'top', 'tk', 'ml', 'ga', 'cf', 'gq', 'buzz', 'click', 'zip', 'mov'].includes(tld);
-    const brandWords = ['vietcombank', 'paypal', 'microsoft', 'apple', 'google', 'facebook', 'techcombank', 'momo'];
-    const brandInSub = brandWords.find((b) => host.toLowerCase().includes(b) && !host.toLowerCase().endsWith(`${b}.com`) && !host.toLowerCase().endsWith(`${b}.vn`));
-    const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
-    const hasPunycode = host.includes('xn--');
-
-    return [
-      { k: 'Độ dài URL', v: String(u.length), risk: u.length > 75, why: 'URL dài che giấu tên miền thật trên di động' },
-      { k: 'Số tên miền con', v: String(Math.max(0, parts.length - 2)), risk: parts.length - 2 >= 2, why: 'Nhiều cấp con là mẹo tạo cảm giác chính thống' },
-      { k: 'Entropy tên miền', v: shannonEntropy(parts[0] ?? '').toFixed(2), risk: shannonEntropy(parts[0] ?? '') > 3.6, why: 'Entropy cao gợi ý sinh tự động' },
-      { k: 'TLD', v: tld || '—', risk: suspiciousTld, why: 'Một số TLD giá rẻ bị lạm dụng nhiều' },
-      { k: 'Dùng IP thay tên miền', v: isIp ? 'CÓ' : 'không', risk: isIp, why: 'Trang hợp pháp gần như không bao giờ dùng IP trần' },
-      { k: 'Có dấu gạch ngang', v: String((host.match(/-/g) ?? []).length), risk: (host.match(/-/g) ?? []).length >= 2, why: 'Kỹ thuật ghép từ khoá thương hiệu' },
-      { k: 'Thương hiệu ở sai vị trí', v: brandInSub ?? 'không', risk: !!brandInSub, why: 'Tên thương hiệu nằm ngoài tên miền gốc = giả mạo' },
-      { k: 'Punycode', v: hasPunycode ? 'CÓ' : 'không', risk: hasPunycode, why: 'Chữ cái nhìn giống nhau từ bảng mã khác' },
-      { k: 'Từ khoá nhạy cảm', v: /login|verify|secure|account|update|confirm|signin/i.test(u) ? 'CÓ' : 'không', risk: /login|verify|secure|account|update|confirm|signin/i.test(u), why: 'Từ khoá tạo cảm giác cấp bách' },
-      { k: 'HTTPS', v: u.startsWith('https') ? 'có' : 'KHÔNG', risk: !u.startsWith('https'), why: 'Ngày nay HTTPS gần như miễn phí — thiếu nó là bất thường' },
-      { k: 'Độ dài đường dẫn', v: String(path.length), risk: path.length > 40, why: 'Đường dẫn dài chứa tham số theo dõi nạn nhân' },
-    ];
-  }, [url]);
-
+  const f = useMemo(() => urlFeatures(url), [url]);
   const risky = f.filter((x) => x.risk).length;
   const score = risky / f.length;
 
@@ -269,12 +307,26 @@ const PE_SAMPLES = [
   },
 ];
 
-export function LabPeFeatures() {
-  const [idx, setIdx] = useState(2);
+const DANGEROUS_APIS = ['CryptEncrypt', 'VirtualProtect', 'CreateRemoteThread', 'WriteProcessMemory', 'DeleteFileW', 'CryptGenKey'];
+/** Ngưỡng entropy mà lời kết luận nêu thẳng: trên mức này gần như chắc là nén/mã hoá. */
+export const PE_ENTROPY_PACKED = 7.2;
+
+export function peFeatures(idx: number) {
   const s = PE_SAMPLES[idx];
   const maxSectionEnt = Math.max(...s.sections.map((x) => x.e));
-  const dangerousApis = ['CryptEncrypt', 'VirtualProtect', 'CreateRemoteThread', 'WriteProcessMemory', 'DeleteFileW', 'CryptGenKey'];
-  const flagged = s.apis.filter((a) => dangerousApis.includes(a));
+  return {
+    sample: s,
+    maxSectionEnt,
+    packedBySection: maxSectionEnt > PE_ENTROPY_PACKED,
+    flaggedApis: s.apis.filter((a) => DANGEROUS_APIS.includes(a)),
+    fewImports: s.imports.length <= 1,
+  };
+}
+
+export function LabPeFeatures() {
+  const [idx, setIdx] = useState(2);
+  const { sample: s, maxSectionEnt, flaggedApis: flagged } = peFeatures(idx);
+  const dangerousApis = DANGEROUS_APIS;
 
   return (
     <LabShell
@@ -299,8 +351,8 @@ export function LabPeFeatures() {
 
       <Readout
         items={[
-          { k: 'Entropy toàn tệp', v: s.entropyOverall.toFixed(2), tone: s.entropyOverall > 7.2 ? 'bad' : s.entropyOverall > 6.5 ? 'warn' : 'ok' },
-          { k: 'Entropy cao nhất', v: maxSectionEnt.toFixed(2), tone: maxSectionEnt > 7.2 ? 'bad' : 'ok', sub: '>7,2 = nén/mã hoá' },
+          { k: 'Entropy toàn tệp', v: s.entropyOverall.toFixed(2), tone: s.entropyOverall > PE_ENTROPY_PACKED ? 'bad' : s.entropyOverall > 6.5 ? 'warn' : 'ok' },
+          { k: 'Entropy cao nhất', v: maxSectionEnt.toFixed(2), tone: maxSectionEnt > PE_ENTROPY_PACKED ? 'bad' : 'ok', sub: '>7,2 = nén/mã hoá' },
           { k: 'Số DLL nhập', v: String(s.imports.length), tone: s.imports.length <= 1 ? 'warn' : 'neutral', sub: s.imports.length <= 1 ? 'quá ít → nghi nén' : '' },
           { k: 'Chữ ký số', v: s.signed ? 'có' : 'KHÔNG', tone: s.signed ? 'ok' : 'warn' },
         ]}
@@ -310,7 +362,7 @@ export function LabPeFeatures() {
         <div className="stat-k" style={{ marginBottom: 8 }}>Entropy từng section</div>
         <Bars
           color={COLORS.brand}
-          data={s.sections.map((x) => ({ label: x.n, v: x.e, color: x.e > 7.2 ? 'var(--bad)' : x.e > 6.5 ? 'var(--warn)' : 'var(--ok)' }))}
+          data={s.sections.map((x) => ({ label: x.n, v: x.e, color: x.e > PE_ENTROPY_PACKED ? 'var(--bad)' : x.e > 6.5 ? 'var(--warn)' : 'var(--ok)' }))}
           fmt={(v) => v.toFixed(2)}
         />
       </div>
@@ -353,23 +405,28 @@ const LOG_LINES = [
   'cron session opened for user backup',
 ];
 
-export function LabTfidf() {
-  const [query, setQuery] = useState('powershell EncodedCommand downloadstring');
-  const [useIdf, setUseIdf] = useState(true);
+const tokenise = (s: string) => s.toLowerCase().split(/[\s=/]+/).filter(Boolean);
 
-  const model = useMemo(() => {
-    const docs = LOG_LINES.map((l) => l.toLowerCase().split(/[\s=/]+/).filter(Boolean));
-    const df = new Map<string, number>();
-    docs.forEach((d) => new Set(d).forEach((w) => df.set(w, (df.get(w) ?? 0) + 1)));
-    return { docs, df, N: docs.length };
-  }, []);
+/**
+ * TF-IDF trên tám dòng log, cộng độ tương đồng cosine với một truy vấn.
+ *
+ * Tách khỏi component để chốt điều lời kết luận hứa: BẬT IDF thì từ hiếm nặng
+ * hơn từ phổ biến, TẮT IDF thì mọi từ trong truy vấn nặng ngang nhau. Đó là
+ * một quan hệ thứ tự, không phải một con số, nên nó phải được kiểm bằng so
+ * sánh chứ không bằng chốt cứng ba chữ số thập phân.
+ */
+export function tfidfRun(query: string, useIdf: boolean) {
+  const docs = LOG_LINES.map(tokenise);
+  const df = new Map<string, number>();
+  docs.forEach((d) => new Set(d).forEach((w) => df.set(w, (df.get(w) ?? 0) + 1)));
+  const N = docs.length;
 
   const vec = (words: string[]) => {
     const tf = new Map<string, number>();
     words.forEach((w) => tf.set(w, (tf.get(w) ?? 0) + 1));
     const out = new Map<string, number>();
     tf.forEach((c, w) => {
-      const idf = useIdf ? Math.log((model.N + 1) / ((model.df.get(w) ?? 0) + 1)) + 1 : 1;
+      const idf = useIdf ? Math.log((N + 1) / ((df.get(w) ?? 0) + 1)) + 1 : 1;
       out.set(w, (c / words.length) * idf);
     });
     return out;
@@ -384,9 +441,21 @@ export function LabTfidf() {
     return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
   };
 
-  const qv = vec(query.toLowerCase().split(/[\s=/]+/).filter(Boolean));
-  const sims = LOG_LINES.map((l, i) => ({ l, s: cosine(qv, vec(model.docs[i])) })).sort((a, b) => b.s - a.s);
-  const topTerms = [...qv.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const qv = vec(tokenise(query));
+  const sims = LOG_LINES.map((l, i) => ({ l, s: cosine(qv, vec(docs[i])) })).sort((a, b) => b.s - a.s);
+  return {
+    df,
+    weights: qv,
+    sims,
+    topTerms: [...qv.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6),
+  };
+}
+
+export function LabTfidf() {
+  const [query, setQuery] = useState('powershell EncodedCommand downloadstring');
+  const [useIdf, setUseIdf] = useState(true);
+
+  const { sims, topTerms } = useMemo(() => tfidfRun(query, useIdf), [query, useIdf]);
 
   return (
     <LabShell
@@ -394,10 +463,15 @@ export function LabTfidf() {
       title="TF-IDF: từ nào thực sự mang thông tin"
       takeaway={
         <>
-          Tắt IDF và xem chuyện gì xảy ra: những từ xuất hiện ở <b>mọi</b> dòng log (như "for", "from", "port")
-          bỗng có trọng số ngang với từ hiếm. IDF chính là ý tưởng "từ càng hiếm càng nhiều thông tin" — và
-          trong bảo mật, <b>cái hiếm mới đáng nhìn</b>. Đây là nền tảng của rất nhiều hệ thống phát hiện dựa
-          trên độ hiếm: dòng lệnh hiếm, tiến trình cha–con hiếm, cặp user–máy hiếm.
+          Truy vấn mặc định toàn từ hiếm, nên nút IDF gần như không đổi gì. Hãy gõ một dòng đầy từ phổ biến
+          — thử <span className="mono">failed password for root from port</span> — rồi bật tắt IDF và nhìn
+          hàng trọng số. Bật IDF: "root" (chỉ có ở 1 trong 8 dòng) nặng 0,42 trong khi "for" (có ở 5 dòng)
+          chỉ còn 0,23. Tắt IDF: cả sáu từ đều đúng 0,17, tức từ phổ biến bỗng nặng ngang từ hiếm.
+          <br />
+          <br />
+          IDF chính là ý tưởng "từ càng hiếm càng nhiều thông tin" — và trong bảo mật, <b>cái hiếm mới đáng
+          nhìn</b>. Đây là nền tảng của rất nhiều hệ thống phát hiện dựa trên độ hiếm: dòng lệnh hiếm, tiến
+          trình cha–con hiếm, cặp user–máy hiếm.
         </>
       }
     >
@@ -444,75 +518,129 @@ export function LabTfidf() {
 /*  lab-anomaly — Phát hiện bất thường trên log đăng nhập                      */
 /* ========================================================================== */
 
-export function LabAnomaly() {
-  const [method, setMethod] = useState<'zscore' | 'iforest' | 'percentile'>('iforest');
-  const [sensitivity, setSensitivity] = useState(2.5);
-  const [seed, reseed] = useSeed();
+export type AnomalyMethod = 'zscore' | 'iforest' | 'percentile';
 
-  const pts = useMemo(() => {
-    const rng = mulberry32(seed);
-    const out: { hour: number; files: number; label: 'normal' | 'attack'; who: string }[] = [];
-    for (let i = 0; i < 160; i++) {
-      out.push({
-        hour: clamp(gaussian(rng, 10.5, 2.4), 0, 23.9),
-        files: clamp(gaussian(rng, 22, 12), 0, 400),
-        label: 'normal',
-        who: `user${(i % 24) + 1}`,
-      });
-    }
-    // Ba kịch bản bất thường thật
-    out.push({ hour: 2.7, files: 310, label: 'attack', who: 'svc-backup' });
-    out.push({ hour: 3.4, files: 265, label: 'attack', who: 'user7' });
-    out.push({ hour: 23.4, files: 190, label: 'attack', who: 'user15' });
-    // Bất thường LÀNH TÍNH — bẫy kinh điển
-    out.push({ hour: 21.6, files: 240, label: 'normal', who: 'user3 (deadline)' });
-    out.push({ hour: 5.2, files: 30, label: 'normal', who: 'user9 (múi giờ khác)' });
-    return out;
-  }, [seed]);
+export interface AnomalyPoint {
+  hour: number;
+  files: number;
+  label: 'normal' | 'attack';
+  who: string;
+}
 
-  const scores = useMemo(() => {
-    const norm = (v: number, lo: number, hi: number) => (v - lo) / (hi - lo);
-    const X = pts.map((p) => [norm(p.hour, 0, 24), norm(p.files, 0, 400)]);
-    if (method === 'zscore') {
-      const mh = X.reduce((s, x) => s + x[0], 0) / X.length;
-      const mf = X.reduce((s, x) => s + x[1], 0) / X.length;
-      const sh = Math.sqrt(X.reduce((s, x) => s + (x[0] - mh) ** 2, 0) / X.length) || 1e-9;
-      const sf = Math.sqrt(X.reduce((s, x) => s + (x[1] - mf) ** 2, 0) / X.length) || 1e-9;
-      return X.map((x) => Math.hypot((x[0] - mh) / sh, (x[1] - mf) / sf));
-    }
-    if (method === 'percentile') {
-      return X.map((x) => Math.max(Math.abs(x[0] - 0.44) * 4, Math.abs(x[1] - 0.06) * 4));
-    }
-    // Isolation Forest thu nhỏ: độ sâu trung bình để cô lập bằng phép chia ngẫu nhiên
-    const rng = mulberry32(seed + 9);
-    const depths = new Array(X.length).fill(0);
-    const TREES = 60;
-    for (let t = 0; t < TREES; t++) {
-      const isolate = (idxs: number[], depth: number) => {
-        if (idxs.length <= 1 || depth > 9) {
-          idxs.forEach((i) => (depths[i] += depth));
-          return;
-        }
-        const dim = rng() < 0.5 ? 0 : 1;
-        const vals = idxs.map((i) => X[i][dim]);
-        const lo = Math.min(...vals);
-        const hi = Math.max(...vals);
-        if (hi - lo < 1e-9) { idxs.forEach((i) => (depths[i] += depth)); return; }
-        const sp = lo + rng() * (hi - lo);
-        isolate(idxs.filter((i) => X[i][dim] < sp), depth + 1);
-        isolate(idxs.filter((i) => X[i][dim] >= sp), depth + 1);
-      };
-      isolate(X.map((_, i) => i), 0);
-    }
-    const avg = depths.map((d) => d / TREES);
-    const mx = Math.max(...avg);
-    return avg.map((d) => (mx - d) * 1.6);
-  }, [pts, method, seed]);
+/** Ba tấn công thật, cộng hai bất thường LÀNH TÍNH — cái bẫy của cả bài lab. */
+export const ANOMALY_ATTACKS = 3;
 
-  const thr = method === 'zscore' ? sensitivity : sensitivity * 0.9;
-  const flagged = scores.map((s, i) => ({ ...pts[i], s })).filter((x) => x.s >= thr);
+export const ANOMALY_NAMES: Record<AnomalyMethod, string> = {
+  iforest: 'Isolation Forest',
+  zscore: 'Z-score đa biến',
+  percentile: 'Ngưỡng phân vị thủ công',
+};
+
+export function anomalyPoints(seed: number): AnomalyPoint[] {
+  const rng = mulberry32(seed);
+  const out: AnomalyPoint[] = [];
+  for (let i = 0; i < 160; i++) {
+    out.push({
+      hour: clamp(gaussian(rng, 10.5, 2.4), 0, 23.9),
+      files: clamp(gaussian(rng, 22, 12), 0, 400),
+      label: 'normal',
+      who: `user${(i % 24) + 1}`,
+    });
+  }
+  out.push({ hour: 2.7, files: 310, label: 'attack', who: 'svc-backup' });
+  out.push({ hour: 3.4, files: 265, label: 'attack', who: 'user7' });
+  out.push({ hour: 23.4, files: 190, label: 'attack', who: 'user15' });
+  // Bất thường LÀNH TÍNH — bẫy kinh điển, và là điều lời kết luận nói tới.
+  out.push({ hour: 21.6, files: 240, label: 'normal', who: 'user3 (deadline)' });
+  out.push({ hour: 5.2, files: 30, label: 'normal', who: 'user9 (múi giờ khác)' });
+  return out;
+}
+
+export function anomalyScores(pts: AnomalyPoint[], method: AnomalyMethod, seed: number): number[] {
+  const norm = (v: number, lo: number, hi: number) => (v - lo) / (hi - lo);
+  const X = pts.map((p) => [norm(p.hour, 0, 24), norm(p.files, 0, 400)]);
+  if (method === 'zscore') {
+    const mh = X.reduce((s, x) => s + x[0], 0) / X.length;
+    const mf = X.reduce((s, x) => s + x[1], 0) / X.length;
+    const sh = Math.sqrt(X.reduce((s, x) => s + (x[0] - mh) ** 2, 0) / X.length) || 1e-9;
+    const sf = Math.sqrt(X.reduce((s, x) => s + (x[1] - mf) ** 2, 0) / X.length) || 1e-9;
+    return X.map((x) => Math.hypot((x[0] - mh) / sh, (x[1] - mf) / sf));
+  }
+  if (method === 'percentile') {
+    return X.map((x) => Math.max(Math.abs(x[0] - 0.44) * 4, Math.abs(x[1] - 0.06) * 4));
+  }
+  // Isolation Forest thu nhỏ: độ sâu trung bình để cô lập bằng phép chia ngẫu nhiên.
+  const rng = mulberry32(seed + 9);
+  const depths = new Array(X.length).fill(0);
+  const TREES = 60;
+  for (let t = 0; t < TREES; t++) {
+    const isolate = (idxs: number[], depth: number) => {
+      if (idxs.length <= 1 || depth > 9) {
+        idxs.forEach((i) => (depths[i] += depth));
+        return;
+      }
+      const dim = rng() < 0.5 ? 0 : 1;
+      const vals = idxs.map((i) => X[i][dim]);
+      const lo = Math.min(...vals);
+      const hi = Math.max(...vals);
+      if (hi - lo < 1e-9) { idxs.forEach((i) => (depths[i] += depth)); return; }
+      const sp = lo + rng() * (hi - lo);
+      isolate(idxs.filter((i) => X[i][dim] < sp), depth + 1);
+      isolate(idxs.filter((i) => X[i][dim] >= sp), depth + 1);
+    };
+    isolate(X.map((_, i) => i), 0);
+  }
+  const avg = depths.map((d) => d / TREES);
+  const mx = Math.max(...avg);
+  return avg.map((d) => (mx - d) * 1.6);
+}
+
+/**
+ * Một lượt chạy, cắt theo NGÂN SÁCH CẢNH BÁO chứ không theo ngưỡng điểm.
+ *
+ * Bản trước cắt bằng một thanh trượt "độ nhạy" dùng chung cho cả ba phương
+ * pháp, mà ba phương pháp lại cho ba thang điểm khác hẳn nhau: điểm cao nhất
+ * của Isolation Forest là 11,6, của z-score là 8,1, của ngưỡng phân vị là 2,9.
+ * Cùng một con số trên thanh trượt vì thế cắt ở ba chỗ hoàn toàn khác nhau —
+ * ở mức 2,5 thì Isolation Forest sinh 21 cảnh báo còn ngưỡng phân vị sinh 2.
+ * Lời kết luận đọc kết quả đó rồi tuyên bố Isolation Forest "thường thắng",
+ * trong khi thứ đang được đo là hiệu chuẩn thang điểm, không phải chất lượng
+ * phương pháp.
+ *
+ * Cắt theo top-N thì cả ba cùng sinh đúng N cảnh báo, và câu hỏi trở về đúng
+ * chỗ nó cần ở: với cùng ngần ấy công sức của analyst, phương pháp nào bỏ
+ * đúng thứ vào hàng đợi? Đó cũng là cách một SOC thật chọn ngưỡng.
+ */
+export function anomalyRun(method: AnomalyMethod, budget: number, seed = 12345) {
+  const pts = anomalyPoints(seed);
+  const scores = anomalyScores(pts, method, seed);
+  const ranked = scores.map((s, i) => [s, i] as const).sort((a, b) => b[0] - a[0]);
+  const chosen = new Set(ranked.slice(0, Math.min(budget, ranked.length)).map(([, i]) => i));
+  const flagged = [...chosen].sort((a, b) => scores[b] - scores[a]).map((i) => ({ ...pts[i], s: scores[i] }));
   const caught = flagged.filter((x) => x.label === 'attack').length;
   const falseAlarms = flagged.filter((x) => x.label === 'normal').length;
+  return {
+    pts, scores, chosen, flagged, caught, falseAlarms,
+    precision: flagged.length ? caught / flagged.length : 0,
+    /** Hai điểm lành tính bất thường có bị gọi lên hàng đợi điều tra không. */
+    benignAnomaliesFlagged: flagged.filter((x) => x.who.includes('(')).length,
+  };
+}
+
+export function LabAnomaly() {
+  const [method, setMethod] = useState<AnomalyMethod>('iforest');
+  const [budget, setBudget] = useState(5);
+  const [seed, reseed] = useSeed();
+
+  const { pts, chosen, flagged, caught, falseAlarms } = useMemo(
+    () => anomalyRun(method, budget, seed),
+    [method, budget, seed],
+  );
+  // Cùng ngân sách, ba phương pháp — bảng so sánh này là lý do lab tồn tại.
+  const compare = useMemo(
+    () => (['iforest', 'zscore', 'percentile'] as const).map((m) => ({ m, ...anomalyRun(m, budget, seed) })),
+    [budget, seed],
+  );
 
   const p = mkPlot(460, 320, [0, 24], [0, 400], { l: 46, r: 14, t: 14, b: 38 });
 
@@ -525,9 +653,22 @@ export function LabAnomaly() {
           Chú ý hai điểm được dán nhãn "deadline" và "múi giờ khác": chúng <b>bất thường thật</b> nhưng hoàn
           toàn lành tính. Không thuật toán nào phân biệt được — vì thông tin để phân biệt <b>không nằm trong
           dữ liệu</b>. Đây là giới hạn nền tảng của phát hiện bất thường, và là lý do mọi hệ thống UEBA
-          nghiêm túc đều phải làm giàu ngữ cảnh (lịch làm việc, vị trí, vai trò) trước khi cảnh báo. So sánh
-          ba phương pháp: z-score giả định phân phối chuẩn (sai với dữ liệu bảo mật đuôi nặng), Isolation
-          Forest không giả định gì và thường thắng.
+          nghiêm túc đều phải làm giàu ngữ cảnh (lịch làm việc, vị trí, vai trò) trước khi cảnh báo.
+          <br />
+          <br />
+          Giờ tới điều bất ngờ, và nó nằm ở bảng so sánh phía dưới. Ba phương pháp này khác nhau về giả định
+          tới mức không thể khác hơn — z-score giả định phân phối chuẩn, Isolation Forest không giả định gì,
+          ngưỡng phân vị thì do người viết tay. Vậy mà <b>ở cùng một ngân sách cảnh báo, cả ba chọn ra gần
+          như cùng một danh sách</b>: tới ngân sách 5 thì cả ba đều bắt đủ 3 vụ tấn công, và cả ba đều kéo
+          theo đúng cái điểm "deadline" lành tính. Điểm "múi giờ khác" thì cả ba cùng xếp hạng 7, tức cùng
+          bỏ lọt như nhau.
+          <br />
+          <br />
+          Bài học vận hành: khi tín hiệu đã đủ mạnh, <b>chọn thuật toán nào ít quan trọng hơn chọn ngân sách
+          cảnh báo</b>. Và hãy cảnh giác với mọi so sánh "thuật toán A thắng B" mà hai bên không được cắt ở
+          cùng số lượng cảnh báo — bản trước của chính lab này cắt bằng một thanh trượt ngưỡng dùng chung
+          cho ba thang điểm khác nhau, và nó làm Isolation Forest sinh 21 cảnh báo trong khi ngưỡng phân vị
+          sinh 2. So như vậy là đang đo hiệu chuẩn thang điểm chứ không đo phương pháp.
         </>
       }
     >
@@ -535,12 +676,20 @@ export function LabAnomaly() {
         <div className="field">
           <label htmlFor="an-m"><span>Phương pháp</span></label>
           <select id="an-m" value={method} onChange={(e) => setMethod(e.target.value as typeof method)}>
-            <option value="iforest">Isolation Forest</option>
-            <option value="zscore">Z-score đa biến</option>
-            <option value="percentile">Ngưỡng phân vị thủ công</option>
+            {(Object.keys(ANOMALY_NAMES) as AnomalyMethod[]).map((m) => (
+              <option key={m} value={m}>{ANOMALY_NAMES[m]}</option>
+            ))}
           </select>
         </div>
-        <Slider label="Độ nhạy" value={sensitivity} min={1} max={5} step={0.05} onChange={setSensitivity} format={(v) => v.toFixed(2)} />
+        <Slider
+          label="Ngân sách cảnh báo mỗi ngày"
+          value={budget}
+          min={1}
+          max={30}
+          step={1}
+          onChange={setBudget}
+          hint="Số vụ analyst thật sự điều tra nổi. Cắt top-N thay vì cắt theo ngưỡng điểm là cách duy nhất so ba phương pháp một cách công bằng."
+        />
       </div>
       <Reseed onClick={reseed} />
 
@@ -548,7 +697,7 @@ export function LabAnomaly() {
         <Axes p={p} xLabel="Giờ trong ngày" yLabel="Số tệp truy cập" xTicks={6} yTicks={4} fmtX={(v) => `${Math.round(v)}h`} fmtY={(v) => String(Math.round(v))} />
         {pts.map((pt, i) => (
           <g key={i}>
-            {scores[i] >= thr && <circle cx={px(p, pt.hour)} cy={py(p, pt.files)} r={11} fill="none" stroke={COLORS.warn} strokeWidth={2} />}
+            {chosen.has(i) && <circle cx={px(p, pt.hour)} cy={py(p, pt.files)} r={11} fill="none" stroke={COLORS.warn} strokeWidth={2} />}
             <circle cx={px(p, pt.hour)} cy={py(p, pt.files)} r={pt.label === 'attack' ? 6 : 4}
               fill={pt.label === 'attack' ? COLORS.bad : COLORS.info} opacity={0.85} />
           </g>
@@ -557,7 +706,7 @@ export function LabAnomaly() {
 
       <Readout
         items={[
-          { k: 'Bắt được', v: `${caught}/3`, tone: caught === 3 ? 'ok' : caught >= 2 ? 'warn' : 'bad' },
+          { k: 'Bắt được', v: `${caught}/${ANOMALY_ATTACKS}`, tone: caught === ANOMALY_ATTACKS ? 'ok' : caught >= 2 ? 'warn' : 'bad' },
           { k: 'Báo động giả', v: String(falseAlarms), tone: falseAlarms === 0 ? 'ok' : falseAlarms <= 2 ? 'warn' : 'bad' },
           { k: 'Tổng cảnh báo', v: String(flagged.length) },
           { k: 'Độ chuẩn xác', v: flagged.length ? `${((caught / flagged.length) * 100).toFixed(0)}%` : '—', tone: caught / Math.max(flagged.length, 1) > 0.5 ? 'ok' : 'warn' },
@@ -575,6 +724,28 @@ export function LabAnomaly() {
           </div>
         </div>
       )}
+
+      <div className="panel">
+        <div className="stat-k" style={{ marginBottom: 8 }}>
+          Ba phương pháp ở cùng ngân sách {budget} cảnh báo
+        </div>
+        <div className="table-wrap">
+          <table className="data">
+            <thead>
+              <tr><th>Phương pháp</th><th>Bắt được</th><th>Kéo theo "deadline" / "múi giờ khác"</th></tr>
+            </thead>
+            <tbody>
+              {compare.map((c) => (
+                <tr key={c.m}>
+                  <td>{ANOMALY_NAMES[c.m]}</td>
+                  <td className="mono">{c.caught}/{ANOMALY_ATTACKS}</td>
+                  <td className="mono">{c.benignAnomaliesFlagged}/2</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </LabShell>
   );
 }
@@ -583,27 +754,47 @@ export function LabAnomaly() {
 /*  lab-drift — Trôi khái niệm theo thời gian                                  */
 /* ========================================================================== */
 
+/** Dưới mức này thì mô hình coi như hết dùng được — đường đứt đỏ trên biểu đồ. */
+export const DRIFT_RETIRE_F1 = 0.6;
+
+/**
+ * Đường xuống cấp của mô hình theo tháng. F1 phân rã theo hàm mũ tính từ lần
+ * huấn luyện gần nhất, nên huấn luyện lại kéo nó về mốc ban đầu.
+ *
+ * Tách khỏi component để chốt lời kết luận "tụt dưới mức dùng được chỉ sau vài
+ * tháng" thành một con số tháng cụ thể, thay vì một cảm giác.
+ */
+export function driftSeries(driftRate: number, retrainEvery: number, months: number) {
+  const points: { m: number; f1: number; retrained: boolean }[] = [];
+  let sinceTrain = 0;
+  for (let m = 0; m <= months; m++) {
+    const retrained = retrainEvery > 0 && m > 0 && m % retrainEvery === 0;
+    if (retrained) sinceTrain = 0;
+    const decay = Math.exp((-driftRate * sinceTrain) / 12);
+    points.push({ m, f1: clamp(0.92 * decay + 0.06, 0, 1), retrained });
+    sinceTrain++;
+  }
+  const below = points.find((s) => s.f1 < DRIFT_RETIRE_F1);
+  return {
+    points,
+    /** Tháng đầu tiên rơi dưới ngưỡng ngừng dùng, `null` nếu không bao giờ. */
+    retireMonth: below ? below.m : null,
+    finalF1: points[points.length - 1].f1,
+    retrains: points.filter((s) => s.retrained).length,
+  };
+}
+
 export function LabDrift() {
   const [driftRate, setDriftRate] = useState(1.4);
   const [retrainEvery, setRetrainEvery] = useState(0);
   const [months, setMonths] = useState(24);
 
-  const series = useMemo(() => {
-    const out: { m: number; f1: number; retrained: boolean }[] = [];
-    let sinceTrain = 0;
-    for (let m = 0; m <= months; m++) {
-      const retrained = retrainEvery > 0 && m > 0 && m % retrainEvery === 0;
-      if (retrained) sinceTrain = 0;
-      const decay = Math.exp((-driftRate * sinceTrain) / 12);
-      out.push({ m, f1: clamp(0.92 * decay + 0.06, 0, 1), retrained });
-      sinceTrain++;
-    }
-    return out;
-  }, [driftRate, retrainEvery, months]);
+  const { points: series, retireMonth, finalF1 } = useMemo(
+    () => driftSeries(driftRate, retrainEvery, months),
+    [driftRate, retrainEvery, months],
+  );
 
   const p = mkPlot(470, 260, [0, months], [0, 1], { l: 46, r: 14, t: 14, b: 38 });
-  const belowThreshold = series.find((s) => s.f1 < 0.6);
-  const finalF1 = series[series.length - 1].f1;
 
   return (
     <LabShell
@@ -627,8 +818,8 @@ export function LabDrift() {
 
       <Chart p={p} label="Hiệu năng mô hình theo thời gian">
         <Axes p={p} xLabel="Tháng kể từ khi triển khai" yLabel="Điểm F1" xTicks={6} yTicks={5} fmtX={(v) => String(Math.round(v))} />
-        <Line p={p} pts={[[0, 0.6], [months, 0.6]]} color={COLORS.bad} width={1.6} dash="6 4" />
-        <text x={px(p, months) - 4} y={py(p, 0.6) - 6} textAnchor="end" className="svg-label" style={{ fontSize: 12.5 }}>ngưỡng ngừng dùng</text>
+        <Line p={p} pts={[[0, DRIFT_RETIRE_F1], [months, DRIFT_RETIRE_F1]]} color={COLORS.bad} width={1.6} dash="6 4" />
+        <text x={px(p, months) - 4} y={py(p, DRIFT_RETIRE_F1) - 6} textAnchor="end" className="svg-label" style={{ fontSize: 12.5 }}>ngưỡng ngừng dùng</text>
         <Line p={p} pts={series.map((s) => [s.m, s.f1] as [number, number])} color={COLORS.brand} />
         {series.filter((s) => s.retrained).map((s, i) => (
           <line key={i} x1={px(p, s.m)} y1={p.pad.t} x2={px(p, s.m)} y2={p.h - p.pad.b} stroke={COLORS.ok} strokeWidth={1.4} strokeDasharray="3 3" />
@@ -637,8 +828,8 @@ export function LabDrift() {
 
       <Readout
         items={[
-          { k: 'F1 sau ' + months + ' tháng', v: finalF1.toFixed(2), tone: finalF1 > 0.75 ? 'ok' : finalF1 > 0.6 ? 'warn' : 'bad' },
-          { k: 'Tháng chạm ngưỡng hỏng', v: belowThreshold ? String(belowThreshold.m) : 'không', tone: belowThreshold ? 'bad' : 'ok' },
+          { k: 'F1 sau ' + months + ' tháng', v: finalF1.toFixed(2), tone: finalF1 > 0.75 ? 'ok' : finalF1 > DRIFT_RETIRE_F1 ? 'warn' : 'bad' },
+          { k: 'Tháng chạm ngưỡng hỏng', v: retireMonth == null ? 'không' : String(retireMonth), tone: retireMonth == null ? 'ok' : 'bad' },
           { k: 'Số lần huấn luyện lại', v: String(series.filter((s) => s.retrained).length), tone: 'info' },
         ]}
       />

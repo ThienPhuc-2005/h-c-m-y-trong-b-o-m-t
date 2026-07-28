@@ -452,25 +452,39 @@ export function LabCostThreshold() {
 /*  lab-calibration — Hiệu chuẩn xác suất                                      */
 /* ========================================================================== */
 
+/**
+ * Biểu đồ độ tin cậy: gom 5.000 dự đoán vào 10 giỏ theo điểm mô hình ĐƯA RA,
+ * rồi đo tỉ lệ dương THẬT trong từng giỏ.
+ *
+ * `skew` là xu hướng của mô hình: điểm hiện ra bằng `trueP^(1/skew)`. Với
+ * skew > 1 thì điểm hiện ra CAO hơn xác suất thật, nên đường cong nằm DƯỚI
+ * đường chéo — đúng dạng "tự tin quá mức" mà lời kết luận nói tới. Tách khỏi
+ * component để chốt được chiều lệch, chứ không chỉ chốt con số ECE.
+ */
+export function calibrationRun(skew: number) {
+  const N = 5000;
+  const rng = mulberry32(99);
+  const bins = Array.from({ length: 10 }, () => ({ n: 0, pos: 0 }));
+  for (let i = 0; i < N; i++) {
+    const trueP = rng();
+    const shown = clamp(Math.pow(trueP, 1 / skew), 0, 0.999);
+    const y = rng() < trueP ? 1 : 0;
+    const b = Math.min(9, Math.floor(shown * 10));
+    bins[b].n++;
+    bins[b].pos += y;
+  }
+  const pts = bins.map((b, i) => ({ x: i / 10 + 0.05, y: b.n ? b.pos / b.n : 0, n: b.n }));
+  const ece = pts.reduce((s, b) => s + (b.n / N) * Math.abs(b.y - b.x), 0);
+  /** Dương = đường cong nằm dưới đường chéo = mô hình nói quá. */
+  const bias = pts.reduce((s, b) => s + (b.n / N) * (b.x - b.y), 0);
+  return { pts, ece, bias };
+}
+
 export function LabCalibration() {
   const [skew, setSkew] = useState(1);
-  const pts = useMemo(() => {
-    // skew = 1 → hiệu chuẩn hoàn hảo; > 1 → tự tin quá mức; < 1 → rụt rè.
-    const rng = mulberry32(99);
-    const bins = Array.from({ length: 10 }, () => ({ n: 0, pos: 0 }));
-    for (let i = 0; i < 5000; i++) {
-      const trueP = rng();
-      const shown = clamp(Math.pow(trueP, 1 / skew), 0, 0.999);
-      const y = rng() < trueP ? 1 : 0;
-      const b = Math.min(9, Math.floor(shown * 10));
-      bins[b].n++;
-      bins[b].pos += y;
-    }
-    return bins.map((b, i) => ({ x: i / 10 + 0.05, y: b.n ? b.pos / b.n : 0, n: b.n }));
-  }, [skew]);
+  const { pts, ece } = useMemo(() => calibrationRun(skew), [skew]);
 
   const p = mkPlot(440, 280, [0, 1], [0, 1], { l: 48, r: 14, t: 14, b: 38 });
-  const ece = pts.reduce((s, b) => s + (b.n / 5000) * Math.abs(b.y - b.x), 0);
 
   return (
     <LabShell
@@ -514,6 +528,38 @@ export function LabCalibration() {
 /*  lab-alert-load — Tải cảnh báo của SOC                                      */
 /* ========================================================================== */
 
+/** Hệ số giảm cảnh báo khi bật gom nhóm — dùng ở cả phép tính lẫn nhãn nút bật. */
+export const GROUPING_FACTOR = 8;
+
+/**
+ * Số học của một ca trực SOC. Không có gì hơn bốn phép chia, nhưng đó chính là
+ * điều đáng nói: con số quyết định sống chết của cả đội nằm gọn trong bốn phép
+ * chia mà hầu như không đội nào ngồi tính.
+ */
+export function alertLoad(o: {
+  events: number;
+  fpr: number;
+  analysts: number;
+  minutes: number;
+  grouping: boolean;
+}) {
+  const rawAlerts = (o.events * o.fpr) / 100;
+  const alerts = o.grouping ? rawAlerts / GROUPING_FACTOR : rawAlerts;
+  const capacity = o.analysts * 8 * (60 / o.minutes);
+  const perAnalyst = 8 * (60 / o.minutes);
+  return {
+    rawAlerts,
+    alerts,
+    capacity,
+    ratio: alerts / (capacity || 1),
+    backlogPerDay: Math.max(0, alerts - capacity),
+    /** Số analyst phải tuyển thêm để hàng đợi thôi phình ra. */
+    extraAnalysts: Math.max(0, Math.ceil((alerts - capacity) / perAnalyst)),
+    /** FPR phải hạ xuống mức nào để cân bằng với đúng số analyst đang có. */
+    fprNeeded: (capacity * 100) / (o.events / (o.grouping ? GROUPING_FACTOR : 1)),
+  };
+}
+
 export function LabAlertLoad() {
   const [events, setEvents] = useState(5_000_000);
   const [fpr, setFpr] = useState(0.1);
@@ -521,11 +567,9 @@ export function LabAlertLoad() {
   const [minutes, setMinutes] = useState(12);
   const [grouping, setGrouping] = useState(true);
 
-  const rawAlerts = (events * fpr) / 100;
-  const alerts = grouping ? rawAlerts / 8 : rawAlerts;
-  const capacity = analysts * 8 * (60 / minutes);
-  const ratio = alerts / (capacity || 1);
-  const backlogPerDay = Math.max(0, alerts - capacity);
+  const { alerts, capacity, ratio, backlogPerDay, extraAnalysts, fprNeeded } = alertLoad({
+    events, fpr, analysts, minutes, grouping,
+  });
 
   return (
     <LabShell
@@ -546,7 +590,7 @@ export function LabAlertLoad() {
           <Slider label="Tỉ lệ báo động giả" value={fpr} min={0.001} max={2} step={0.001} onChange={setFpr} format={(v) => `${v}%`} />
           <Slider label="Số analyst trực" value={analysts} min={1} max={40} step={1} onChange={setAnalysts} />
           <Slider label="Phút xử lý mỗi cảnh báo" value={minutes} min={2} max={60} step={1} onChange={setMinutes} format={(v) => `${v} phút`} />
-          <Toggle label="Bật gom nhóm cảnh báo (giảm ~8 lần)" checked={grouping} onChange={setGrouping} />
+          <Toggle label={`Bật gom nhóm cảnh báo (giảm ~${GROUPING_FACTOR} lần)`} checked={grouping} onChange={setGrouping} />
         </div>
         <div className="stack">
           <Readout
@@ -588,8 +632,7 @@ export function LabAlertLoad() {
               </span>
             </div>
             <div className="faint" style={{ marginTop: 8 }}>
-              Cần thêm {Math.max(0, Math.ceil((alerts - capacity) / (8 * (60 / minutes))))} analyst để cân bằng,
-              hoặc hạ FPR xuống {((capacity * 100) / (events / (grouping ? 8 : 1))).toFixed(4)}%.
+              Cần thêm {extraAnalysts} analyst để cân bằng, hoặc hạ FPR xuống {fprNeeded.toFixed(4)}%.
             </div>
           </div>
         </div>

@@ -46,6 +46,51 @@ function makeUrlData(seed: number, n = 220): Sample[] {
   return out;
 }
 
+/** Một bước gradient descent trên TOÀN BỘ tập (batch gradient descent). */
+function logisticStep(m: { w: number[]; b: number; epoch: number }, rate: number, data: Sample[]) {
+  const gw = [0, 0, 0, 0];
+  let gb = 0;
+  for (const s of data) {
+    const z = s.x.reduce((acc, xi, i) => acc + xi * m.w[i], m.b);
+    const err = sigmoid(z) - s.y;
+    for (let i = 0; i < 4; i++) gw[i] += err * s.x[i];
+    gb += err;
+  }
+  const n = data.length;
+  return {
+    w: m.w.map((wi, i) => wi - (rate * gw[i]) / n),
+    b: m.b - (rate * gb) / n,
+    epoch: m.epoch + 1,
+  };
+}
+
+function logisticEval(w: number[], b: number, data: Sample[]) {
+  let l = 0;
+  let c = 0;
+  for (const s of data) {
+    const z = s.x.reduce((a, xi, i) => a + xi * w[i], b);
+    const p = clamp(sigmoid(z), 1e-9, 1 - 1e-9);
+    l += -(s.y * Math.log(p) + (1 - s.y) * Math.log(1 - p));
+    if ((p >= 0.5 ? 1 : 0) === s.y) c++;
+  }
+  return { loss: l / data.length, acc: c / data.length };
+}
+
+/**
+ * Chạy trọn `epochs` vòng huấn luyện từ trạng thái khởi tạo bằng 0.
+ *
+ * Tách khỏi component để chốt được điều lời kết luận hứa: entropy và số dấu
+ * chấm nhận trọng số DƯƠNG, tuổi tên miền nhận trọng số ÂM. Đó là "mô hình học
+ * được luật", và nếu một ngày dữ liệu giả bị đổi thì lời hứa đó phải trượt chứ
+ * không được im lặng đổi dấu.
+ */
+export function logisticRun(lr: number, epochs: number, seed = 12345) {
+  const data = makeUrlData(seed);
+  let m = { w: [0, 0, 0, 0], b: 0, epoch: 0 };
+  for (let i = 0; i < epochs; i++) m = logisticStep(m, lr, data);
+  return { ...m, ...logisticEval(m.w, m.b, data) };
+}
+
 export function LabLogistic() {
   const [seed, reseed] = useSeed();
   const [lr, setLr] = useState(0.5);
@@ -63,23 +108,7 @@ export function LabLogistic() {
   };
   useEffect(reset, [seed]);
 
-  /** Một bước gradient descent trên toàn bộ tập (batch gradient descent). */
-  const stepOnce = (m: { w: number[]; b: number; epoch: number }, rate: number) => {
-    const gw = [0, 0, 0, 0];
-    let gb = 0;
-    for (const s of data) {
-      const z = s.x.reduce((acc, xi, i) => acc + xi * m.w[i], m.b);
-      const err = sigmoid(z) - s.y;
-      for (let i = 0; i < 4; i++) gw[i] += err * s.x[i];
-      gb += err;
-    }
-    const n = data.length;
-    return {
-      w: m.w.map((wi, i) => wi - (rate * gw[i]) / n),
-      b: m.b - (rate * gb) / n,
-      epoch: m.epoch + 1,
-    };
-  };
+  const stepOnce = (m: { w: number[]; b: number; epoch: number }, rate: number) => logisticStep(m, rate, data);
 
   useEffect(() => {
     if (!running) return;
@@ -98,17 +127,7 @@ export function LabLogistic() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, lr, data]);
 
-  const { loss, acc } = useMemo(() => {
-    let l = 0;
-    let c = 0;
-    for (const s of data) {
-      const z = s.x.reduce((a, xi, i) => a + xi * w[i], b);
-      const p = clamp(sigmoid(z), 1e-9, 1 - 1e-9);
-      l += -(s.y * Math.log(p) + (1 - s.y) * Math.log(1 - p));
-      if ((p >= 0.5 ? 1 : 0) === s.y) c++;
-    }
-    return { loss: l / data.length, acc: c / data.length };
-  }, [w, b, data]);
+  const { loss, acc } = useMemo(() => logisticEval(w, b, data), [w, b, data]);
 
   const plot = mkPlot(440, 260, [0, 1], [0, 1], { l: 46, r: 14, t: 14, b: 38 });
 
@@ -121,13 +140,25 @@ export function LabLogistic() {
           Bấm Huấn luyện và nhìn các <b>trọng số</b> bò dần về giá trị hợp lý: entropy và số dấu chấm nhận
           trọng số dương (càng cao càng nghi ngờ), tuổi tên miền nhận trọng số âm (tên miền càng già càng
           đáng tin). Đó chính là "mô hình học được luật". Toàn bộ thuật toán chỉ là: đoán → đo sai số → dịch
-          trọng số ngược hướng sai số → lặp lại. Đặt tốc độ học quá cao và xem nó nổ tung.
+          trọng số ngược hướng sai số → lặp lại.
+          <br />
+          <br />
+          Giờ kéo tốc độ học lên hết cỡ rồi huấn luyện lại, và để ý một điều dễ đoán sai: nó <b>không</b> nổ
+          tung. Hàm mất mát vọt lên ở vài bước đầu rồi vẫn tụt về đáy, độ chính xác y hệt 99,5%. Lý do là
+          hàm mất mát ở đây <b>lồi</b>, và sigmoid bão hoà — trọng số càng lớn thì gradient trên những mẫu
+          đã đoán đúng càng tiến về 0, nên thuật toán tự phanh. Muốn thấy gradient descent thật sự phân kỳ,
+          bạn cần một mặt lỗi không lồi: đó là phòng lab <b>Gradient descent</b>.
+          <br />
+          <br />
+          Cái giá của tốc độ học quá cao ở đây tinh vi hơn: trọng số lớn nhất phình từ 5,7 lên 11,9 mà không
+          đổi được lấy một dự đoán. Mô hình không giỏi hơn — nó chỉ <b>tự tin hơn</b>, và xác suất nó in ra
+          bị đẩy sát 0 với 1. Đó đúng là căn bệnh mà phòng lab <b>Hiệu chuẩn xác suất</b> đo.
         </>
       }
     >
       <div className="grid grid-2">
         <div className="stack">
-          <Slider label="Tốc độ học (learning rate)" value={lr} min={0.01} max={8} step={0.01} onChange={setLr} format={(v) => v.toFixed(2)} hint="Quá nhỏ: rất lâu. Quá lớn: dao động, không hội tụ." />
+          <Slider label="Tốc độ học (learning rate)" value={lr} min={0.01} max={8} step={0.01} onChange={setLr} format={(v) => v.toFixed(2)} hint="Quá nhỏ: rất lâu. Quá lớn: vọt qua đáy vài bước đầu, rồi vẫn về đích — nhưng với trọng số phình to." />
           <div className="row-wrap">
             <button className="btn btn-primary btn-sm" onClick={() => setRunning((r) => !r)}>
               <Icon name={running ? 'pause' : 'play'} size={14} filled={!running} />
@@ -205,49 +236,86 @@ const SPAM_CORPUS = [
   { t: 'biên bản cuộc họp đã gửi trong tệp đính kèm', y: 0 },
 ];
 
+function nbModel() {
+  const spam = new Map<string, number>();
+  const ham = new Map<string, number>();
+  let ns = 0;
+  let nh = 0;
+  let docS = 0;
+  let docH = 0;
+  for (const d of SPAM_CORPUS) {
+    const ws = d.t.split(/\s+/);
+    if (d.y) {
+      docS++;
+      ns += ws.length;
+      ws.forEach((w) => spam.set(w, (spam.get(w) ?? 0) + 1));
+    } else {
+      docH++;
+      nh += ws.length;
+      ws.forEach((w) => ham.set(w, (ham.get(w) ?? 0) + 1));
+    }
+  }
+  const vocab = new Set([...spam.keys(), ...ham.keys()]);
+  return { spam, ham, ns, nh, docS, docH, V: vocab.size };
+}
+
+export interface NaiveBayesOut {
+  /** Xác suất là thư rác. `null` khi bài toán suy biến — xem `degenerate`. */
+  p: number | null;
+  /**
+   * α = 0 cộng một từ CHƯA TỪNG xuất hiện ở cả hai lớp thì cả hai vế cùng bằng
+   * 0, và posterior là 0/0 chứ không phải một con số.
+   *
+   * Lời kết luận mời người học "hạ α về 0 để thấy chuyện gì xảy ra", nên đây
+   * không phải ca hiếm gặp mà là ca lab CHỦ ĐỘNG dẫn người ta tới. Bản trước
+   * tính `exp(-Inf - (-Inf))` ra NaN rồi in thẳng "NaN% rác" — vừa không dạy
+   * được gì, vừa làm người học tưởng lab hỏng. Giờ nó được gọi đúng tên: mô
+   * hình không kết luận được, và đó chính là lý do làm mượt Laplace tồn tại.
+   */
+  degenerate: boolean;
+  /** `d = null` cho từ mà α = 0 làm cả hai vế bằng 0: đóng góp là 0/0, không phải 0. */
+  contrib: { w: string; d: number | null }[];
+  /** Những từ khiến bài toán suy biến, để chỉ đúng thủ phạm cho người học. */
+  unknownWords: string[];
+}
+
+export function naiveBayesScore(input: string, alpha: number): NaiveBayesOut {
+  const model = nbModel();
+  const words = input.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  let logS = Math.log(model.docS / SPAM_CORPUS.length);
+  let logH = Math.log(model.docH / SPAM_CORPUS.length);
+  const contrib: { w: string; d: number | null }[] = [];
+  const unknownWords: string[] = [];
+  for (const w of words) {
+    const cs = model.spam.get(w) ?? 0;
+    const ch = model.ham.get(w) ?? 0;
+    const unknown = alpha === 0 && cs === 0 && ch === 0;
+    if (unknown) unknownWords.push(w);
+    const ps = (cs + alpha) / (model.ns + alpha * model.V);
+    const ph = (ch + alpha) / (model.nh + alpha * model.V);
+    logS += Math.log(ps);
+    logH += Math.log(ph);
+    // −∞ trừ −∞ là NaN, không phải 0. Từ này không đẩy quyết định đi đâu cả —
+    // nó xoá sạch quyết định, nên nó phải được vẽ khác hẳn mọi từ còn lại.
+    contrib.push({ w, d: unknown ? null : Math.log(ps) - Math.log(ph) });
+  }
+  const sorted = contrib
+    .sort((a, b) => (a.d == null ? -1 : b.d == null ? 1 : Math.abs(b.d) - Math.abs(a.d)))
+    .slice(0, 8);
+  if (!Number.isFinite(logS) && !Number.isFinite(logH)) {
+    return { p: null, degenerate: true, contrib: sorted, unknownWords };
+  }
+  const m = Math.max(logS, logH);
+  const p = Math.exp(logS - m) / (Math.exp(logS - m) + Math.exp(logH - m));
+  return { p, degenerate: false, contrib: sorted, unknownWords };
+}
+
 export function LabNaiveBayes() {
   const [alpha, setAlpha] = useState(1);
   const [input, setInput] = useState('tài khoản của bạn bị khoá xác minh ngay');
 
-  const model = useMemo(() => {
-    const spam = new Map<string, number>();
-    const ham = new Map<string, number>();
-    let ns = 0;
-    let nh = 0;
-    let docS = 0;
-    let docH = 0;
-    for (const d of SPAM_CORPUS) {
-      const ws = d.t.split(/\s+/);
-      if (d.y) {
-        docS++;
-        ns += ws.length;
-        ws.forEach((w) => spam.set(w, (spam.get(w) ?? 0) + 1));
-      } else {
-        docH++;
-        nh += ws.length;
-        ws.forEach((w) => ham.set(w, (ham.get(w) ?? 0) + 1));
-      }
-    }
-    const vocab = new Set([...spam.keys(), ...ham.keys()]);
-    return { spam, ham, ns, nh, docS, docH, V: vocab.size };
-  }, []);
-
-  const scored = useMemo(() => {
-    const words = input.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    let logS = Math.log(model.docS / SPAM_CORPUS.length);
-    let logH = Math.log(model.docH / SPAM_CORPUS.length);
-    const contrib: { w: string; d: number }[] = [];
-    for (const w of words) {
-      const ps = ((model.spam.get(w) ?? 0) + alpha) / (model.ns + alpha * model.V);
-      const ph = ((model.ham.get(w) ?? 0) + alpha) / (model.nh + alpha * model.V);
-      logS += Math.log(ps);
-      logH += Math.log(ph);
-      contrib.push({ w, d: Math.log(ps) - Math.log(ph) });
-    }
-    const m = Math.max(logS, logH);
-    const p = Math.exp(logS - m) / (Math.exp(logS - m) + Math.exp(logH - m));
-    return { p, contrib: contrib.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 8) };
-  }, [input, alpha, model]);
+  const scored = useMemo(() => naiveBayesScore(input, alpha), [input, alpha]);
+  const pct = scored.p == null ? null : scored.p * 100;
 
   return (
     <LabShell
@@ -265,32 +333,68 @@ export function LabNaiveBayes() {
       <div className="field">
         <label htmlFor="nb-in">
           <span>Thử một email</span>
-          <var>{(scored.p * 100).toFixed(1)}% rác</var>
+          <var>{pct == null ? 'không xác định' : `${pct.toFixed(1)}% rác`}</var>
         </label>
         <textarea id="nb-in" value={input} onChange={(e) => setInput(e.target.value)} rows={2} style={{ fontFamily: 'var(--ff-sans)' }} />
       </div>
       <Slider label="Làm mượt Laplace (α)" value={alpha} min={0} max={3} step={0.05} onChange={setAlpha} format={(v) => v.toFixed(2)} hint="α = 0 nghĩa là một từ lạ sẽ khiến toàn bộ xác suất về 0." />
 
-      <div className="bar bar-lg">
-        <div className="bar-fill" style={{ width: `${scored.p * 100}%`, background: scored.p > 0.5 ? 'var(--bad)' : 'var(--ok)' }} />
-      </div>
-      <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
-        <span className="chip chip-ok">bình thường</span>
-        <span className={`chip ${scored.p > 0.5 ? 'chip-bad' : 'chip-ok'}`}>
-          <Icon name={scored.p > 0.5 ? 'alert-triangle' : 'check'} size={12} />
-          {scored.p > 0.5 ? 'Xếp loại: THƯ RÁC' : 'Xếp loại: BÌNH THƯỜNG'}
-        </span>
-        <span className="chip chip-bad">thư rác</span>
-      </div>
+      {scored.degenerate ? (
+        <div className="panel" style={{ borderColor: 'var(--warn-border)', background: 'var(--warn-soft)' }}>
+          <div className="row" style={{ gap: 'var(--s-2)', alignItems: 'flex-start' }}>
+            <Icon name="alert-triangle" size={14} style={{ marginTop: 2, color: 'var(--warn-text)' }} />
+            <span>
+              Đây chính là thứ α = 0 gây ra. Từ{' '}
+              {scored.unknownWords.slice(0, 4).map((w, i) => (
+                <span key={w}>{i > 0 && ', '}<b className="mono">{w}</b></span>
+              ))}{' '}
+              chưa từng xuất hiện trong kho mẫu, nên xác suất của nó bằng 0 ở <em>cả hai</em> lớp. Nhân vào là
+              cả hai vế cùng bằng 0, và mô hình không còn gì để so sánh — không phải "0% rác", mà là{' '}
+              <b>không kết luận được</b>. Kéo α lên dù chỉ 0,05 để thấy nó sống lại.
+            </span>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="bar bar-lg">
+            <div className="bar-fill" style={{ width: `${pct}%`, background: scored.p! > 0.5 ? 'var(--bad)' : 'var(--ok)' }} />
+          </div>
+          <div className="row" style={{ justifyContent: 'space-between', fontSize: 'var(--fs-xs)' }}>
+            <span className="chip chip-ok">bình thường</span>
+            <span className={`chip ${scored.p! > 0.5 ? 'chip-bad' : 'chip-ok'}`}>
+              <Icon name={scored.p! > 0.5 ? 'alert-triangle' : 'check'} size={12} />
+              {scored.p! > 0.5 ? 'Xếp loại: THƯ RÁC' : 'Xếp loại: BÌNH THƯỜNG'}
+            </span>
+            <span className="chip chip-bad">thư rác</span>
+          </div>
+        </>
+      )}
 
       <div>
         <div className="stat-k" style={{ marginBottom: 8 }}>Từ nào đẩy quyết định đi đâu</div>
         <div className="row-wrap">
-          {scored.contrib.map((c, i) => (
-            <span key={i} className={`chip ${c.d > 0.15 ? 'chip-bad' : c.d < -0.15 ? 'chip-ok' : ''}`}>
-              {c.w} <b className="mono">{c.d > 0 ? '+' : ''}{c.d.toFixed(2)}</b>
-            </span>
-          ))}
+          {/* Với α = 0, một từ có thể nhận giá trị 0/0 hoặc ±∞. Cả hai đều là
+              con số thật của mô hình, và cả hai đều KHÔNG được in ra thành
+              "NaN" hay "Infinity" — chữ đó không dạy được gì. */}
+          {scored.contrib.map((c, i) =>
+            c.d == null ? (
+              <span key={i} className="chip chip-warn" title="Từ chưa từng gặp, và α = 0 nên xác suất bằng 0 ở cả hai lớp">
+                {c.w} <b className="mono">0/0</b>
+              </span>
+            ) : !Number.isFinite(c.d) ? (
+              <span
+                key={i}
+                className={`chip ${c.d > 0 ? 'chip-bad' : 'chip-ok'}`}
+                title="Từ chỉ xuất hiện ở một lớp, và α = 0 nên nó một mình quyết định cả câu"
+              >
+                {c.w} <b className="mono">{c.d > 0 ? '+∞' : '−∞'}</b>
+              </span>
+            ) : (
+              <span key={i} className={`chip ${c.d > 0.15 ? 'chip-bad' : c.d < -0.15 ? 'chip-ok' : ''}`}>
+                {c.w} <b className="mono">{c.d > 0 ? '+' : ''}{c.d.toFixed(2)}</b>
+              </span>
+            ),
+          )}
         </div>
         <div className="faint" style={{ marginTop: 8 }}>
           Đây chính là "khả năng giải thích" mà gradient boosting và mạng nơ-ron phải làm việc rất vất vả mới có được.
@@ -320,8 +424,40 @@ const entropyOf = (rows: typeof TREE_ROWS) => {
   return -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p));
 };
 
+export type TreeFeature = 'ent' | 'age' | 'dots';
+
+/** Độ lợi thông tin của một phép chia thủ công. */
+export function treeSplit(feature: TreeFeature, thr: number) {
+  const left = TREE_ROWS.filter((r) => r[feature] <= thr);
+  const right = TREE_ROWS.filter((r) => r[feature] > thr);
+  const H = entropyOf(TREE_ROWS);
+  const gain =
+    H - (left.length / TREE_ROWS.length) * entropyOf(left) - (right.length / TREE_ROWS.length) * entropyOf(right);
+  return { left, right, rootEntropy: H, gain };
+}
+
+/**
+ * Duyệt MỌI đặc trưng ở MỌI ngưỡng — đúng nguyên văn thuật toán mà lời kết luận
+ * mô tả, và là đáp án người học đem phép chia thủ công ra so.
+ */
+export function bestTreeSplit() {
+  const H = entropyOf(TREE_ROWS);
+  let gain = -1;
+  let feature: TreeFeature = 'ent';
+  let thr = 0;
+  for (const f of ['ent', 'age', 'dots'] as const) {
+    const vals = [...new Set(TREE_ROWS.map((r) => r[f]))].sort((a, b) => a - b);
+    for (let i = 0; i < vals.length - 1; i++) {
+      const t = (vals[i] + vals[i + 1]) / 2;
+      const g = treeSplit(f, t).gain;
+      if (g > gain) { gain = g; feature = f; thr = t; }
+    }
+  }
+  return { gain, feature, thr, rootEntropy: H };
+}
+
 export function LabTree() {
-  const [feature, setFeature] = useState<'ent' | 'age' | 'dots'>('ent');
+  const [feature, setFeature] = useState<TreeFeature>('ent');
   const ranges = { ent: [0.2, 1, 0.01], age: [0, 2100, 10], dots: [1, 7, 1] } as const;
   const [thr, setThr] = useState(0.65);
 
@@ -329,27 +465,8 @@ export function LabTree() {
     setThr(feature === 'ent' ? 0.65 : feature === 'age' ? 100 : 3);
   }, [feature]);
 
-  const left = TREE_ROWS.filter((r) => r[feature] <= thr);
-  const right = TREE_ROWS.filter((r) => r[feature] > thr);
-  const H = entropyOf(TREE_ROWS);
-  const gain = H - (left.length / TREE_ROWS.length) * entropyOf(left) - (right.length / TREE_ROWS.length) * entropyOf(right);
-
-  const best = useMemo(() => {
-    let bg = -1;
-    let bf: 'ent' | 'age' | 'dots' = 'ent';
-    let bt = 0;
-    for (const f of ['ent', 'age', 'dots'] as const) {
-      const vals = [...new Set(TREE_ROWS.map((r) => r[f]))].sort((a, b) => a - b);
-      for (let i = 0; i < vals.length - 1; i++) {
-        const t = (vals[i] + vals[i + 1]) / 2;
-        const l = TREE_ROWS.filter((r) => r[f] <= t);
-        const rr = TREE_ROWS.filter((r) => r[f] > t);
-        const g = H - (l.length / TREE_ROWS.length) * entropyOf(l) - (rr.length / TREE_ROWS.length) * entropyOf(rr);
-        if (g > bg) { bg = g; bf = f; bt = t; }
-      }
-    }
-    return { gain: bg, feature: bf, thr: bt };
-  }, [H]);
+  const { left, right, rootEntropy: H, gain } = treeSplit(feature, thr);
+  const best = useMemo(bestTreeSplit, []);
 
   const NAMES = { ent: 'Entropy tên miền', age: 'Tuổi tên miền (ngày)', dots: 'Số dấu chấm' };
   const Node = ({ rows, label }: { rows: typeof TREE_ROWS; label: string }) => {
@@ -425,45 +542,90 @@ export function LabTree() {
 /*  lab-knn — k-NN và ranh giới quyết định                                     */
 /* ========================================================================== */
 
+const KNN_GRID = 34;
+
+/**
+ * Ranh giới quyết định k-NN trên lưới 34×34, kèm hai số đo hình dạng của nó.
+ *
+ * Tách khỏi component vì lời kết luận hứa một chiều biến thiên, không phải một
+ * con số: k nhỏ cho ranh giới RĂNG CƯA và sinh ra những hòn đảo quanh điểm
+ * nhiễu, k lớn làm nó mượt lại. `roughness` đếm số cặp ô kề nhau khác lớp —
+ * chu vi của ranh giới, đo bằng ô. `islands` đếm số vùng liên thông; hai vùng
+ * là hình dạng lành mạnh, nhiều hơn tức là đã mọc đảo.
+ */
+export function knnRun(k: number, noise: number, seed = 12345) {
+  const rng = mulberry32(seed);
+  const pts: { x: number; y: number; c: 0 | 1 }[] = [];
+  for (let i = 0; i < 60; i++) {
+    const c: 0 | 1 = i % 2 === 0 ? 0 : 1;
+    pts.push({
+      x: clamp(gaussian(rng, c ? 0.66 : 0.34, noise), 0.02, 0.98),
+      y: clamp(gaussian(rng, c ? 0.62 : 0.38, noise), 0.02, 0.98),
+      c,
+    });
+  }
+
+  const N = KNN_GRID;
+  const cells: { x: number; y: number; c: number }[] = [];
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      const gx = (i + 0.5) / N;
+      const gy = (j + 0.5) / N;
+      const near = pts
+        .map((p) => ({ d: (p.x - gx) ** 2 + (p.y - gy) ** 2, c: p.c }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, k);
+      cells.push({ x: gx, y: gy, c: near.filter((n) => n.c === 1).length / k });
+    }
+  }
+
+  // Lưới xếp theo cột: chỉ số i*N + j, nên ô kề phải là +N và ô kề trên là +1.
+  const lab = cells.map((c) => (c.c > 0.5 ? 1 : 0));
+  let roughness = 0;
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < N; j++) {
+      const a = lab[i * N + j];
+      if (i + 1 < N && lab[(i + 1) * N + j] !== a) roughness++;
+      if (j + 1 < N && lab[i * N + j + 1] !== a) roughness++;
+    }
+  }
+
+  const seen = new Array(N * N).fill(false);
+  let islands = 0;
+  for (let s = 0; s < N * N; s++) {
+    if (seen[s]) continue;
+    islands++;
+    const stack = [s];
+    seen[s] = true;
+    while (stack.length) {
+      const cur = stack.pop()!;
+      const ci = Math.floor(cur / N);
+      const cj = cur % N;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const ni = ci + di;
+        const nj = cj + dj;
+        if (ni < 0 || nj < 0 || ni >= N || nj >= N) continue;
+        const nx = ni * N + nj;
+        if (seen[nx] || lab[nx] !== lab[cur]) continue;
+        seen[nx] = true;
+        stack.push(nx);
+      }
+    }
+  }
+
+  return { pts, cells, roughness, islands };
+}
+
 export function LabKnn() {
   const [k, setK] = useState(5);
   const [seed, reseed] = useSeed();
   const [noise, setNoise] = useState(0.16);
 
-  const pts = useMemo(() => {
-    const rng = mulberry32(seed);
-    const out: { x: number; y: number; c: 0 | 1 }[] = [];
-    for (let i = 0; i < 60; i++) {
-      const c: 0 | 1 = i % 2 === 0 ? 0 : 1;
-      out.push({
-        x: clamp(gaussian(rng, c ? 0.66 : 0.34, noise), 0.02, 0.98),
-        y: clamp(gaussian(rng, c ? 0.62 : 0.38, noise), 0.02, 0.98),
-        c,
-      });
-    }
-    return out;
-  }, [seed, noise]);
-
-  const grid = useMemo(() => {
-    const N = 34;
-    const cells: { x: number; y: number; c: number }[] = [];
-    for (let i = 0; i < N; i++) {
-      for (let j = 0; j < N; j++) {
-        const gx = (i + 0.5) / N;
-        const gy = (j + 0.5) / N;
-        const near = pts
-          .map((p) => ({ d: (p.x - gx) ** 2 + (p.y - gy) ** 2, c: p.c }))
-          .sort((a, b) => a.d - b.d)
-          .slice(0, k);
-        cells.push({ x: gx, y: gy, c: near.filter((n) => n.c === 1).length / k });
-      }
-    }
-    return cells;
-  }, [pts, k]);
+  const { pts, cells: grid } = useMemo(() => knnRun(k, noise, seed), [k, noise, seed]);
 
   const p = mkPlot(430, 330, [0, 1], [0, 1], { l: 40, r: 12, t: 12, b: 34 });
-  const cw = (p.w - p.pad.l - p.pad.r) / 34;
-  const ch = (p.h - p.pad.t - p.pad.b) / 34;
+  const cw = (p.w - p.pad.l - p.pad.r) / KNN_GRID;
+  const ch = (p.h - p.pad.t - p.pad.b) / KNN_GRID;
 
   return (
     <LabShell
@@ -471,10 +633,20 @@ export function LabKnn() {
       title="k-NN: hàng xóm quyết định bạn là ai"
       takeaway={
         <>
-          k nhỏ (1–3) cho ranh giới răng cưa, bám sát từng điểm — đó là <b>quá khớp</b>, một điểm nhiễu cũng
-          tạo ra một hòn đảo. k lớn làm ranh giới mượt nhưng bắt đầu bỏ qua cấu trúc thật. Đây là đánh đổi
-          thiên lệch–phương sai hiện ra bằng hình ảnh. Lưu ý thực chiến: k-NN không huấn luyện gì cả nhưng
-          mỗi lần dự đoán phải so với TOÀN BỘ dữ liệu — gần như không dùng được ở quy mô hàng triệu sự kiện/giây.
+          Ở mức nhiễu mặc định, kéo k từ 1 lên 5 và nhìn đường ranh giới: chu vi của nó rụng gần một nửa
+          (118 xuống 63 ô lưới). Đó là <b>quá khớp</b> co lại — k = 1 bắt mọi điểm phải đúng, kể cả điểm
+          nhiễu.
+          <br />
+          <br />
+          Nhưng muốn thấy những <b>hòn đảo</b> mà quá khớp sinh ra thì phải kéo <b>độ nhiễu</b> lên khoảng
+          0,22 trở lên: ở mức đó, k = 1 xé mặt phẳng thành 7 vùng rời rạc, còn k = 15 gộp lại đúng 2 vùng
+          như đáng lẽ phải thế. Kéo nhiễu xuống thấp nhất thì điều ngược lại xảy ra — hai lớp tách bạch tới
+          mức k gần như không còn ý nghĩa, mọi giá trị k đều cho cùng một ranh giới. <b>k quan trọng đúng
+          bằng mức dữ liệu của bạn chồng lấn.</b>
+          <br />
+          <br />
+          Lưu ý thực chiến: k-NN không huấn luyện gì cả nhưng mỗi lần dự đoán phải so với TOÀN BỘ dữ liệu —
+          gần như không dùng được ở quy mô hàng triệu sự kiện/giây.
         </>
       }
     >
@@ -911,49 +1083,67 @@ export function LabPerceptron() {
 /*  lab-kmeans — Phân cụm hành vi                                              */
 /* ========================================================================== */
 
+/** Số điểm ngoại lai rắc thêm vào cuối tập — đúng thứ hàng đợi điều tra săn tìm. */
+export const KMEANS_OUTLIERS = 5;
+/** Phân vị cắt: điểm nằm trên mức này mới được khoanh vòng đỏ. */
+export const KMEANS_CUT_Q = 0.94;
+
+/**
+ * k-means trên dữ liệu hành vi mạng giả lập: ba cụm cộng vài điểm rắc ngẫu
+ * nhiên. Năm điểm ngoại lai nằm ở CUỐI mảng, nên `outlierRanks` cho biết chúng
+ * đứng đâu trong bảng xếp hạng khoảng cách — đó là cách chốt lời hứa "điểm ở
+ * xa mọi tâm cụm là ứng viên điều tra" mà không phải đoán bằng mắt.
+ */
+export function kmeansRun(k: number, iters: number, seed = 12345) {
+  const rng = mulberry32(seed);
+  const centers = [[0.25, 0.3], [0.7, 0.28], [0.5, 0.75]];
+  const pts: [number, number][] = [];
+  centers.forEach((c, ci) => {
+    for (let i = 0; i < (ci === 2 ? 22 : 34); i++)
+      pts.push([clamp(gaussian(rng, c[0], 0.09), 0, 1), clamp(gaussian(rng, c[1], 0.09), 0, 1)]);
+  });
+  const clusterCount = pts.length;
+  for (let i = 0; i < KMEANS_OUTLIERS; i++) pts.push([clamp(rng(), 0, 1), clamp(rng(), 0, 1)]);
+
+  const rng2 = mulberry32(seed + 1);
+  let cents: [number, number][] = Array.from({ length: k }, () => [rng2(), rng2()]);
+  let assign = new Array(pts.length).fill(0);
+  for (let it = 0; it < iters; it++) {
+    assign = pts.map((p) => {
+      let bi = 0;
+      let bd = Infinity;
+      cents.forEach((c, i) => {
+        const d = (c[0] - p[0]) ** 2 + (c[1] - p[1]) ** 2;
+        if (d < bd) { bd = d; bi = i; }
+      });
+      return bi;
+    });
+    cents = cents.map((c, i) => {
+      const mem = pts.filter((_, j) => assign[j] === i);
+      if (!mem.length) return c;
+      return [mem.reduce((s, m) => s + m[0], 0) / mem.length, mem.reduce((s, m) => s + m[1], 0) / mem.length];
+    });
+  }
+
+  const dists = pts.map((p, i) => Math.hypot(p[0] - cents[assign[i]][0], p[1] - cents[assign[i]][1]));
+  const cutoff = [...dists].sort((a, b) => a - b)[Math.floor(dists.length * KMEANS_CUT_Q)];
+  const flagged = dists.map((d) => d >= cutoff);
+  const order = dists.map((d, i) => [d, i] as const).sort((a, b) => b[0] - a[0]).map(([, i]) => i);
+  return {
+    pts, cents, assign, dists, cutoff, flagged,
+    flaggedCount: flagged.filter(Boolean).length,
+    /** Hạng theo khoảng cách (0 = xa tâm cụm nhất) của từng điểm ngoại lai. */
+    outlierRanks: Array.from({ length: KMEANS_OUTLIERS }, (_, i) => order.indexOf(clusterCount + i)).sort((a, b) => a - b),
+    outlierIndexes: Array.from({ length: KMEANS_OUTLIERS }, (_, i) => clusterCount + i),
+  };
+}
+
 export function LabKmeans() {
   const [k, setK] = useState(3);
   const [iters, setIters] = useState(8);
   const [seed, reseed] = useSeed();
 
-  const pts = useMemo(() => {
-    const rng = mulberry32(seed);
-    const centers = [[0.25, 0.3], [0.7, 0.28], [0.5, 0.75]];
-    const out: [number, number][] = [];
-    centers.forEach((c, ci) => {
-      for (let i = 0; i < (ci === 2 ? 22 : 34); i++)
-        out.push([clamp(gaussian(rng, c[0], 0.09), 0, 1), clamp(gaussian(rng, c[1], 0.09), 0, 1)]);
-    });
-    // vài điểm ngoại lai — chính là thứ ta quan tâm trong bảo mật
-    for (let i = 0; i < 5; i++) out.push([clamp(rng(), 0, 1), clamp(rng(), 0, 1)]);
-    return out;
-  }, [seed]);
-
-  const { cents, assign } = useMemo(() => {
-    const rng = mulberry32(seed + 1);
-    let cents: [number, number][] = Array.from({ length: k }, () => [rng(), rng()]);
-    let assign = new Array(pts.length).fill(0);
-    for (let it = 0; it < iters; it++) {
-      assign = pts.map((p) => {
-        let bi = 0;
-        let bd = Infinity;
-        cents.forEach((c, i) => {
-          const d = (c[0] - p[0]) ** 2 + (c[1] - p[1]) ** 2;
-          if (d < bd) { bd = d; bi = i; }
-        });
-        return bi;
-      });
-      cents = cents.map((c, i) => {
-        const mem = pts.filter((_, j) => assign[j] === i);
-        if (!mem.length) return c;
-        return [mem.reduce((s, m) => s + m[0], 0) / mem.length, mem.reduce((s, m) => s + m[1], 0) / mem.length];
-      });
-    }
-    return { cents, assign };
-  }, [pts, k, iters, seed]);
-
-  const dists = pts.map((p, i) => Math.hypot(p[0] - cents[assign[i]][0], p[1] - cents[assign[i]][1]));
-  const cutoff = [...dists].sort((a, b) => a - b)[Math.floor(dists.length * 0.94)];
+  const { pts, cents, assign, flagged, flaggedCount } = useMemo(() => kmeansRun(k, iters, seed), [k, iters, seed]);
   const palette = [COLORS.info, COLORS.lab, COLORS.warn, COLORS.ok, COLORS.brand, COLORS.bad];
   // l: 54 chứ không phải 40 — nhãn "0,25" đè lên chữ "Số kết nối (chuẩn hoá)".
   const p = mkPlot(430, 330, [0, 1], [0, 1], { l: 54, r: 12, t: 12, b: 34 });
@@ -981,7 +1171,7 @@ export function LabKmeans() {
         <Axes p={p} xLabel="Số byte gửi đi (chuẩn hoá)" yLabel="Số kết nối (chuẩn hoá)" xTicks={4} yTicks={4} />
         {pts.map((pt, i) => (
           <g key={i}>
-            {dists[i] >= cutoff && <circle cx={px(p, pt[0])} cy={py(p, pt[1])} r={10} fill="none" stroke={COLORS.bad} strokeWidth={2} strokeDasharray="3 2" />}
+            {flagged[i] && <circle cx={px(p, pt[0])} cy={py(p, pt[1])} r={10} fill="none" stroke={COLORS.bad} strokeWidth={2} strokeDasharray="3 2" />}
             <circle cx={px(p, pt[0])} cy={py(p, pt[1])} r={4} fill={palette[assign[i] % palette.length]} opacity={0.85} />
           </g>
         ))}
@@ -991,7 +1181,9 @@ export function LabKmeans() {
           </g>
         ))}
       </Chart>
-      <div className="faint center">Vòng đứt đỏ = 6% điểm xa tâm cụm nhất → hàng đợi điều tra của bạn</div>
+      <div className="faint center">
+        Vòng đứt đỏ = {flaggedCount} điểm xa tâm cụm nhất ({((flaggedCount / pts.length) * 100).toFixed(0)}%) → hàng đợi điều tra của bạn
+      </div>
     </LabShell>
   );
 }
