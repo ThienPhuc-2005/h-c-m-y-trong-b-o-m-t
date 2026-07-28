@@ -1479,6 +1479,12 @@ def ly_do(i: int, k: int = 3) -> list[str]:
           ],
         },
         {
+          t: 'figure',
+          id: 'fig-why-block',
+          caption:
+            'Cùng một cảnh báo, cùng một mô hình, hai cách viết khối "vì sao". Bên trái đúng về kỹ thuật và hoàn toàn vô dụng: analyst không tra được `feature_47` là gì, cũng không biết 0,83 là cao hay thấp. Bên phải là cùng những con số đó, nhưng mỗi con số mang một đơn vị và một mốc để so — rồi kết bằng việc cần làm, chứ không kết bằng điểm số.',
+        },
+        {
           t: 'callout',
           kind: 'pro',
           title: 'Quy tắc ba con số của một khối "vì sao"',

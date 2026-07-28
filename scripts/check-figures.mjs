@@ -2,11 +2,12 @@
  * ============================================================================
  *  Kiểm hình vẽ trong trình duyệt thật
  * ============================================================================
- *  Hai lỗi mà không bộ test nào chạy trên jsdom bắt được, vì cả hai chỉ tồn tại
+ *  Ba lỗi mà không bộ test nào chạy trên jsdom bắt được, vì cả ba chỉ tồn tại
  *  sau khi trình duyệt đã dàn chữ bằng font thật:
  *
  *    1. Một phần tử nằm ngoài `viewBox` — nửa dòng chữ bị cắt cụt.
  *    2. Hai hộp chữ đè lên nhau — hai nhãn thành một vệt không đọc được.
+ *    3. Một đường kẻ chạy xuyên giữa dòng chữ — trông y như chữ bị gạch bỏ.
  *
  *  Script mở Chrome (hoặc Edge) ở chế độ không giao diện, duyệt mọi bài có hình
  *  và mọi phòng lab, đo từng phần tử, rồi TRƯỢT nếu thấy vi phạm.
@@ -45,6 +46,14 @@ const TOL_TEXT = 0.5;
 const TOL_SHAPE = 1.0;
 const OVERLAP_MIN = 2;
 
+/* Đường kẻ gạch ngang chữ: hình được coi là MẢNH khi một chiều dưới ngần này,
+   và bị coi là gạch qua chữ khi nó chồng đủ dài theo trục ngang lẫn đủ sâu
+   theo trục dọc. Ngưỡng ngang để rộng (6) vì một nét chỉ chạm mép chữ thì mắt
+   không thấy; ngưỡng dọc để chặt (3) vì gạch đúng giữa dòng là hỏng hẳn. */
+const THIN = 4;
+const LINE_CROSS_X = 6;
+const LINE_CROSS_Y = 3;
+
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(name);
 const opt = (name) => {
@@ -80,6 +89,7 @@ const PAGE_HELPERS = `
 window.__aegis = (() => {
   const SKIP = 'defs,marker,clipPath,mask,pattern,symbol';
   const TOL_TEXT = ${TOL_TEXT}, TOL_SHAPE = ${TOL_SHAPE}, OVERLAP_MIN = ${OVERLAP_MIN};
+  const THIN = ${THIN}, LINE_CROSS_X = ${LINE_CROSS_X}, LINE_CROSS_Y = ${LINE_CROSS_Y};
 
   function measure(svg) {
     const scm = svg.getScreenCTM();
@@ -87,7 +97,7 @@ window.__aegis = (() => {
     const inv = scm.inverse();
     const vb = svg.viewBox.baseVal;
     if (!vb || !vb.width) return [{ type: 'khong-co-viewbox' }];
-    const out = [], texts = [];
+    const out = [], texts = [], thin = [], solid = [];
     const sel = 'text,rect,line,path,circle,ellipse,polygon,polyline,image,foreignObject';
     for (const el of svg.querySelectorAll(sel)) {
       if (el.closest(SKIP)) continue;
@@ -114,6 +124,15 @@ window.__aegis = (() => {
       if (box.y1 > vb.y + vb.height + tol) sides.push('dưới ' + (box.y1 - vb.y - vb.height).toFixed(1));
       if (sides.length) out.push({ type: 'tran', tag, label, sides: sides.join(', ') });
       if (isText && label) texts.push({ label, box });
+      const isThin = box.x1 - box.x0 < THIN || box.y1 - box.y0 < THIN;
+      if (!isText && isThin) thin.push({ tag, box });
+      // Hình ĐẶC và đủ lớn: nếu một nhãn nằm gọn trong nó thì mọi đường kẻ
+      // chạy phía sau đều bị che, và phép kiểm gạch-qua-chữ phải bỏ qua nhãn
+      // đó. Đây là bố cục bình thường của mọi đồ thị: nhãn nằm trên đỉnh.
+      if (!isText && !isThin) {
+        const fill = getComputedStyle(el).fill;
+        if (fill && fill !== 'none' && !/rgba\\(.*,\\s*0\\)/.test(fill)) solid.push(box);
+      }
     }
     for (let i = 0; i < texts.length; i++) {
       for (let j = i + 1; j < texts.length; j++) {
@@ -122,6 +141,37 @@ window.__aegis = (() => {
         const oy = Math.min(a.y1, c.y1) - Math.max(a.y0, c.y0);
         if (ox > OVERLAP_MIN && oy > OVERLAP_MIN) {
           out.push({ type: 'de', a: texts[i].label, b: texts[j].label, ox: +ox.toFixed(1), oy: +oy.toFixed(1) });
+        }
+      }
+    }
+
+    // Đường kẻ mảnh cắt ngang một dòng chữ trông y như chữ bị gạch bỏ, và phép
+    // kiểm chữ-đè-chữ ở trên không thấy gì vì một bên không phải chữ.
+    //
+    // KHÔNG đo bằng diện tích chồng lấn: \`getBBox()\` của một đường ngang cho
+    // chiều cao đúng bằng 0 (nó không tính nét vẽ), nên phần chồng theo trục
+    // dọc không bao giờ vượt nổi một ngưỡng dương — phép kiểm sẽ im lặng mãi
+    // mãi. Tiêu chí đúng là hình học: TÂM của đường có nằm trong phần GIỮA của
+    // hộp chữ không, và nó có chạy dọc đủ dài bên trong hộp đó không. Chừa 20%
+    // ở hai đầu vì hộp chữ cao hơn phần chữ thật (gồm cả phần trên đầu và dưới
+    // chân font), nên một đường sát mép trên hộp thì mắt không thấy chạm gì.
+    const coNen = (t) =>
+      solid.some((b) => b.x0 <= t.x0 + 1 && b.x1 >= t.x1 - 1 && b.y0 <= t.y0 + 1 && b.y1 >= t.y1 - 1);
+    for (const s of thin) {
+      const w = s.box.x1 - s.box.x0;
+      const h = s.box.y1 - s.box.y0;
+      for (const t of texts) {
+        if (coNen(t.box)) continue;
+        const tw = t.box.x1 - t.box.x0;
+        const th = t.box.y1 - t.box.y0;
+        const ox = Math.min(t.box.x1, s.box.x1) - Math.max(t.box.x0, s.box.x0);
+        const oy = Math.min(t.box.y1, s.box.y1) - Math.max(t.box.y0, s.box.y0);
+        const cy = (s.box.y0 + s.box.y1) / 2;
+        const cx = (s.box.x0 + s.box.x1) / 2;
+        const ngang = h < THIN && ox > LINE_CROSS_X && cy > t.box.y0 + 0.2 * th && cy < t.box.y1 - 0.2 * th;
+        const doc = w < THIN && oy > LINE_CROSS_Y && cx > t.box.x0 + 0.15 * tw && cx < t.box.x1 - 0.15 * tw;
+        if (ngang || doc) {
+          out.push({ type: 'gach', tag: s.tag, label: t.label, huong: ngang ? 'ngang' : 'dọc' });
         }
       }
     }
@@ -438,7 +488,7 @@ async function run() {
 
 function report(findings) {
   if (!findings.length) {
-    console.log('\nKhông hình nào tràn khung, không hộp chữ nào đè nhau.');
+    console.log('\nKhông hình nào tràn khung, không hộp chữ nào đè nhau, không đường kẻ nào gạch qua chữ.');
     return;
   }
   console.log(`\n${findings.length} chỗ cần sửa:\n`);
@@ -449,6 +499,8 @@ function report(findings) {
         console.log(`    tràn ${i.sides.padEnd(22)} <${i.tag}> ${i.label ? `"${i.label}"` : ''}`);
       } else if (i.type === 'de') {
         console.log(`    đè ${i.ox}×${i.oy} đơn vị: "${i.a}" ↔ "${i.b}"`);
+      } else if (i.type === 'gach') {
+        console.log(`    <${i.tag}> chạy ${i.huong} xuyên qua chữ "${i.label}"`);
       } else {
         console.log(`    ${i.type}${i.got != null ? ` (thấy ${i.got}, cần ${i.expect})` : ''}`);
       }

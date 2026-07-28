@@ -352,7 +352,7 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'Chọn ngưỡng theo chi phí, không theo 0,5',
       subtitle: 'Nơi chỉ số biến thành quyết định, và là bài quan trọng nhất của cả chặng',
-      minutes: 24,
+      minutes: 25,
       practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t4-l3'],
@@ -486,6 +486,12 @@ export const track4: Track = {
               md: 'Câu trả lời trưởng thành không phải một ngưỡng mà là một **chính sách ba vùng**:\n\n- Điểm ≥ 0,97 (precision ~89%): **hành động tự động** — cách ly email, gắn cờ đỏ. Khoảng 9 email/ngày.\n- 0,66 ≤ điểm < 0,97: **vào hàng đợi analyst**. Khoảng 111 email/ngày.\n- 0,30 ≤ điểm < 0,66: **không cảnh báo, nhưng ghi lại và lấy mẫu**. Mỗi tuần threat hunting lấy ngẫu nhiên 50 mẫu trong vùng này để ước lượng FN — đây là cách duy nhất nhìn thấy ô mà bảng điều khiển không hiện.\n- Điểm < 0,30: bỏ qua.\n\nKiến trúc này lấy được phần lớn giá trị của ngưỡng thấp mà không phá vỡ công suất.',
             },
           ],
+        },
+        {
+          t: 'figure',
+          id: 'fig-three-zones',
+          caption:
+            'Một ngưỡng chia được hai hành động. Nhưng bạn có ba hành động — chặn, xếp hàng, bỏ qua — nên bạn cần hai lát cắt. Điều đáng nói là hai con số đó đến từ hai cuộc nói chuyện khác nhau: lát cắt trên hỏi "chặn nhầm bao nhiêu thì chấp nhận được", lát cắt dưới hỏi "bỏ sót bao nhiêu thì chấp nhận được". Ép chúng thành một ngưỡng 0,5 là bỏ mất cả hai câu hỏi.',
         },
         {
           t: 'code',
@@ -1305,7 +1311,7 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'So sánh hai mô hình cho ra kết luận đứng vững',
       subtitle: 'Chênh 0,03 PR-AUC là tiến bộ thật hay là nhiễu của một tập kiểm thử?',
-      minutes: 25,
+      minutes: 26,
       practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t4-l3'],
@@ -1461,6 +1467,12 @@ print(f'Chênh lệch accuracy: {chenh * 100:+.3f} điểm phần trăm')`,
           kind: 'math',
           title: 'Vì sao phải ghi hiệu số, không phải hai phân phối riêng',
           md: 'Cách làm sai rất phổ biến: dựng khoảng tin cậy cho PR-AUC của A, dựng khoảng tin cậy cho PR-AUC của B, rồi xem chúng có chồng lấn không.\n\nHai khoảng chồng lấn **không** có nghĩa là khác biệt không đáng kể. Vì hai chỉ số tương quan mạnh với nhau, phân phối của hiệu số hẹp hơn nhiều so với những gì hai khoảng riêng lẻ gợi ý. Bạn có thể gặp trường hợp hai khoảng chồng lấn khá nhiều mà khoảng tin cậy của hiệu số vẫn nằm gọn về một phía của số 0.\n\nQuy tắc: **luôn bootstrap trực tiếp đại lượng bạn muốn kết luận.** Nếu câu hỏi là “A có hơn B không” thì đại lượng đó là hiệu số.',
+        },
+        {
+          t: 'figure',
+          id: 'fig-mcnemar-cells',
+          caption:
+            'Hai ô mờ chiếm 98,4% tập kiểm thử và không nói được gì về việc mô hình nào hơn — ở đó hai mô hình đồng ý, nên chúng bị loại khỏi phép tính. Toàn bộ tin tức nằm trong 800 mẫu chúng bất đồng. Đó là lý do một phép kiểm theo cặp mạnh hơn hẳn việc so hai chỉ số tổng thể: nó vứt đi phần dữ liệu không mang thông tin thay vì để phần đó pha loãng tín hiệu.',
         },
         {
           t: 'code',
@@ -1694,7 +1706,7 @@ print(f'Hiệu số PR-AUC: {tb:+.4f}, khoảng tin cậy 95%: [{thap:+.4f}, {ca
       trackId: 'do-luong',
       title: 'Định lượng bất định và conformal prediction',
       subtitle: 'Cho mô hình quyền nói “tôi không chắc” — kèm một bảo đảm bằng con số',
-      minutes: 22,
+      minutes: 23,
       practiceMinutes: 7,
       level: 'chuyen-gia',
       prereqs: ['t4-l6'],
@@ -1794,6 +1806,12 @@ print(f'Tỉ lệ tập một nhãn — phần tự động hoá được: {co_d
             ['{lành, độc}', 'Cả hai nhãn đều nằm trong mức bất tuân cho phép — mô hình thật sự không phân biệt được.', 'Chuyển cho người xem. Đây chính là chỗ đáng trả tiền cho analyst.'],
             ['∅ (rỗng)', 'KHÔNG nhãn nào đủ tuân thủ: mẫu này bất thường so với mọi thứ trong tập hiệu chuẩn.', 'Cờ đỏ. Ứng viên cho họ mã độc mới, hoặc dấu hiệu dữ liệu đã trôi.'],
           ],
+        },
+        {
+          t: 'figure',
+          id: 'fig-conformal-sets',
+          caption:
+            'Mô hình thường buộc phải chọn một nhãn. Bộ conformal trả về một tập, và tập đó có bốn hình dạng — mỗi hình dạng ứng với một hành động khác nhau của đội trực. Hai hình dạng đầu là câu trả lời quen thuộc; hai hình dạng sau là thứ mô hình thường bị ép phải giấu đi.',
         },
         {
           t: 'callout',

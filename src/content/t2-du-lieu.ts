@@ -936,6 +936,12 @@ export const track2: Track = {
           md: 'Một đội ứng cứu dựng dòng thời gian của sự cố và kết luận rằng tệp mã độc được ghi xuống đĩa **sau** khi tiến trình khởi chạy nó — điều bất khả thi. Nguyên nhân: máy chủ tệp lệch đồng hồ 4 phút so với máy trạm vì mất đồng bộ NTP. Bốn phút đó làm đảo ngược thứ tự nhân quả của toàn bộ dòng thời gian.\n\nBài học cho ML: nếu bạn xây đặc trưng dạng “A xảy ra trước B bao nhiêu giây” trên nhiều nguồn khác nhau, hãy **đo lệch đồng hồ trước**, và cân nhắc làm tròn về cửa sổ lớn hơn độ lệch quan sát được.',
         },
         {
+          t: 'figure',
+          id: 'fig-log-timestamps',
+          caption:
+            'Một dòng log mang ba mốc thời gian, và chúng cách nhau hàng phút. Chỉ mốc SỰ KIỆN là thuộc tính của thế giới thật; hai mốc kia là thuộc tính của đường ống, và chúng đổi mỗi lần ai đó nâng cấp hạ tầng. Chia tập huấn luyện theo mốc thu nhận là để rò rỉ tương lai vào quá khứ mà không ai nhìn thấy.',
+        },
+        {
           t: 'checkpoint',
           questions: [
             {

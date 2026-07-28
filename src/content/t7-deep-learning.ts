@@ -1753,7 +1753,7 @@ export const track7: Track = {
       trackId: 'deep-learning',
       title: 'Khi nào KHÔNG nên dùng deep learning',
       subtitle: 'Bài quan trọng nhất chặng này: phần lớn bài toán bảo mật là dữ liệu bảng, và cây vẫn thắng',
-      minutes: 27,
+      minutes: 28,
       practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t7-l3', 't7-l5', 't3-l5', 't6-l2'],
@@ -1903,6 +1903,12 @@ export const track7: Track = {
             '**Tái lập và khả năng quay lui.** Khi kiểm toán viên hỏi vì sao mô hình tháng trước chặn giao dịch này, bạn phải dựng lại đúng mô hình đó. Huấn luyện GPU có nguồn không xác định (thứ tự cộng dồn số thực, thuật toán cuDNN được chọn động), nên "chạy lại cùng mã cùng seed" không bảo đảm ra cùng trọng số.',
             '**Chi phí huấn luyện lại.** Đây là chi phí bị đánh giá thấp nhất. Trong bảo mật, bạn huấn luyện lại theo tuần hoặc theo tháng vì trôi khái niệm, không phải một lần rồi thôi. Nhân chi phí một lần huấn luyện với 52 tuần trước khi so sánh. Chênh lệch giữa 20 phút CPU và 30 giờ GPU mỗi tuần là một con số ngân sách thật, không phải chi tiết kỹ thuật.',
           ],
+        },
+        {
+          t: 'figure',
+          id: 'fig-latency-cost',
+          caption:
+            'Ba mươi mili-giây nghe như không có gì. Nhân với lưu lượng thật rồi nhân tiếp hệ số giờ cao điểm thì nó thành mười một lõi chạy liên tục, chưa kể chi phí trích xuất đặc trưng — thứ hầu như không ai đo và thường đắt hơn chính lượt suy luận. Con số cuối mới là thứ đem đi xin ngân sách được, và nó là lý do phép so sánh chỉ nhìn độ chính xác luôn thiếu một cột.',
         },
         {
           t: 'callout',

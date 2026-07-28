@@ -643,7 +643,7 @@ export const track3: Track = {
       trackId: 'ml-cot-loi',
       title: 'Naive Bayes và lọc thư rác',
       subtitle: 'Một giả định sai rành rành, vậy mà đã dọn sạch hộp thư của cả thế giới',
-      minutes: 17,
+      minutes: 18,
       practiceMinutes: 7,
       level: 'co-ban',
       prereqs: ['t3-l2', 't1-l2'],
@@ -693,6 +693,12 @@ export const track3: Track = {
           kind: 'insight',
           title: 'Bài học rộng hơn cả Naive Bayes',
           md: 'Một mô hình có thể **sai về xác suất mà vẫn đúng về thứ hạng**. Trong bảo mật, bạn thường chỉ cần thứ hạng: xem cái nào trước, chặn 100 cái đáng ngờ nhất. Nhưng ngay khi bạn muốn nhân xác suất với chi phí để ra quyết định kinh tế, sai lệch đó trở thành vấn đề nghiêm trọng. Đây là lý do hiệu chuẩn có hẳn một bài riêng ở chặng 4.',
+        },
+        {
+          t: 'figure',
+          id: 'fig-naive-independence',
+          caption:
+            'Chữ "ngây thơ" nằm ở chỗ này: mô hình cắt sạch mọi mũi tên phụ thuộc giữa các từ, dù ai cũng thấy "tài khoản" và "khoá" đi với nhau. Xác suất in ra vì thế sai — nó bị đẩy sát 0 hoặc sát 1 vô căn cứ. Nhưng phân loại chỉ cần biết bên nào lớn hơn, và thứ hạng thì sống sót qua phép cắt đó.',
         },
         { t: 'h', text: 'Hai lỗi khiến bộ lọc chết lặng', level: 2 },
         {
@@ -1038,6 +1044,12 @@ export const track3: Track = {
           kind: 'pitfall',
           title: 'Cái bẫy lớn nhất: đặc trưng có nhiều giá trị phân biệt',
           md: 'Nếu bạn để `src_ip`, `hostname`, `user_agent` hay `session_id` vào cây dưới dạng hạng mục, thuật toán sẽ mê chúng ngay. Lý do thuần cơ học: một đặc trưng có 50.000 giá trị khác nhau luôn tìm được cách chia làm giảm độ vẩn đục nhiều hơn một đặc trưng chỉ có 2 giá trị — kể cả khi nó hoàn toàn vô nghĩa. Cây sẽ tạo ra luật kiểu "nếu `src_ip = 10.4.1.77` thì độc hại", tức là ghi nhớ máy tính, không phải học hành vi. Kiểm tra nhanh: nhìn 10 phép chia đầu tiên; nếu có bất kỳ định danh nào ở đó, hãy bỏ hoặc thay bằng đặc trưng dẫn xuất (số kết nối, độ tuổi tài khoản, thuộc dải mạng nào).',
+        },
+        {
+          t: 'figure',
+          id: 'fig-high-cardinality',
+          caption:
+            'Hai phép chia cùng đạt "thuần khiết", và chỉ một trong hai là mô hình. Bên phải, mỗi lá chứa đúng một mẫu nên Gini bằng 0 — điểm số hoàn hảo mua bằng cách học thuộc từng máy. Tiêu chí tham lam của cây không phân biệt được hai trường hợp này; chỉ có bạn phân biệt được, bằng cách nhìn xem đặc trưng nào leo lên các phép chia đầu tiên.',
         },
         {
           t: 'code',

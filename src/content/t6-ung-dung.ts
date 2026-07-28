@@ -36,7 +36,7 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Phát hiện phishing đầu-cuối',
       subtitle: 'Từ URL thô tới một hệ thống chặn thư, với đầy đủ các chỗ nó sẽ hỏng',
-      minutes: 30,
+      minutes: 31,
       practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t2-l6', 't4-l4'],
@@ -130,6 +130,14 @@ export const track6: Track = {
               md: 'Trang: có form nhập mật khẩu không, form gửi dữ liệu về tên miền khác không, favicon tải từ tên miền khác (dấu hiệu sao chép giao diện), tỉ lệ liên kết trỏ ra ngoài, có iframe che, mã JavaScript bị làm rối.\n\nThư: SPF/DKIM/DMARC có đạt không, `Reply-To` khác `From`, tên hiển thị trùng một lãnh đạo nhưng địa chỉ lạ, khoảng cách chỉnh sửa giữa tên miền người gửi và các tên miền đối tác quen thuộc (bắt typosquatting), thư đầu tiên từ người gửi này tới tổ chức.\n\n**Chi phí né:** cao, vì kẻ tấn công vẫn phải hiển thị một form đăng nhập trông giống thật — đó là mục đích của cả chiến dịch.',
             },
           ],
+        },
+        {
+          // Đặt NGAY sau ba tầng, trước khi bài chuyển sang chuyện đánh giá:
+          // đây là lúc người học vừa đọc xong cả ba và cần thấy chúng cạnh nhau.
+          t: 'figure',
+          id: 'fig-phishing-layers',
+          caption:
+            'Thứ tự đúng để xếp tầng phòng thủ không phải theo chi phí xây, mà theo chi phí NÉ. Tầng từ vựng dựng trong một buổi chiều và kẻ tấn công né bằng cách đổi một chuỗi ký tự. Tầng nội dung tốn hàng tháng, nhưng muốn né nó thì phải dựng lại cả bộ công cụ — và đó chính là thứ làm hắn chậm lại. Hệ thống chỉ có tầng 1 sẽ chết đúng vào tuần nó bắt đầu có ích.',
         },
         {
           t: 'code',
@@ -2268,6 +2276,12 @@ export const track6: Track = {
         {
           t: 'p',
           md: 'STL viết tắt của *Seasonal-Trend decomposition using Loess*: nó ước lượng thành phần mùa bằng cách làm trơn cục bộ, nên thành phần mùa được phép **thay đổi dần theo thời gian** — đúng với thực tế, vì thói quen làm việc của tổ chức có đổi. Nhưng lý do quan trọng hơn nhiều để chọn STL nằm ở tham số `robust`.',
+        },
+        {
+          t: 'figure',
+          id: 'fig-decomposition',
+          caption:
+            'Phân rã trước, rồi mới hỏi "hôm nay có bất thường không". Ba hàng trên là câu trả lời cho "hôm nay đáng lẽ phải như thế nào" — xu hướng dài hạn và nhịp lặp theo giờ, theo tuần. Chỉ hàng cuối, phần dư, được đem đi cảnh báo. Đợt tấn công khoanh tròn chìm nghỉm trong chuỗi gốc vì nó rơi đúng vào giờ cao điểm thường ngày, và chỉ nhô lên khi nhịp mùa đã bị trừ đi.',
         },
         {
           t: 'callout',

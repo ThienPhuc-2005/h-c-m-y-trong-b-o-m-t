@@ -1045,6 +1045,10 @@ const DatasetAge = () => (
         <g key={i}>
           <line x1={x} y1={150} x2={x} y2={yTop + 16} stroke={C.line} strokeWidth="1.2" />
           <circle cx={x} cy={150} r={4} fill={C.info} />
+          {/* Nền đặc sau nhãn: CIC-IDS2017 và EMBER chỉ cách nhau một năm, tức
+              20 đơn vị, nên đường nối của mốc trên chạy xuyên qua nhãn của mốc
+              dưới. Che nó đi là cách sửa đúng — dời nhãn thì vỡ trục thời gian. */}
+          <rect x={x - 44} y={yTop - 12} width={88} height={30} rx={4} fill="var(--bg-elev)" />
           <T x={x} y={yTop} size={11}>{d.n}</T>
           <T x={x} y={yTop + 14} size={11}>{String(d.y)}</T>
         </g>
@@ -1326,6 +1330,379 @@ const MarginIdea = () => (
   </Svg>
 );
 
+/* --- Mười một hình cho các bài chỉ có lab ---------------------------------
+
+    Nguyên tắc chọn ý: hình KHÔNG được nói lại điều phòng lab của cùng bài đã
+    cho người học tự tay nghịch. Lab cho cảm giác, hình cho cấu trúc. Ví dụ
+    t6-l10 có lab cho thấy một đợt tấn công tự nâng mức nền của chính nó, nên
+    hình ở đây vẽ phép phân rã ba thành phần — thứ lab không dừng lại để chỉ.
+   -------------------------------------------------------------------------- */
+
+/** t1-l4 — ngoại lai tự nâng cái ngưỡng đáng lẽ phải bắt được nó. */
+const MaskingFig = () => (
+  <Svg vb="0 0 600 250">
+    <Defs />
+    <T x={300} y={22} strong>Cùng một cột dữ liệu, hai bộ thước đo, hai kết luận trái ngược</T>
+
+    {/* Trục giá trị dùng chung cho cả hai hàng, vẽ thành HAI đoạn chứ không
+        một đoạn liền: một đường liền từ 44 tới 196 chạy xuyên qua ba dòng chữ
+        nằm giữa hai hàng, và trông đúng như chữ bị gạch. */}
+    {[0, 1, 2, 3, 4].flatMap((i) => [
+      <line key={`a${i}`} x1={70 + i * 118} y1={60} x2={70 + i * 118} y2={96} className="svg-grid" />,
+      <line key={`b${i}`} x1={70 + i * 118} y1={144} x2={70 + i * 118} y2={180} className="svg-grid" />,
+    ])}
+    {[0, 1, 2, 3, 4].map((i) => (
+      <T key={i} x={70 + i * 118} y={214} size={11}>{i * 50} MB</T>
+    ))}
+
+    {/* Hàng trên: trung bình + 3σ. Ngoại lai kéo cả trung bình lẫn σ đi theo. */}
+    <T x={44} y={68} anchor="end" size={11}>3-sigma</T>
+    {[6, 9, 11, 14, 16, 19, 22, 25, 28, 33].map((v, i) => (
+      <circle key={i} cx={70 + (v / 50) * 118} cy={78} r={5} fill={C.info} opacity={0.75} />
+    ))}
+    <circle cx={70 + (196 / 50) * 118} cy={78} r={8} fill={C.bad} />
+    <line x1={70 + (188 / 50) * 118} y1={54} x2={70 + (188 / 50) * 118} y2={102} stroke={C.warn} strokeWidth="2.4" strokeDasharray="5 4" />
+    <T x={70 + (188 / 50) * 118} y={48} size={11}>ngưỡng</T>
+    <T x={300} y={116} size={11}>Chính điểm đỏ làm phồng trung bình và σ, nên ngưỡng nhảy qua PHẢI nó → bỏ lọt</T>
+
+    {/* Hàng dưới: trung vị + MAD. Ngoại lai không lay chuyển được thước đo. */}
+    <T x={44} y={152} anchor="end" size={11}>MAD</T>
+    {[6, 9, 11, 14, 16, 19, 22, 25, 28, 33].map((v, i) => (
+      <circle key={i} cx={70 + (v / 50) * 118} cy={162} r={5} fill={C.info} opacity={0.75} />
+    ))}
+    <circle cx={70 + (196 / 50) * 118} cy={162} r={8} fill={C.bad} />
+    <line x1={70 + (46 / 50) * 118} y1={138} x2={70 + (46 / 50) * 118} y2={186} stroke={C.ok} strokeWidth="2.4" strokeDasharray="5 4" />
+    <T x={70 + (46 / 50) * 118} y={132} size={11}>ngưỡng</T>
+    <T x={300} y={238} size={11}>Trung vị và MAD không nhúc nhích vì một điểm, nên ngưỡng đứng yên → bắt được</T>
+  </Svg>
+);
+
+/** t2-l3 — ba mốc thời gian, và chỉ một mốc được dùng để chia tập. */
+const LogTimestampsFig = () => (
+  <Svg vb="0 0 600 230">
+    <Defs />
+    <T x={300} y={22} strong>Một dòng log mang ba mốc thời gian khác nhau</T>
+
+    <line x1={40} y1={150} x2={560} y2={150} className="svg-axis" />
+    {[
+      { x: 96, l: 'Sự kiện xảy ra', s: '09:14:02', c: C.ok, dy: -1 },
+      { x: 268, l: 'Bộ thu nhận được', s: '09:14:47', c: C.info, dy: 1 },
+      { x: 470, l: 'Chỉ mục ghi xong', s: '09:21:35', c: C.warn, dy: -1 },
+    ].map((m, i) => (
+      <g key={i}>
+        <line x1={m.x} y1={150} x2={m.x} y2={150 + m.dy * 22} stroke={m.c} strokeWidth="2" />
+        <circle cx={m.x} cy={150} r={6} fill={m.c} />
+        <rect x={m.x - 74} y={m.dy < 0 ? 84 : 176} width={148} height={40} rx={7} fill="var(--bg-sunken)" stroke={m.c} strokeWidth="1.4" />
+        <T x={m.x} y={m.dy < 0 ? 100 : 192} size={11} strong>{m.l}</T>
+        <T x={m.x} y={m.dy < 0 ? 114 : 206} size={11}>{m.s}</T>
+      </g>
+    ))}
+
+    <path d="M96 150 L268 150" stroke={C.bad} strokeWidth="3" opacity={0.5} />
+    <T x={182} y={142} size={11}>độ trễ 45 giây</T>
+    <path d="M268 150 L470 150" stroke={C.bad} strokeWidth="3" opacity={0.25} />
+    <T x={369} y={142} size={11}>thêm 6 phút 48</T>
+
+    <T x={300} y={56} size={11}>Chia tập huấn luyện phải dùng mốc SỰ KIỆN — hai mốc kia do hạ tầng quyết định</T>
+    <T x={300} y={70} size={11}>và chúng đổi mỗi khi ai đó nâng cấp đường ống</T>
+  </Svg>
+);
+
+/** t3-l3 — cắt hết mũi tên phụ thuộc thì hỏng xác suất, nhưng còn nguyên thứ hạng. */
+const NaiveIndependenceFig = () => (
+  <Svg vb="0 0 600 250">
+    <Defs />
+    <T x={300} y={22} strong>Giả định "ngây thơ": cắt mọi mũi tên giữa các từ</T>
+
+    <rect x={22} y={44} width={262} height={124} rx={9} fill="var(--bad-soft)" stroke="var(--bad-border)" strokeWidth="1.4" />
+    <T x={153} y={64} size={11} strong>Thực tế</T>
+    {[
+      { x: 76, y: 100, t: 'tài khoản' },
+      { x: 230, y: 100, t: 'khoá' },
+      { x: 153, y: 142, t: 'xác minh' },
+    ].map((n, i) => (
+      <g key={i}>
+        <rect x={n.x - 48} y={n.y - 14} width={96} height={26} rx={13} fill="var(--bg-elev)" stroke={C.bad} strokeWidth="1.4" />
+        <T x={n.x} y={n.y + 4} size={11}>{n.t}</T>
+      </g>
+    ))}
+    <line x1={125} y1={100} x2={181} y2={100} stroke={C.bad} strokeWidth="1.8" />
+    <line x1={96} y1={114} x2={124} y2={130} stroke={C.bad} strokeWidth="1.8" />
+    <line x1={210} y1={114} x2={182} y2={130} stroke={C.bad} strokeWidth="1.8" />
+
+    <rect x={316} y={44} width={262} height={124} rx={9} fill="var(--ok-soft)" stroke="var(--ok-border)" strokeWidth="1.4" />
+    <T x={447} y={64} size={11} strong>Điều mô hình giả định</T>
+    {[
+      { x: 370, y: 100, t: 'tài khoản' },
+      { x: 524, y: 100, t: 'khoá' },
+      { x: 447, y: 142, t: 'xác minh' },
+    ].map((n, i) => (
+      <g key={i}>
+        <rect x={n.x - 48} y={n.y - 14} width={96} height={26} rx={13} fill="var(--bg-elev)" stroke={C.ok} strokeWidth="1.4" />
+        <T x={n.x} y={n.y + 4} size={11}>{n.t}</T>
+      </g>
+    ))}
+
+    <T x={300} y={196} size={11}>Xác suất in ra vì thế SAI — nó bị đẩy sát 0 hoặc sát 1 một cách vô căn cứ.</T>
+    <T x={300} y={214} size={11}>Nhưng để phân loại, ta chỉ cần biết bên nào lớn hơn, và THỨ HẠNG thì sống sót.</T>
+    <T x={300} y={238} strong>Đó là lý do một giả định sai rành rành vẫn dọn sạch hộp thư của cả thế giới</T>
+  </Svg>
+);
+
+/** t3-l4 — đặc trưng nhiều giá trị mua độ thuần khiết bằng cách học thuộc. */
+const HighCardinalityFig = () => (
+  <Svg vb="0 0 600 260">
+    <Defs />
+    <T x={300} y={22} strong>Hai phép chia, cùng một nút gốc, cùng đạt "thuần khiết"</T>
+
+    <rect x={16} y={38} width={276} height={186} rx={9} fill="var(--ok-soft)" stroke="var(--ok-border)" strokeWidth="1.4" />
+    <T x={154} y={58} size={11} strong>Chia theo "tiến trình cha là Office"</T>
+    <rect x={104} y={70} width={100} height={30} rx={6} fill="var(--bg-elev)" stroke={C.line} strokeWidth="1.4" />
+    <T x={154} y={90} size={11}>12 mẫu</T>
+    <line x1={128} y1={100} x2={82} y2={128} stroke={C.line} strokeWidth="1.5" />
+    <line x1={180} y1={100} x2={226} y2={128} stroke={C.line} strokeWidth="1.5" />
+    <rect x={34} y={130} width={96} height={34} rx={6} fill="var(--bad-soft)" stroke={C.bad} strokeWidth="1.4" />
+    <T x={82} y={151} size={11}>5 độc</T>
+    <rect x={178} y={130} width={96} height={34} rx={6} fill="var(--ok-soft)" stroke={C.ok} strokeWidth="1.4" />
+    <T x={226} y={151} size={11}>7 lành</T>
+    <T x={154} y={186} size={11}>Hai lá, mỗi lá một quy luật</T>
+    <T x={154} y={206} size={11}>đọc lên nghe được cho analyst</T>
+
+    <rect x={308} y={38} width={276} height={186} rx={9} fill="var(--bad-soft)" stroke="var(--bad-border)" strokeWidth="1.4" />
+    <T x={446} y={58} size={11} strong>Chia theo src_ip</T>
+    <rect x={396} y={70} width={100} height={30} rx={6} fill="var(--bg-elev)" stroke={C.line} strokeWidth="1.4" />
+    <T x={446} y={90} size={11}>12 mẫu</T>
+    {Array.from({ length: 12 }, (_, i) => {
+      const x = 330 + i * 19.5;
+      return (
+        <g key={i}>
+          <line x1={446} y1={100} x2={x + 7} y2={130} stroke={C.line} strokeWidth="0.9" />
+          <rect x={x} y={130} width={14} height={34} rx={3} fill={i % 3 === 0 ? 'var(--bad-soft)' : 'var(--ok-soft)'} stroke={i % 3 === 0 ? C.bad : C.ok} strokeWidth="1.2" />
+        </g>
+      );
+    })}
+    <T x={446} y={186} size={11}>Mười hai lá, mỗi lá đúng một mẫu</T>
+    <T x={446} y={206} size={11}>Gini bằng 0, và mô hình rỗng tuếch</T>
+
+    <T x={300} y={248} size={11}>Độ thuần khiết mua bằng cách học thuộc thì không khái quát hoá được một dòng nào</T>
+  </Svg>
+);
+
+/** t4-l4 — hai lát cắt, ba hành động; một ngưỡng duy nhất là thứ xa xỉ không có thật. */
+const ThreeZonesFig = () => (
+  <Svg vb="0 0 600 230">
+    <Defs />
+    <T x={300} y={22} strong>Một ngưỡng cho hai hành động; hai ngưỡng cho ba hành động</T>
+
+    <rect x={40} y={54} width={196} height={46} rx={6} fill="var(--ok-soft)" stroke={C.ok} strokeWidth="1.5" />
+    <rect x={236} y={54} width={186} height={46} rx={0} fill="var(--warn-soft)" stroke={C.warn} strokeWidth="1.5" />
+    <rect x={422} y={54} width={138} height={46} rx={6} fill="var(--bad-soft)" stroke={C.bad} strokeWidth="1.5" />
+    <T x={138} y={82} size={11} strong>Bỏ qua tự động</T>
+    <T x={329} y={82} size={11} strong>Đưa vào hàng đợi analyst</T>
+    <T x={491} y={82} size={11} strong>Chặn tự động</T>
+
+    <line x1={40} y1={120} x2={560} y2={120} className="svg-axis" />
+    {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
+      <g key={i}>
+        <line x1={40 + v * 520} y1={116} x2={40 + v * 520} y2={124} className="svg-axis" />
+        <T x={40 + v * 520} y={140} size={11}>{v.toFixed(2).replace('.', ',')}</T>
+      </g>
+    ))}
+    <T x={300} y={160} size={11}>Điểm mô hình</T>
+
+    <line x1={236} y1={48} x2={236} y2={126} stroke={C.warn} strokeWidth="2.4" />
+    <line x1={422} y1={48} x2={422} y2={126} stroke={C.bad} strokeWidth="2.4" />
+    <T x={236} y={42} size={11}>0,38</T>
+    <T x={422} y={42} size={11}>0,74</T>
+
+    <T x={300} y={188} size={11}>Lát cắt DƯỚI đặt theo mức bỏ sót chịu được; lát cắt TRÊN đặt theo mức chặn nhầm chịu được.</T>
+    <T x={300} y={206} size={11}>Hai con số đó đến từ hai cuộc nói chuyện khác nhau với hai phòng ban khác nhau,</T>
+    <T x={300} y={224} size={11}>nên ép chúng thành một ngưỡng 0,5 là bỏ mất cả hai.</T>
+  </Svg>
+);
+
+/** t4-l8 — chỉ hai ô lệch tâm mang thông tin; hai ô kia bị loại khỏi phép tính. */
+const McnemarCellsFig = () => (
+  <Svg vb="0 0 560 250">
+    <Defs />
+    <T x={280} y={22} strong>Cùng một tập kiểm thử, hai mô hình, bốn ô — chỉ hai ô được đếm</T>
+
+    <T x={196} y={54} size={11} strong>Mô hình B đúng</T>
+    <T x={356} y={54} size={11} strong>Mô hình B sai</T>
+    <T x={104} y={98} anchor="end" size={11} strong>Mô hình A đúng</T>
+    <T x={104} y={168} anchor="end" size={11} strong>Mô hình A sai</T>
+
+    <rect x={116} y={64} width={160} height={62} rx={7} fill="var(--bg-sunken)" stroke={C.line} strokeWidth="1.3" opacity={0.55} />
+    <T x={196} y={92} size={11}>48.912</T>
+    <T x={196} y={110} size={11}>cùng đúng</T>
+
+    <rect x={280} y={64} width={160} height={62} rx={7} fill="var(--ok-soft)" stroke={C.ok} strokeWidth="2" />
+    <T x={360} y={92} size={11} strong>n₁₀ = 431</T>
+    <T x={360} y={110} size={11}>chỉ A đúng</T>
+
+    <rect x={116} y={134} width={160} height={62} rx={7} fill="var(--bad-soft)" stroke={C.bad} strokeWidth="2" />
+    <T x={196} y={162} size={11} strong>n₀₁ = 369</T>
+    <T x={196} y={180} size={11}>chỉ B đúng</T>
+
+    <rect x={280} y={134} width={160} height={62} rx={7} fill="var(--bg-sunken)" stroke={C.line} strokeWidth="1.3" opacity={0.55} />
+    <T x={360} y={162} size={11}>288</T>
+    <T x={360} y={180} size={11}>cùng sai</T>
+
+    <T x={280} y={220} size={11}>Hai ô mờ chiếm 98,4% dữ liệu và không nói gì về việc mô hình nào hơn:</T>
+    <T x={280} y={238} size={11}>ở đó hai mô hình đồng ý. Tin tức nằm hết trong 800 mẫu chúng bất đồng.</T>
+  </Svg>
+);
+
+/** t4-l9 — bốn hình dạng tập dự đoán, và tập rỗng là câu trả lời quý nhất. */
+const ConformalSetsFig = () => (
+  <Svg vb="0 0 600 240">
+    <Defs />
+    <T x={300} y={22} strong>Mô hình thường trả về một nhãn; bộ conformal trả về một TẬP</T>
+    {[
+      { t: '{lành}', s: 'chắc chắn lành', c: C.ok, note: 'đóng phiếu' },
+      { t: '{độc}', s: 'chắc chắn độc', c: C.bad, note: 'chặn ngay' },
+      { t: '{lành, độc}', s: 'không đủ tách', c: C.warn, note: 'người xem' },
+      { t: '{ }', s: 'không giống gì đã thấy', c: C.lab, note: 'ưu tiên điều tra' },
+    ].map((s, i) => {
+      const x = 26 + i * 140;
+      return (
+        <g key={i}>
+          <rect x={x} y={48} width={128} height={94} rx={9} fill="var(--bg-sunken)" stroke={s.c} strokeWidth="1.8" />
+          <T x={x + 64} y={84} strong>{s.t}</T>
+          <T x={x + 64} y={108} size={11}>{s.s}</T>
+          <rect x={x + 14} y={156} width={100} height={28} rx={14} fill="var(--bg-elev)" stroke={s.c} strokeWidth="1.4" />
+          <T x={x + 64} y={174} size={11}>{s.note}</T>
+          <line x1={x + 64} y1={142} x2={x + 64} y2={154} stroke={s.c} strokeWidth="1.5" />
+        </g>
+      );
+    })}
+    <T x={300} y={208} size={11}>Tập rỗng không phải lỗi. Nó nói mẫu này không giống bất kỳ lớp nào trong tập hiệu chuẩn —</T>
+    <T x={300} y={226} size={11}>tức đúng thứ một đội bảo mật muốn nhìn thấy trước tiên.</T>
+  </Svg>
+);
+
+/** t6-l1 — xếp tầng phòng thủ theo chi phí NÉ TRÁNH, không theo chi phí xây. */
+const PhishingLayersFig = () => (
+  <Svg vb="0 0 600 260">
+    <Defs />
+    <T x={300} y={22} strong>Ba tầng đặc trưng, xếp theo cái giá kẻ tấn công phải trả để né</T>
+    <T x={452} y={48} size={11} strong>Né bằng cách</T>
+    {[
+      { l: 'Từ vựng URL', s: 'độ dài, entropy, TLD', e: 'đổi một chuỗi ký tự', w: 122, c: C.warn },
+      { l: 'Hạ tầng & danh tiếng', s: 'tuổi tên miền, ASN, chứng chỉ', e: 'mua tên miền mới rồi chờ', w: 200, c: C.info },
+      { l: 'Nội dung trang & thư', s: 'DOM, logo, biểu mẫu, header', e: 'dựng lại cả bộ công cụ', w: 278, c: C.ok },
+    ].map((t, i) => {
+      const y = 60 + i * 58;
+      return (
+        <g key={i}>
+          <rect x={24} y={y} width={t.w} height={44} rx={7} fill="var(--bg-sunken)" stroke={t.c} strokeWidth="1.8" />
+          <T x={24 + t.w / 2} y={y + 19} size={11} strong>{t.l}</T>
+          <T x={24 + t.w / 2} y={y + 34} size={11}>{t.s}</T>
+          <T x={452} y={y + 27} size={11}>{t.e}</T>
+        </g>
+      );
+    })}
+    {/* Mũi tên nằm dưới cột trái, đúng chiều bề rộng ba thanh đang lớn dần. */}
+    <line x1={24} y1={244} x2={302} y2={244} stroke={C.line} strokeWidth="1.5" markerEnd="url(#ah)" />
+    <T x={163} y={236} size={11}>Chi phí né tránh tăng dần</T>
+    <T x={452} y={228} size={11}>Tầng rẻ nhất cũng là</T>
+    <T x={452} y={244} size={11}>tầng chết nhanh nhất</T>
+  </Svg>
+);
+
+/** t6-l10 — ba thành phần, và chỉ thành phần thứ ba được đem đi cảnh báo. */
+const DecompositionFig = () => {
+  const w = 470;
+  const x0 = 96;
+  const trend = (t: number) => 0.5 + 0.22 * t;
+  const seas = (t: number) => 0.5 + 0.34 * Math.sin(t * Math.PI * 6);
+  const spike = (t: number) => (t > 0.62 && t < 0.71 ? 0.42 : 0);
+  const path = (f: (t: number) => number, y0: number, h: number) =>
+    Array.from({ length: 96 }, (_, i) => {
+      const t = i / 95;
+      return `${i ? 'L' : 'M'}${(x0 + t * w).toFixed(1)} ${(y0 + h - f(t) * h).toFixed(1)}`;
+    }).join(' ');
+  return (
+    <Svg vb="0 0 600 270">
+      <Defs />
+      <T x={300} y={20} strong>Phân rã trước, rồi mới hỏi "hôm nay có bất thường không"</T>
+      {[
+        { l: 'Chuỗi gốc', f: (t: number) => (trend(t) + seas(t)) / 2 + spike(t) * 0.5, c: C.line, y: 34 },
+        { l: 'Xu hướng', f: trend, c: C.info, y: 92 },
+        { l: 'Thành phần mùa', f: seas, c: C.lab, y: 150 },
+        { l: 'Phần dư', f: (t: number) => 0.32 + spike(t), c: C.bad, y: 208 },
+      ].map((r, i) => (
+        <g key={i}>
+          <line x1={x0} y1={r.y + 46} x2={x0 + w} y2={r.y + 46} className="svg-grid" />
+          <T x={88} y={r.y + 28} anchor="end" size={11} strong>{r.l}</T>
+          <path d={path(r.f, r.y, 44)} fill="none" stroke={r.c} strokeWidth={i === 3 ? 2.4 : 1.8} />
+        </g>
+      ))}
+      {/* Đợt tấn công chỉ nhô lên ở hàng cuối; ở hàng đầu nó chìm trong nhịp tuần. */}
+      <circle cx={x0 + 0.665 * w} cy={216} r={11} fill="none" stroke={C.bad} strokeWidth="2" />
+      <T x={300} y={266} size={11}>Chỉ hàng cuối được đem đi cảnh báo — ba hàng trên là thứ "đáng lẽ phải như thế"</T>
+    </Svg>
+  );
+};
+
+/** t7-l6 — mili-giây nhân với lưu lượng thật thì thành máy chủ. */
+const LatencyCostFig = () => (
+  <Svg vb="0 0 600 240">
+    <Defs />
+    <T x={300} y={22} strong>Độ trễ mỗi mẫu là con số vô hại cho tới khi nhân với lưu lượng</T>
+    {[
+      { l: '30 ms', s: 'một mẫu, một lõi', c: C.ok },
+      { l: '× 10 triệu', s: 'sự kiện mỗi ngày', c: C.info },
+      { l: '× 3', s: 'hệ số giờ cao điểm', c: C.warn },
+      { l: '250 giờ CPU', s: 'mỗi ngày → 11 lõi chạy liên tục', c: C.bad },
+    ].map((b, i) => {
+      const x = 16 + i * 148;
+      return (
+        <g key={i}>
+          <rect x={x} y={54} width={128} height={62} rx={8} fill="var(--bg-sunken)" stroke={b.c} strokeWidth="1.8" />
+          <T x={x + 64} y={80} strong>{b.l}</T>
+          <T x={x + 64} y={100} size={11}>{b.s}</T>
+          {i < 3 && <Arrow x1={x + 130} y1={85} x2={x + 146} y2={85} />}
+        </g>
+      );
+    })}
+    <T x={300} y={150} size={11}>Cộng thêm chi phí trích xuất đặc trưng, thứ hầu như không ai đo,</T>
+    <T x={300} y={168} size={11}>và thường đắt hơn chính lượt suy luận.</T>
+    <rect x={132} y={186} width={336} height={38} rx={8} fill="var(--brand-soft)" stroke="var(--brand-border)" strokeWidth="1.5" />
+    <T x={300} y={210} size={11} strong>Random Forest cùng bài toán: 0,4 ms — rẻ hơn 75 lần</T>
+  </Svg>
+);
+
+/** t10-l4 — cùng một cảnh báo, hai cách trình bày, hai kết cục cho analyst. */
+const WhyBlockFig = () => (
+  <Svg vb="0 0 600 250">
+    <Defs />
+    <T x={300} y={22} strong>Cùng một cảnh báo, cùng một mô hình, hai cách viết khối "vì sao"</T>
+
+    <rect x={16} y={40} width={272} height={168} rx={9} fill="var(--bad-soft)" stroke="var(--bad-border)" strokeWidth="1.5" />
+    <T x={152} y={62} size={11} strong>Đúng kỹ thuật, vô dụng</T>
+    {['feature_47 = 0,83', 'shap_value = +0,21', 'feature_12 = 1,00', 'độ tin cậy: 0,91'].map((s, i) => (
+      <T key={i} x={152} y={90 + i * 24} size={11}>{s}</T>
+    ))}
+    <T x={152} y={196} size={11}>Analyst không hành động được</T>
+
+    <rect x={312} y={40} width={272} height={168} rx={9} fill="var(--ok-soft)" stroke="var(--ok-border)" strokeWidth="1.5" />
+    <T x={448} y={62} size={11} strong>Có đơn vị, có mốc so sánh</T>
+    {[
+      'Tải xuống 4,2 GB — gấp 31 lần',
+      'mức thường ngày của tài khoản này',
+      'Lúc 03:14, ngoài mọi ca trực đã ghi',
+      'Tới một ASN chưa từng thấy 90 ngày',
+    ].map((s, i) => (
+      <T key={i} x={448} y={90 + i * 24} size={11}>{s}</T>
+    ))}
+    <T x={448} y={196} size={11} strong>Việc cần làm: xác minh với chủ máy</T>
+
+    <T x={300} y={230} size={11}>Ba con số, mỗi con số có đơn vị và một mốc để so — rồi kết bằng việc cần làm,</T>
+    <T x={300} y={246} size={11}>không phải bằng điểm số.</T>
+  </Svg>
+);
+
 /* ========================================================================== */
 
 const REGISTRY: Record<string, () => ReactNode> = {
@@ -1377,6 +1754,17 @@ const REGISTRY: Record<string, () => ReactNode> = {
   'fig-graph-lateral': GraphLateralFig,
   'fig-calibration': CalibrationFig,
   'fig-data-sources': DataSourcesFig,
+  'fig-masking': MaskingFig,
+  'fig-log-timestamps': LogTimestampsFig,
+  'fig-naive-independence': NaiveIndependenceFig,
+  'fig-high-cardinality': HighCardinalityFig,
+  'fig-three-zones': ThreeZonesFig,
+  'fig-mcnemar-cells': McnemarCellsFig,
+  'fig-conformal-sets': ConformalSetsFig,
+  'fig-phishing-layers': PhishingLayersFig,
+  'fig-decomposition': DecompositionFig,
+  'fig-latency-cost': LatencyCostFig,
+  'fig-why-block': WhyBlockFig,
 };
 
 export function Figure({ id, caption }: { id: string; caption?: string }) {

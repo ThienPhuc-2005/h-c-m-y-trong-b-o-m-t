@@ -24,8 +24,9 @@ npm run check:figures                     # đo hình vẽ trong trình duyệt 
 ```
 
 `check:figures` mở Chrome (hoặc Edge) đã cài sẵn ở chế độ không giao diện, duyệt
-48 hình và 33 phòng lab, rồi trượt nếu có phần tử nào vượt khỏi `viewBox` hoặc
-hai hộp chữ đè nhau quá 2 đơn vị theo cả hai chiều. Nó không tải trình duyệt về
+59 hình và 33 phòng lab, rồi trượt nếu có phần tử nào vượt khỏi `viewBox`, hai
+hộp chữ đè nhau quá 2 đơn vị theo cả hai chiều, hoặc một đường kẻ chạy xuyên
+giữa một dòng chữ. Nó không tải trình duyệt về
 và không thêm dependency: Node đã có `WebSocket` và `fetch`, đủ để nói thẳng
 giao thức DevTools. Chạy nó sau khi sửa bất cứ hình nào hoặc bất cứ biểu đồ nào
 trong `src/labs/`. Không nằm trong CI vì CI không có trình duyệt.

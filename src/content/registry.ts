@@ -40,6 +40,17 @@ export const FIGURE_IDS = [
   'fig-graph-lateral', // Đồ thị di chuyển ngang trong mạng
   'fig-calibration', // Biểu đồ độ tin cậy (reliability diagram)
   'fig-data-sources', // Bản đồ nguồn dữ liệu bảo mật
+  'fig-masking', // Hiệu ứng che lấp: ngoại lai tự nâng ngưỡng bắt nó
+  'fig-log-timestamps', // Ba mốc thời gian của một dòng log
+  'fig-naive-independence', // Cắt mũi tên phụ thuộc: hỏng xác suất, còn thứ hạng
+  'fig-high-cardinality', // Đặc trưng nhiều giá trị mua độ thuần khiết bằng học thuộc
+  'fig-three-zones', // Hai lát cắt, ba hành động
+  'fig-mcnemar-cells', // Chỉ hai ô lệch tâm mang thông tin
+  'fig-conformal-sets', // Bốn hình dạng tập dự đoán, kể cả tập rỗng
+  'fig-phishing-layers', // Ba tầng đặc trưng xếp theo chi phí né tránh
+  'fig-decomposition', // Xu hướng + mùa + phần dư, chỉ phần dư dùng để cảnh báo
+  'fig-latency-cost', // Mili-giây nhân lưu lượng thành giờ CPU
+  'fig-why-block', // Cùng một cảnh báo, hai cách viết khối "vì sao"
   'fig-bayes-direction', // Đảo chiều điều kiện là đổi mẫu số
   'fig-precision-recall', // Precision đọc theo cột, recall đọc theo hàng
   'fig-model-stealing', // Trộm mô hình qua API và suy luận thành viên

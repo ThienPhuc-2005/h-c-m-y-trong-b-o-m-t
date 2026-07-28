@@ -1199,6 +1199,17 @@ export function LabAuthGraph() {
                 stroke={laW3 ? 'var(--bad)' : laHaTang ? 'var(--brand)' : 'var(--border)'}
                 strokeWidth={laW3 ? 2.2 : 1.4}
               />
+              {/* Nhãn dài hơn đường kính vòng tròn: "S-mail" rộng khoảng 34 đơn
+                  vị còn vòng tròn chỉ 18, nên phần chữ thò ra hai bên bị các
+                  cạnh đồ thị cắt ngang. Nền đặc vừa khít chữ che chúng đi. */}
+              <rect
+                x={p0.x - (name.length * 5.6 + 6) / 2}
+                y={p0.y - 7}
+                width={name.length * 5.6 + 6}
+                height={14}
+                rx={4}
+                fill={laW3 ? 'var(--bad-soft)' : laHaTang ? 'var(--brand-soft)' : 'var(--bg-sunken)'}
+              />
               <text
                 x={p0.x} y={p0.y + 3.5}
                 textAnchor="middle"
