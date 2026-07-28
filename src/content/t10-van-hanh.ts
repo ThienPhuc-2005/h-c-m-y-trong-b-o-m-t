@@ -34,8 +34,8 @@ export const track10: Track = {
       title: 'Đưa mô hình vào sản xuất trong SOC',
       subtitle:
         'Khoảng cách giữa notebook và hệ thống trực 24/7 không nằm ở thuật toán — nó nằm ở độ trễ, ở đặc trưng lúc chạy thật, và ở cái analyst nhìn thấy.',
-      minutes: 25,
-      practiceMinutes: 7,
+      minutes: 30,
+      practiceMinutes: 8,
       level: 'nang-cao',
       prereqs: ['t4-l4', 't4-l7'],
       why: {
@@ -300,6 +300,66 @@ def dau_van_tay(dt: DacTrungKetNoi) -> str:
           title: 'Mẹo thực chiến: chạy khô bằng log lịch sử một tuần',
           md: 'Trước khi bật bất cứ thứ gì, cho mô hình chạy lại trên đúng bảy ngày log gần nhất và xuất ra danh sách cảnh báo mà nó **sẽ** tạo. Ngồi cùng một analyst và cùng đọc 30 cảnh báo ngẫu nhiên trong danh sách đó. Buổi ngồi 90 phút này thường tiết kiệm cho bạn hàng tháng tranh cãi, và gần như lần nào cũng lộ ra một đặc trưng bị rò rỉ hoặc một nhóm tài sản cần ngưỡng riêng.',
         },
+        { t: 'h', text: 'Bước 5 — Gọi đúng tên thứ bạn vừa xây', level: 2 },
+        {
+          t: 'p',
+          md: 'Mọi **khái niệm** trong bài này bạn đã nắm. Thứ còn thiếu là **tên gọi** mà ngành dùng cho chúng — và cái thiếu đó tốn tiền thật ở đúng hai chỗ: buổi phỏng vấn, và lúc bạn đọc tài liệu của một công cụ để xem nó có giải quyết vấn đề của mình không. Bảng dưới đây dịch xuôi từ thứ bạn hiểu sang thứ người ta viết trên trang chủ sản phẩm.',
+        },
+        {
+          t: 'table',
+          caption: 'Từ khái niệm sang từ vựng công cụ. Cột cuối là điều đáng nhớ khi bạn thật sự cân nhắc dùng.',
+          head: ['Việc bạn đã biết phải làm', 'Ngành gọi là', 'Công cụ hay gặp', 'Điều đáng nhớ'],
+          rows: [
+            [
+              'Ghi lại từng lần huấn luyện: tham số, dữ liệu nào, ra kết quả gì',
+              'Theo dõi thí nghiệm (experiment tracking)',
+              'MLflow Tracking, Weights & Biases',
+              'Giá trị nằm ở chỗ tái lập được một kết quả cũ, không ở biểu đồ đẹp',
+            ],
+            [
+              'Kho các phiên bản mô hình đã duyệt, biết chắc cái nào đang chạy',
+              'Model registry',
+              'MLflow Model Registry, SageMaker Model Registry',
+              'Đây là thứ cấp ra `model_version` mà cảnh báo phải mang theo',
+            ],
+            [
+              'Đóng gói mô hình để chạy ở ngôn ngữ hoặc phần cứng khác',
+              'Định dạng trao đổi mô hình',
+              'ONNX + ONNX Runtime',
+              'Chuyển đổi có thể đổi nhẹ kết quả số — phải đo lại trên tập kiểm thử sau khi chuyển',
+            ],
+            [
+              'Phiên bản hoá dữ liệu và tập nhãn, không chỉ mã',
+              'Data / dataset versioning',
+              'DVC, LakeFS, Delta Lake',
+              'Không có nó thì "tái lập được" chỉ là lời nói suông, vì dữ liệu đã đổi',
+            ],
+            [
+              'Kho đặc trưng hai nửa trực tuyến và ngoại tuyến (Bước 2)',
+              'Feature store',
+              'Feast, Tecton',
+              'Chỉ đáng dựng khi có nhiều mô hình dùng chung đặc trưng',
+            ],
+            [
+              'Lập lịch job huấn luyện lại và chấm điểm theo lô',
+              'Điều phối (orchestration)',
+              'Airflow, Dagster, Prefect',
+              'Thứ bạn cần là chạy lại được sau khi hỏng, không phải giao diện kéo thả',
+            ],
+            [
+              'Đo phân bố đầu vào lệch so với lúc huấn luyện',
+              'Giám sát trôi (drift monitoring)',
+              'Evidently, NannyML',
+              'Bài t10-l2 nói kỹ; công cụ chỉ đo, quyết định vẫn là của bạn',
+            ],
+          ],
+        },
+        {
+          t: 'callout',
+          kind: 'pro',
+          title: 'Biết tên không có nghĩa là phải mua',
+          md: 'Bảng trên rất dễ đọc thành một danh sách mua sắm. Đừng.\n\nMột đội có **một** mô hình đang chạy không cần feature store: một hàm Python dùng chung cho cả huấn luyện lẫn phục vụ đã giải quyết đúng vấn đề mà feature store sinh ra để giải quyết, với chi phí bằng không. Model registry của bạn hoàn toàn có thể là một thư mục có gắn thẻ git cộng một tệp `MODELS.md` ghi rõ phiên bản nào đang chạy từ ngày nào.\n\nThứ tự đúng là: **có vấn đề → thấy nó đau → mới tìm công cụ**. Ngược lại thì bạn có thêm một hệ thống phải vận hành mà chưa từng có vấn đề nào để nó giải.\n\nNhưng hãy **thuộc tên** cả bảy dòng. Trong phỏng vấn, câu "chúng tôi dùng thư mục có gắn thẻ git thay cho model registry vì mới có một mô hình" nghe như người hiểu việc; câu "model registry là gì ạ" thì không.',
+        },
         {
           t: 'terms',
           ids: ['training-serving-skew', 'siem', 'soar', 'suy-luan', 'alert-fatigue'],
@@ -413,6 +473,19 @@ def dau_van_tay(dt: DacTrungKetNoi) -> str:
           q: 'Cách tốt nhất để đưa kết quả mô hình tới analyst là tạo một loại cảnh báo mới với giao diện riêng của đội data science.',
           answer: false,
           why: 'Ngược lại. Analyst đã có quy trình, hàng đợi, SLA và công cụ điều tra quanh dòng cảnh báo hiện có. Một giao diện riêng nghĩa là thêm một tab họ phải nhớ mở, và trong ca trực bận thì tab đó không bao giờ được mở. Cách hiệu quả là **làm giàu** cảnh báo sẵn có bằng các trường điểm rủi ro, phiên bản mô hình và lý do — hoặc dùng điểm để **sắp xếp lại thứ tự** hàng đợi hiện tại.',
+        },
+        {
+          id: 't10l1-q6',
+          kind: 'match',
+          tags: ['san-xuat', 'mlops'],
+          q: 'Ghép mỗi việc bạn cần làm với tên mà ngành đặt cho nó.',
+          pairs: [
+            ['Ghi lại tham số và kết quả của từng lần huấn luyện', 'Experiment tracking (MLflow Tracking)'],
+            ['Biết chắc phiên bản mô hình nào đang chạy trên sản xuất', 'Model registry'],
+            ['Chạy mô hình ở ngôn ngữ hoặc phần cứng khác lúc huấn luyện', 'ONNX'],
+            ['Phiên bản hoá tập dữ liệu và tập nhãn, không chỉ mã', 'Data versioning (DVC)'],
+          ],
+          why: 'Bốn cái tên này không thêm khái niệm nào mới — bạn đã biết phải làm cả bốn việc từ trước khi biết chúng tên gì. Nhưng chúng là từ vựng chung của ngành, nên thiếu chúng bạn tốn tiền ở đúng hai chỗ: buổi phỏng vấn, và lúc đọc tài liệu một công cụ để xem nó có giải quyết vấn đề của mình không. Lưu ý riêng về ONNX: chuyển đổi có thể làm kết quả số lệch nhẹ, nên sau khi chuyển phải đo lại trên tập kiểm thử chứ đừng tin là giống hệt.',
         },
       ],
       terms: ['training-serving-skew', 'siem', 'soar', 'suy-luan', 'alert-fatigue'],

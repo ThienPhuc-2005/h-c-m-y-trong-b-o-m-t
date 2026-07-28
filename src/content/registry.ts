@@ -67,6 +67,8 @@ export const LAB_IDS = [
   'lab-tfidf', // TF-IDF / n-gram trên dòng log
   'lab-perceptron', // Perceptron & bài toán XOR
   'lab-calibration', // Hiệu chuẩn xác suất
+  'lab-conformal', // Tập dự đoán conformal và bảo đảm phủ
+  'lab-seasonality', // Phân rã mùa vụ và bẫy tự nâng mức nền
   'lab-forgetting', // Mô phỏng đường cong quên & lịch ôn
   'lab-pe-features', // Đọc đặc trưng tệp PE giả lập
   'lab-cost-threshold', // Tối ưu ngưỡng theo ma trận chi phí

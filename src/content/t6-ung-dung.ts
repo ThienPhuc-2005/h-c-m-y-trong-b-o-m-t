@@ -2231,8 +2231,8 @@ export const track6: Track = {
       trackId: 'ung-dung',
       title: 'Mùa vụ và phân rã chuỗi thời gian',
       subtitle: 'Trước khi hỏi “hôm nay có bất thường không”, phải trả lời “hôm nay đáng lẽ phải như thế nào”',
-      minutes: 21,
-      practiceMinutes: 3,
+      minutes: 22,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t6-l6'],
       why: {
@@ -2307,6 +2307,12 @@ diem = (du - np.median(du)) / max(sigma, 1e-9)
 canh_bao = s[diem > 4]
 print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
       f'({len(canh_bao) / len(s) * 100:.2f}%)')`,
+        },
+        {
+          t: 'lab',
+          id: 'lab-seasonality',
+          intro:
+            'Sáu tuần log theo giờ, một đợt dò mật khẩu lặp lại lúc 3h sáng Chủ nhật — khung giờ mà mức nền thật chỉ khoảng 46 sự kiện. Để chế độ cổ điển và nhìn ô đầu tiên: mức nền ước lượng bị chính cuộc tấn công kéo lên. Bật chế độ bền vững để thấy nó trở về đúng chỗ. Rồi hạ cỡ tấn công xuống 50 và xem chế độ nào bỏ lọt.',
         },
         {
           t: 'checkpoint',

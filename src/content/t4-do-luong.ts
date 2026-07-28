@@ -1689,7 +1689,7 @@ print(f'Hiệu số PR-AUC: {tb:+.4f}, khoảng tin cậy 95%: [{thap:+.4f}, {ca
       title: 'Định lượng bất định và conformal prediction',
       subtitle: 'Cho mô hình quyền nói “tôi không chắc” — kèm một bảo đảm bằng con số',
       minutes: 22,
-      practiceMinutes: 3,
+      practiceMinutes: 7,
       level: 'chuyen-gia',
       prereqs: ['t4-l6'],
       why: {
@@ -1839,6 +1839,12 @@ print(f'Tỉ lệ tập một nhãn — phần tự động hoá được: {co_d
               ],
             },
           ],
+        },
+        {
+          t: 'lab',
+          id: 'lab-conformal',
+          intro:
+            'Kéo α và xem hai thứ chuyển động ngược chiều nhau: đòi chắc chắn hơn thì phủ tăng, nhưng tỉ lệ tập một nhãn — phần bạn tự động hoá được — tụt xuống. Rồi để α ở 0,1 và nhìn kỹ hai ô đầu: phủ biên đạt đúng 90%, phủ riêng lớp dương chỉ khoảng 53%. Bật conformal theo lớp để thấy nó được sửa, và thấy luôn cái giá phải trả.',
         },
         {
           t: 'compare',

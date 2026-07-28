@@ -560,3 +560,210 @@ export function LabAlertLoad() {
     </LabShell>
   );
 }
+
+/* ========================================================================== */
+/*  lab-conformal — Tập dự đoán có bảo đảm phủ                                 */
+/* ========================================================================== */
+
+export interface ConformalOut {
+  /** Ngưỡng bất tuân dùng chung (chế độ biên). */
+  q: number;
+  /** Ngưỡng riêng cho lớp âm và lớp dương (chế độ Mondrian). */
+  q0: number;
+  q1: number;
+  /** Tỉ lệ mẫu có nhãn thật nằm trong tập dự đoán. */
+  coverage: number;
+  /** Cùng đại lượng đó nhưng chỉ tính trên lớp dương hiếm. */
+  coveragePos: number;
+  singleton: number;
+  both: number;
+  empty: number;
+  nPos: number;
+  nTest: number;
+}
+
+/**
+ * Split conformal trên một bộ điểm mô phỏng.
+ *
+ * `bias` là thứ khiến lab này nói đúng sự thật thay vì nói một sự thật khác.
+ * Với mô hình phân tách tốt và không lệch, lớp dương hiếm lại được phủ QUÁ mức
+ * (99%), nên để mặc định như vậy thì lab sẽ dạy điều ngược hẳn bài học. `bias`
+ * âm mô phỏng đúng thứ xảy ra ngoài đời: mô hình huấn luyện trên dữ liệu mất
+ * cân bằng kéo tụt xác suất của lớp hiếm một cách hệ thống (bài t4-l5). Khi đó
+ * lớp hiếm trở nên bất tuân, và phủ biên che mất chuyện nó bị bỏ rơi — đúng cái
+ * bẫy mà bài t4-l9 cảnh báo.
+ */
+export function conformalRun(
+  alpha: number,
+  classCond: boolean,
+  bias: number,
+  seed = 7,
+  posRate = 0.05,
+): ConformalOut {
+  const rng = mulberry32(seed);
+  const data: { score: number; y: 0 | 1 }[] = [];
+  for (let i = 0; i < 8000; i++) {
+    const y: 0 | 1 = rng() < posRate ? 1 : 0;
+    const raw = gaussian(rng, y ? 1.8 : 0, 1);
+    data.push({ score: 1 / (1 + Math.exp(-(raw + bias))), y });
+  }
+  const cal = data.slice(0, 4000);
+  const test = data.slice(4000);
+
+  /** Điểm bất tuân: 1 trừ xác suất mô hình gán cho NHÃN THẬT. */
+  const nc = (d: { score: number; y: 0 | 1 }) => (d.y === 1 ? 1 - d.score : d.score);
+
+  /**
+   * Phân vị đã hiệu chỉnh cho cỡ mẫu hữu hạn. Cái +1 và phép làm tròn LÊN chính
+   * là chỗ tạo ra bảo đảm; bỏ chúng đi thì phủ chỉ còn đúng xấp xỉ.
+   */
+  const quantile = (xs: number[]) => {
+    if (!xs.length) return 1;
+    const s = [...xs].sort((a, b) => a - b);
+    const k = Math.ceil((s.length + 1) * (1 - alpha));
+    return s[Math.min(k, s.length) - 1];
+  };
+
+  const q = quantile(cal.map(nc));
+  const q1 = quantile(cal.filter((d) => d.y === 1).map(nc));
+  const q0 = quantile(cal.filter((d) => d.y === 0).map(nc));
+  const Q0 = classCond ? q0 : q;
+  const Q1 = classCond ? q1 : q;
+
+  let cov = 0;
+  let covPos = 0;
+  let nPos = 0;
+  let one = 0;
+  let both = 0;
+  let empty = 0;
+
+  for (const d of test) {
+    // Nhãn nào đủ tuân thủ thì vào tập; có thể ra tập rỗng hoặc cả hai nhãn.
+    const set: (0 | 1)[] = [];
+    if (d.score <= Q0) set.push(0);
+    if (1 - d.score <= Q1) set.push(1);
+
+    if (set.includes(d.y)) cov++;
+    if (d.y === 1) {
+      nPos++;
+      if (set.includes(1)) covPos++;
+    }
+    if (set.length === 1) one++;
+    else if (set.length === 2) both++;
+    else empty++;
+  }
+
+  return {
+    q,
+    q0,
+    q1,
+    coverage: cov / test.length,
+    coveragePos: nPos ? covPos / nPos : 0,
+    singleton: one / test.length,
+    both: both / test.length,
+    empty: empty / test.length,
+    nPos,
+    nTest: test.length,
+  };
+}
+
+export function LabConformal() {
+  const [alpha, setAlpha] = useState(0.1);
+  const [bias, setBias] = useState(-1.5);
+  const [classCond, setClassCond] = useState(false);
+
+  const r = useMemo(() => conformalRun(alpha, classCond, bias), [alpha, classCond, bias]);
+  const mucTieu = 1 - alpha;
+  const thieuPhuLopHiem = r.coveragePos < mucTieu - 0.05;
+
+  return (
+    <LabShell
+      id="lab-conformal"
+      title="Tập dự đoán conformal — bảo đảm phủ và cái giá của nó"
+      takeaway={
+        <>
+          Hai điều đáng mang đi. <b>Một:</b> mức phủ là thứ bạn ĐẶT chứ không phải thứ bạn hy vọng — kéo α và
+          cột phủ biên bám theo mục tiêu gần như tuyệt đối, đổi lại tỉ lệ tập một nhãn tụt xuống, tức ít cảnh
+          báo tự động hoá được hơn. Đó là toàn bộ đánh đổi, và nó hiện ra thay vì bị giấu trong một con số
+          ngưỡng tuỳ ý. <b>Hai, quan trọng hơn:</b> ở mặc định (α = 0,1, mô hình đánh giá thấp lớp hiếm) phủ
+          biên đạt đúng 90% trong khi lớp dương — thứ duy nhất bạn quan tâm — chỉ được phủ khoảng 53%. Con số
+          tổng trông đẹp vì 95% dữ liệu là lớp âm và chúng che mất phần còn lại. Bật conformal theo lớp thì phủ
+          lớp dương lên khoảng 87%, đúng mức đã đặt, và cái giá là tập hai nhãn nhiều hơn hẳn. Trong bảo mật,
+          phủ biên gần như luôn là con số nói dối.
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <Slider
+          label="Mức lỗi α"
+          value={alpha}
+          min={0.02}
+          max={0.3}
+          step={0.01}
+          onChange={setAlpha}
+          format={(v) => `α = ${v.toFixed(2)} → đòi phủ ${((1 - v) * 100).toFixed(0)}%`}
+          hint="α nhỏ nghĩa là đòi chắc chắn hơn, nên tập dự đoán TO ra chứ không nhỏ đi."
+        />
+        <Slider
+          label="Mô hình đánh giá thấp lớp hiếm"
+          value={bias}
+          min={-3}
+          max={0}
+          step={0.1}
+          onChange={setBias}
+          format={(v) => (v > -0.3 ? 'không lệch' : v > -1.2 ? 'lệch nhẹ' : v > -2.2 ? 'lệch như thường gặp' : 'lệch nặng')}
+          hint="Huấn luyện trên dữ liệu mất cân bằng kéo tụt xác suất lớp hiếm một cách hệ thống."
+        />
+      </div>
+
+      <Toggle
+        label="Conformal theo lớp (Mondrian) — phân vị riêng cho từng lớp"
+        checked={classCond}
+        onChange={setClassCond}
+      />
+
+      <Readout
+        items={[
+          {
+            k: 'Phủ biên (toàn bộ)',
+            v: `${(r.coverage * 100).toFixed(1)}%`,
+            tone: Math.abs(r.coverage - mucTieu) < 0.02 ? 'ok' : 'warn',
+            sub: `đặt trước ${(mucTieu * 100).toFixed(0)}%`,
+          },
+          {
+            k: 'Phủ riêng lớp dương',
+            v: `${(r.coveragePos * 100).toFixed(1)}%`,
+            tone: thieuPhuLopHiem ? 'bad' : 'ok',
+            sub: `trên ${r.nPos} mẫu dương`,
+          },
+          {
+            k: 'Tập một nhãn',
+            v: `${(r.singleton * 100).toFixed(1)}%`,
+            tone: 'info',
+            sub: 'phần tự động hoá được',
+          },
+          {
+            k: 'Tập rỗng',
+            v: `${(r.empty * 100).toFixed(1)}%`,
+            tone: r.empty > 0.02 ? 'warn' : 'neutral',
+            sub: 'mẫu lạ — đáng điều tra',
+          },
+        ]}
+      />
+
+      <div className={`callout ${thieuPhuLopHiem ? 'co-warn' : 'co-pro'}`}>
+        <Icon className="callout-icon" name={thieuPhuLopHiem ? 'siren' : 'shield'} size={18} />
+        <div>
+          <div className="callout-title">
+            {thieuPhuLopHiem ? 'Phủ biên đang che mất lớp bạn quan tâm' : 'Lớp dương được phủ đúng mức đã đặt'}
+          </div>
+          <div className="callout-body">
+            {thieuPhuLopHiem
+              ? `Con số tổng ${(r.coverage * 100).toFixed(1)}% đạt mục tiêu, nhưng nó là trung bình có trọng số theo tần suất lớp, mà 95% dữ liệu là lớp âm. Riêng lớp dương chỉ được phủ ${(r.coveragePos * 100).toFixed(1)}%: cứ 100 mẫu độc hại thì khoảng ${Math.round(100 - r.coveragePos * 100)} mẫu có tập dự đoán KHÔNG chứa nhãn đúng. Bật conformal theo lớp để mỗi lớp có ngưỡng riêng.`
+              : `Mỗi lớp có phân vị riêng nên bảo đảm áp dụng cho từng lớp, không chỉ cho số trung bình. Cái giá nằm ở ô "tập một nhãn": nó thấp hơn, tức ít mẫu tự động hoá được hơn. Đó là giá đúng của một bảo đảm trung thực.`}
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}

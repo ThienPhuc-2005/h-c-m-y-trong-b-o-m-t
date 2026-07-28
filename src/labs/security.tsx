@@ -636,3 +636,226 @@ export function LabDrift() {
     </LabShell>
   );
 }
+
+/* ========================================================================== */
+/*  lab-seasonality — Phân rã mùa vụ và cái bẫy tự nâng mức nền                */
+/* ========================================================================== */
+
+/** 6 tuần dữ liệu theo giờ. Chu kỳ mùa vụ là TUẦN (24 × 7 = 168 giờ). */
+const SEA_WEEKS = 6;
+const SEA_H = 168;
+/** 3h sáng Chủ nhật — khung giờ vắng nhất tuần, nên là chỗ kẻ tấn công thích. */
+const SEA_ATTACK_I = 6 * 24 + 3;
+/** Ngưỡng cảnh báo theo điểm z, cố định để so sánh hai chế độ cho công bằng. */
+const SEA_THR = 4;
+
+const median = (a: number[]) => {
+  const s = [...a].sort((x, y) => x - y);
+  const n = s.length;
+  return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
+};
+
+export interface SeasonalOut {
+  series: number[];
+  /** Mức nền ước lượng cho từng khung giờ trong tuần, đã đưa về thang gốc. */
+  seasonal: number[];
+  z: number[];
+  /** Điểm z của lần tấn công CUỐI CÙNG — con số lab in ra. */
+  zAttack: number;
+  baseAttackHour: number;
+  falseAlarms: number;
+  detected: boolean;
+  attackIdx: number[];
+}
+
+/**
+ * Phân rã theo khung giờ trong tuần rồi chấm điểm phần dư.
+ *
+ * Hai chi tiết quyết định lab này nói thật hay nói dối:
+ *
+ * 1. NHIỄU NHÂN TÍNH. Khối lượng log biến thiên theo tỉ lệ chứ không theo lượng
+ *    tuyệt đối, nên nhiễu phải nhân chứ không cộng. Bản đầu dùng nhiễu cộng và
+ *    hệ quả là phương sai phần dư trong không gian log to hẳn ở khung giờ vắng,
+ *    tạo 18 báo động giả cố định chẳng liên quan gì tới bài học.
+ * 2. LẤY LOG TRƯỚC KHI PHÂN RÃ. Đúng như đoạn mã trong bài t6-l10; nhờ vậy mô
+ *    hình cộng tính mới áp dụng được và một thang đo chung mới có nghĩa.
+ */
+export function seasonalRun(attack: number, weeksInfected: number, robust: boolean): SeasonalOut {
+  const rng = mulberry32(4242);
+  const firstInfected = SEA_WEEKS - weeksInfected;
+  const series: number[] = [];
+  const attackIdx: number[] = [];
+
+  for (let t = 0; t < SEA_WEEKS * SEA_H; t++) {
+    const i = t % SEA_H;
+    const h = i % 24;
+    const d = Math.floor(i / 24);
+    // Nhịp ngày đỉnh lúc 13h, nhịp tuần: cuối tuần còn khoảng một phần năm.
+    const base = 780 * (0.12 + 0.88 * Math.exp(-((h - 13) ** 2) / 32)) * (d < 5 ? 1 : 0.22) + 9;
+    let x = base * Math.exp(gaussian(rng, 0, 0.16));
+    if (Math.floor(t / SEA_H) >= firstInfected && i === SEA_ATTACK_I) {
+      x += attack;
+      attackIdx.push(t);
+    }
+    series.push(Math.max(0, x));
+  }
+
+  const y = series.map((v) => Math.log1p(v));
+  const seasonalLog: number[] = [];
+  for (let i = 0; i < SEA_H; i++) {
+    const cycle: number[] = [];
+    for (let w = 0; w < SEA_WEEKS; w++) cycle.push(y[w * SEA_H + i]);
+    // Trung vị chịu được tới 50% dữ liệu bị nhiễm; trung bình thì không chịu nổi
+    // một điểm nào — đó là toàn bộ khác biệt giữa hai chế độ.
+    seasonalLog.push(robust ? median(cycle) : cycle.reduce((a, b) => a + b, 0) / cycle.length);
+  }
+
+  const resid = y.map((v, t) => v - seasonalLog[t % SEA_H]);
+  let centre: number;
+  let scale: number;
+  if (robust) {
+    centre = median(resid);
+    scale = 1.4826 * median(resid.map((v) => Math.abs(v - centre)));
+  } else {
+    centre = resid.reduce((a, b) => a + b, 0) / resid.length;
+    scale = Math.sqrt(resid.reduce((a, b) => a + (b - centre) ** 2, 0) / resid.length);
+  }
+  const z = resid.map((v) => (v - centre) / (scale || 1e-9));
+
+  const lastAttack = attackIdx.length ? attackIdx[attackIdx.length - 1] : -1;
+  return {
+    series,
+    seasonal: seasonalLog.map((v) => Math.expm1(v)),
+    z,
+    zAttack: lastAttack >= 0 ? z[lastAttack] : 0,
+    baseAttackHour: Math.expm1(seasonalLog[SEA_ATTACK_I]),
+    falseAlarms: z.filter((v, t) => v > SEA_THR && !attackIdx.includes(t)).length,
+    detected: lastAttack >= 0 && z[lastAttack] > SEA_THR,
+    attackIdx,
+  };
+}
+
+export function LabSeasonality() {
+  const [attack, setAttack] = useState(150);
+  const [weeksInfected, setWeeks] = useState(2);
+  const [robust, setRobust] = useState(false);
+
+  const r = useMemo(() => seasonalRun(attack, weeksInfected, robust), [attack, weeksInfected, robust]);
+
+  // Vẽ hai tuần cuối: đủ để thấy nhịp tuần lặp lại và thấy đỉnh tấn công.
+  const from = (SEA_WEEKS - 2) * SEA_H;
+  const view = r.series.slice(from);
+  const seasonalView = view.map((_, k) => r.seasonal[(from + k) % SEA_H]);
+  const yMax = Math.max(...view) * 1.08;
+  const p = mkPlot(560, 260, [0, view.length], [0, yMax], { l: 52, r: 14, t: 14, b: 38 });
+
+  return (
+    <LabShell
+      id="lab-seasonality"
+      title="Phân rã mùa vụ — và cuộc tấn công tự nâng mức nền của chính nó"
+      takeaway={
+        <>
+          Ở mặc định (tấn công +150 sự kiện, lặp lại 2 trong 6 tuần), chế độ <b>cổ điển</b> ước lượng mức nền
+          của khung giờ 3h sáng Chủ nhật là khoảng 65 sự kiện — nhưng mức nền thật chỉ khoảng 46. Chính cuộc
+          tấn công đã kéo con số đó lên, vì trung bình cộng tính cả những tuần bị nhiễm vào định nghĩa
+          &ldquo;bình thường&rdquo;. Hệ quả: điểm z của nó tụt còn khoảng 6,9. Bật <b>chế độ bền vững</b> và
+          mức nền trở về 46, điểm z nhảy lên khoảng 11,4 — cùng một cuộc tấn công, nổi bật hơn gấp rưỡi.
+          Kéo cỡ tấn công xuống 50 để thấy hậu quả thật: cổ điển cho z ≈ 3,9 và <b>bỏ lọt</b>, bền vững cho
+          z ≈ 5,3 và bắt được.
+          <br />
+          <br />
+          Rồi kéo &ldquo;số tuần bị nhiễm&rdquo; lên 5 và xem cả hai chế độ cùng thua. Trung vị chịu được tới
+          một nửa dữ liệu bị nhiễm, không hơn. Kẻ tấn công đủ kiên nhẫn để có mặt trong phần lớn lịch sử sẽ
+          dạy được hệ thống rằng mình là bình thường — và <b>chế độ bền vững không cứu được điều đó</b>. Chống
+          nó cần thứ khác: neo đường cơ sở vào một khoảng lịch sử đã được kiểm định, và cảnh báo riêng khi
+          chính đường cơ sở dịch chuyển.
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <Slider
+          label="Cỡ đợt tấn công"
+          value={attack}
+          min={0}
+          max={600}
+          step={10}
+          onChange={setAttack}
+          format={(v) => `+${v} sự kiện lúc 3h sáng CN`}
+          hint="Mức nền thật của khung giờ đó chỉ khoảng 46 sự kiện."
+        />
+        <Slider
+          label="Số tuần bị nhiễm"
+          value={weeksInfected}
+          min={1}
+          max={5}
+          step={1}
+          onChange={setWeeks}
+          format={(v) => `${v}/${SEA_WEEKS} tuần cuối`}
+          hint="Kẻ tấn công lặp lại càng nhiều tuần thì càng dạy được đường cơ sở."
+        />
+      </div>
+
+      <Toggle
+        label="Chế độ bền vững (trung vị cho mùa vụ + MAD cho thang đo)"
+        checked={robust}
+        onChange={setRobust}
+      />
+
+      <Chart p={p} label="Hai tuần cuối: khối lượng thật và mức nền ước lượng">
+        <Axes
+          p={p}
+          xLabel="Giờ (hai tuần cuối)"
+          yLabel="Số lần đăng nhập thất bại"
+          xTicks={4}
+          yTicks={4}
+          fmtX={(v) => `${Math.round(v / 24)}d`}
+          fmtY={(v) => String(Math.round(v))}
+        />
+        <Line p={p} pts={seasonalView.map((v, k) => [k, v] as [number, number])} color={COLORS.warn} width={1.8} dash="5 4" />
+        <Line p={p} pts={view.map((v, k) => [k, v] as [number, number])} color={COLORS.brand} width={1.6} />
+      </Chart>
+
+      <Readout
+        items={[
+          {
+            k: 'Mức nền ước lượng cho 3h CN',
+            v: r.baseAttackHour.toFixed(0),
+            tone: r.baseAttackHour > 60 ? 'bad' : 'ok',
+            sub: 'sự thật là khoảng 46',
+          },
+          {
+            k: 'Điểm z của đợt tấn công',
+            v: r.zAttack.toFixed(1),
+            tone: r.detected ? 'ok' : 'bad',
+            sub: `ngưỡng cảnh báo ${SEA_THR}`,
+          },
+          {
+            k: 'Kết quả',
+            v: r.detected ? 'BẮT ĐƯỢC' : 'BỎ LỌT',
+            tone: r.detected ? 'ok' : 'bad',
+          },
+          {
+            k: 'Báo động giả',
+            v: String(r.falseAlarms),
+            tone: r.falseAlarms <= 2 ? 'ok' : 'warn',
+            sub: `trên ${SEA_WEEKS * SEA_H} giờ`,
+          },
+        ]}
+      />
+
+      <div className={`callout ${r.detected ? 'co-pro' : 'co-warn'}`}>
+        <Icon className="callout-icon" name={r.detected ? 'shield' : 'siren'} size={18} />
+        <div>
+          <div className="callout-title">
+            {r.detected ? 'Đợt tấn công nổi lên trên phần dư' : 'Đợt tấn công chìm vào mức nền'}
+          </div>
+          <div className="callout-body">
+            {r.detected
+              ? `Mức nền ước lượng ${r.baseAttackHour.toFixed(0)} so với sự thật khoảng 46, nên phần dư còn đủ lớn để vượt ngưỡng: z = ${r.zAttack.toFixed(1)}.`
+              : `Mức nền của chính khung giờ bị tấn công đã bị kéo lên ${r.baseAttackHour.toFixed(0)} (thật ra khoảng 46), nên phần dư co lại và z chỉ còn ${r.zAttack.toFixed(1)} — dưới ngưỡng ${SEA_THR}. Cuộc tấn công đã tự dạy hệ thống rằng nó là bình thường.`}
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}
