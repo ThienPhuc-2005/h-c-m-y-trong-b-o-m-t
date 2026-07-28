@@ -1221,7 +1221,7 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Bài toán nhãn: lấy nhãn ở đâu',
       subtitle: 'Thứ khan hiếm nhất trong ML bảo mật không phải dữ liệu, mà là câu trả lời đúng',
-      minutes: 24,
+      minutes: 25,
       practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t2-l1'],
@@ -1328,6 +1328,12 @@ export const track2: Track = {
           },
         },
         { t: 'h', text: 'Ba căn bệnh của nhãn bảo mật', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-label-maturity',
+          caption:
+            'Bệnh thứ hai — nhãn muộn — nhìn thấy được: số engine báo độc lớn dần theo tuổi mẫu, và họ mã độc mới lớn chậm hơn hẳn họ đã phổ biến. Vùng bên trái vạch xanh là chỗ nhãn chưa hình thành, nên mọi con số đo trong đó đều là con số của bảng nhãn chứ không phải của mô hình.',
+        },
         {
           t: 'steps',
           title: 'Nhận diện và xử lý từng bệnh',

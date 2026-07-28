@@ -1751,7 +1751,7 @@ export const track5: Track = {
       trackId: 'dac-trung',
       title: 'Từ TF-IDF tới embedding cho log và dòng lệnh',
       subtitle: 'Cách biến văn bản không phải tiếng người thành số — và cách biết khi nào bạn đang dùng dao mổ trâu',
-      minutes: 26,
+      minutes: 27,
       practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t5-l1', 't3-l2', 't1-l5'],
@@ -1944,6 +1944,12 @@ export const track5: Track = {
           ],
         },
         { t: 'h', text: 'Embedding: khi nào đáng và khi nào thừa', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-text-ladder',
+          caption:
+            'Không có bậc nào thắng tuyệt đối. Câu hỏi đúng không phải "cái nào hiện đại nhất" mà là "tôi có cần bắt biến thể chưa từng thấy tới mức đánh đổi khả năng giải thích không".',
+        },
         {
           t: 'p',
           md: '**word2vec** (Mikolov và cộng sự, 2013) học vector cho từng từ sao cho từ xuất hiện trong ngữ cảnh giống nhau có vector gần nhau. Nhược điểm chí mạng cho bảo mật: từ chưa từng thấy trong lúc huấn luyện thì không có vector — mà mỗi ngày dữ liệu bảo mật sinh ra hàng nghìn token mới.',

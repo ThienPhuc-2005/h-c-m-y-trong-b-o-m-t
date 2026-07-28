@@ -1684,6 +1684,12 @@ mo_hinh.fit(X_train, y_train)`,
         },
         { t: 'h', text: 'SVM: tìm đường phân chia có lề rộng nhất', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-margin-idea',
+          caption:
+            'Hai cách trả lời cùng một câu hỏi "hai mẫu thế nào thì giống nhau": k-NN giữ lại toàn bộ dữ liệu và hỏi hàng xóm lúc cần; SVM vứt gần hết, chỉ giữ vài điểm sát lề.',
+        },
+        {
           t: 'p',
           md: 'Khi hai lớp tách được bằng một đường thẳng, thường có **vô số** đường thẳng làm được điều đó. SVM chọn đường mà khoảng trống hai bên rộng nhất — gọi là **lề cực đại** (maximum margin).',
         },

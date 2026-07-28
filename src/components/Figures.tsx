@@ -444,27 +444,37 @@ const AdversarialFig = () => (
 );
 
 const AtlasFig = () => (
-  <Svg vb="0 0 620 200">
+  /* Hai hàng ba ô, không phải một hàng sáu ô. Bản trước xếp sáu ô rộng 90 đơn
+     vị cạnh nhau, trong khi chú thích dài nhất ("API, kho mô hình, dữ liệu")
+     rộng khoảng 145 — chữ của ô này chạy vào ô bên cạnh và có ba cặp đè nhau.
+     Phép kiểm biên viewBox không thấy loại lỗi này; chỉ phép kiểm chữ-đè-chữ
+     bắt được. Ô rộng 176 thì chú thích vừa, và chữ không phải thu nhỏ. */
+  <Svg vb="0 0 620 252">
     <Defs />
+    <T x={310} y={20} strong>Vòng đời tấn công vào hệ thống ML (theo tinh thần MITRE ATLAS)</T>
+    <T x={310} y={40} size={11}>Giai đoạn 3 nhắm vào lúc HUẤN LUYỆN; giai đoạn 4–5 nhắm vào lúc SUY LUẬN</T>
     {[
-      { l: 'Do thám', s: 'tìm mô hình dùng gì', c: C.info },
-      { l: 'Truy cập', s: 'API, kho mô hình, dữ liệu', c: C.info },
-      { l: 'Đầu độc', s: 'sửa dữ liệu huấn luyện', c: C.warn },
-      { l: 'Né tránh', s: 'sửa đầu vào lúc chạy', c: C.bad },
-      { l: 'Trích xuất', s: 'trộm mô hình / dữ liệu', c: C.bad },
-      { l: 'Tác động', s: 'sai lệch, từ chối, thiệt hại', c: C.lab },
-    ].map((s, i) => (
-      <g key={i}>
-        <rect x={12 + i * 100} y={70} width={90} height={60} rx={8}
-          fill="var(--bg-sunken)" stroke={s.c} strokeWidth="2" />
-        <T x={57 + i * 100} y={95} size={11} strong>{s.l}</T>
-        <T x={57 + i * 100} y={112} size={10.5}>{s.s}</T>
-        {i < 5 && <Arrow x1={104 + i * 100} y1={100} x2={110 + i * 100} y2={100} />}
-      </g>
-    ))}
-    <T x={310} y={32} strong>Vòng đời tấn công vào hệ thống ML (theo tinh thần MITRE ATLAS)</T>
-    <T x={310} y={50} size={11}>Giai đoạn 3 nhắm vào lúc HUẤN LUYỆN; giai đoạn 4–5 nhắm vào lúc SUY LUẬN</T>
-    <T x={310} y={162} size={11}>Mỗi giai đoạn cần một biện pháp phòng thủ khác nhau — không có một lá chắn chung</T>
+      { l: '1. Do thám', s: 'tìm mô hình dùng gì', c: C.info, col: 0, row: 0 },
+      { l: '2. Truy cập', s: 'API, kho mô hình, dữ liệu', c: C.info, col: 1, row: 0 },
+      { l: '3. Đầu độc', s: 'sửa dữ liệu huấn luyện', c: C.warn, col: 2, row: 0 },
+      { l: '4. Né tránh', s: 'sửa đầu vào lúc chạy', c: C.bad, col: 2, row: 1 },
+      { l: '5. Trích xuất', s: 'trộm mô hình hoặc dữ liệu', c: C.bad, col: 1, row: 1 },
+      { l: '6. Tác động', s: 'sai lệch, từ chối, thiệt hại', c: C.lab, col: 0, row: 1 },
+    ].map((s, i) => {
+      const x = 20 + s.col * 196;
+      const y = 58 + s.row * 84;
+      return (
+        <g key={i}>
+          <rect x={x} y={y} width={176} height={58} rx={8} fill="var(--bg-sunken)" stroke={s.c} strokeWidth="2" />
+          <T x={x + 88} y={y + 24} strong>{s.l}</T>
+          <T x={x + 88} y={y + 44} size={11}>{s.s}</T>
+        </g>
+      );
+    })}
+    {[0, 1].map((i) => <Arrow key={i} x1={198 + i * 196} y1={87} x2={214 + i * 196} y2={87} />)}
+    {[0, 1].map((i) => <Arrow key={i} x1={410 - i * 196} y1={171} x2={394 - i * 196} y2={171} />)}
+    <Arrow x1={504} y1={118} x2={504} y2={154} color={C.bad} />
+    <T x={310} y={236} size={11}>Mỗi giai đoạn cần một biện pháp phòng thủ khác nhau — không có một lá chắn chung</T>
   </Svg>
 );
 
@@ -802,8 +812,12 @@ const DataSourcesFig = () => (
       { l: 'Danh tính', s: 'đăng nhập, AD', a: 150 },
     ].map((n, i) => {
       const rad = (n.a * Math.PI) / 180;
+      // Bán trục dọc 76, không phải 92: ở 92 thì ô "Mạng" (góc −90°) leo lên
+      // y=36 và đè vào dòng tiêu đề ở y=24, còn ô "Email" (góc 90°) tụt xuống
+      // y=220 và đè vào dòng kết ở y=240. Phép kiểm biên không thấy vì cả hai
+      // vẫn nằm trong khung — chỉ phép kiểm chữ-đè-chữ mới bắt được.
       const x = 310 + 172 * Math.cos(rad);
-      const y = 128 + 92 * Math.sin(rad);
+      const y = 128 + 76 * Math.sin(rad);
       return (
         <g key={i}>
           <line x1={310 + 44 * Math.cos(rad)} y1={128 + 44 * Math.sin(rad)} x2={x - 30 * Math.cos(rad)} y2={y - 20 * Math.sin(rad)} stroke={C.line} strokeWidth="1.4" strokeDasharray="3 3" />
@@ -1157,9 +1171,167 @@ const ProjectReadme = () => (
   </Svg>
 );
 
+/** t2-l4 — nhãn không có sẵn lúc sự việc xảy ra; nó lớn dần rồi mới chín. */
+const LabelMaturity = () => (
+  <Svg vb="0 0 560 250">
+    <Defs />
+    <T x={280} y={18} strong>Nhãn không sinh ra cùng lúc với sự kiện — nó chín dần</T>
+    <line x1={56} y1={186} x2={528} y2={186} stroke={C.line} strokeWidth="1.5" />
+    <text transform="rotate(-90 22 118)" x={22} y={118} textAnchor="middle" className="svg-label-strong">Số engine báo độc</text>
+    <path d="M56 178 C 130 176, 150 96, 230 74 S 380 52, 528 48" fill="none" stroke={C.bad} strokeWidth="2.4" />
+    <path d="M56 180 C 160 179, 260 168, 360 150 S 470 128, 528 120" fill="none" stroke={C.warn} strokeWidth="2.2" strokeDasharray="6 4" />
+    <T x={470} y={40} size={11}>họ đã phổ biến</T>
+    <T x={470} y={136} size={11}>họ mới xuất hiện</T>
+    <rect x={56} y={40} width={62} height={146} fill={C.bad} opacity={0.1} />
+    <T x={87} y={204} size={11}>ngày 0</T>
+    <T x={87} y={220} size={11}>gán nhãn</T>
+    <T x={87} y={236} size={11}>là đoán bừa</T>
+    <line x1={230} y1={40} x2={230} y2={186} stroke={C.ok} strokeWidth="2" strokeDasharray="5 4" />
+    <T x={252} y={62} anchor="start" size={11}>hết cửa sổ chín muồi:</T>
+    <T x={252} y={78} anchor="start" size={11}>từ đây mới đánh giá được</T>
+    <T x={300} y={204} size={11}>Đánh giá mô hình trên dữ liệu mới hơn cửa sổ này thì mọi phát hiện SỚM</T>
+    <T x={300} y={222} size={11}>— thứ đáng giá nhất — đều bị tính thành báo động giả</T>
+  </Svg>
+);
+
+/** t9-l2 — hai đường chèn, và đường nguy hiểm hơn không đi qua ô nhập. */
+const InjectionPaths = () => (
+  /* Chiều cao 296 chứ không phải 250: ba dòng giải thích phải nằm DƯỚI ô "Trang
+     web, tệp, email" (ô này kéo tới y=232). Ở 250 chúng buộc phải đặt ở y≈200 và
+     đè lên chính ô đó — phép đo biên không thấy, vì cả hai vẫn nằm trong khung. */
+  <Svg vb="0 0 620 296">
+    <Defs />
+    <T x={310} y={18} strong>Hai đường chèn: một qua ô nhập, một qua thứ mô hình đọc</T>
+    <Box x={222} y={102} w={150} h={64} label="Mô hình" sub="không phân biệt được nguồn" fill="var(--brand-soft)" stroke="var(--brand-border)" />
+    <Box x={14} y={40} w={150} h={52} label="Người dùng" sub="gõ thẳng vào ô chat" fill="var(--bg-sunken)" />
+    <Arrow x1={166} y1={78} x2={244} y2={100} />
+    <T x={196} y={72} size={11}>trực tiếp</T>
+    <Box x={14} y={170} w={150} h={62} label="Trang web, tệp, email" sub="kẻ tấn công gieo chữ từ trước" fill="var(--bad-soft)" stroke="var(--bad-border)" />
+    <Arrow x1={166} y1={196} x2={244} y2={168} color={C.bad} />
+    <T x={196} y={214} size={11}>gián tiếp</T>
+    <Arrow x1={374} y1={134} x2={430} y2={134} />
+    <Box x={432} y={104} w={174} h={60} label="Công cụ có quyền" sub="gửi mail, gọi API, chạy lệnh" fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <T x={310} y={254} size={11}>Đường gián tiếp nguy hiểm hơn: nạn nhân không gõ gì cả, và nội dung độc được</T>
+    <T x={310} y={272} size={11}>đặt sẵn từ nhiều ngày trước, ở một nơi bạn không kiểm soát</T>
+    <T x={310} y={290} size={11}>Mô hình đọc mọi thứ trong ngữ cảnh như nhau, nên lọc chuỗi ở ô nhập không chạm tới đường dưới</T>
+  </Svg>
+);
+
+/** t8-l3 — đầu độc là tấn công vào QUÁ KHỨ của mô hình, nổ ở tương lai. */
+const PoisonTimeline = () => (
+  <Svg vb="0 0 620 230">
+    <Defs />
+    <T x={310} y={18} strong>Đầu độc xảy ra lúc huấn luyện, hậu quả nổ lúc suy luận</T>
+    <line x1={40} y1={110} x2={580} y2={110} stroke={C.line} strokeWidth="1.5" />
+    {[
+      { x: 96, t: 'Kẻ tấn công gieo', s: 'mẫu vào nguồn dữ liệu', c: C.bad },
+      { x: 262, t: 'Bạn huấn luyện', s: 'mọi chỉ số vẫn xanh', c: C.warn },
+      { x: 428, t: 'Triển khai', s: 'hoạt động bình thường', c: C.info },
+      { x: 552, t: 'Kích hoạt', s: 'mẫu có dấu hiệu riêng', c: C.bad },
+    ].map((p, i) => (
+      <g key={i}>
+        <circle cx={p.x} cy={110} r={7} fill={p.c} />
+        <T x={p.x} y={80} strong>{p.t}</T>
+        <T x={p.x} y={62} size={11}>{p.s}</T>
+        {i < 3 && <Arrow x1={p.x + 12} y1={110} x2={p.x + 140} y2={110} />}
+      </g>
+    ))}
+    <Box x={40} y={140} w={250} h={70} fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <T x={165} y={162} strong>Vì sao chỉ số không bắt được</T>
+    <T x={165} y={182} size={11}>Cửa hậu chỉ bật với mẫu mang dấu hiệu</T>
+    <T x={165} y={200} size={11}>riêng, nên accuracy trên tập kiểm tra</T>
+    <Box x={330} y={140} w={250} h={70} fill="var(--info-soft)" stroke="var(--info-border)" />
+    <T x={455} y={162} strong>Chỗ phải kiểm</T>
+    <T x={455} y={182} size={11}>Nguồn dữ liệu, quyền ghi vào nguồn đó,</T>
+    <T x={455} y={200} size={11}>và vòng phản hồi tự gán nhãn của SOC</T>
+    <T x={165} y={218} size={11}>gần như không đổi</T>
+  </Svg>
+);
+
+/** t4-l7 — cái phễu: sự kiện nhiều, người thì không co giãn. */
+const AlertFunnel = () => (
+  <Svg vb="0 0 560 250">
+    <Defs />
+    <T x={280} y={18} strong>Cái phễu kết thúc ở một con số không co giãn: giờ người</T>
+    {[
+      { w: 460, t: '1.000.000 sự kiện/ngày', c: 'var(--bg-sunken)', s: C.line },
+      { w: 340, t: 'Luật và mô hình lọc còn 5.000', c: 'var(--info-soft)', s: 'var(--info-border)' },
+      { w: 220, t: 'Gom nhóm còn 600 cảnh báo', c: 'var(--ok-soft)', s: 'var(--ok-border)' },
+      { w: 120, t: '120 xử lý nổi', c: 'var(--warn-soft)', s: 'var(--warn-border)' },
+    ].map((r, i) => (
+      <g key={i}>
+        <rect x={280 - r.w / 2} y={44 + i * 44} width={r.w} height={34} rx={5} fill={r.c} stroke={r.s} strokeWidth="1.5" />
+        <T x={280} y={65 + i * 44} size={11}>{r.t}</T>
+      </g>
+    ))}
+    <T x={280} y={238} size={11}>Con số cuối cùng do số analyst nhân số phút mỗi ca quyết định, không do mô hình quyết định.</T>
+    <T x={280} y={220} size={11}>Muốn tăng nó thì gom nhóm và tự động hoá phân loại — tuyển thêm người là đòn bẩy yếu nhất.</T>
+  </Svg>
+);
+
+/** t5-l6 — ba bậc biểu diễn văn bản, mỗi bậc mua thêm một thứ và trả một giá. */
+const TextLadder = () => (
+  <Svg vb="0 0 620 240">
+    <Defs />
+    <T x={310} y={18} strong>Ba bậc biểu diễn: mỗi bậc mua thêm một thứ và trả một giá</T>
+    {[
+      { x: 10, t: 'Đếm từ', s: 'bag of words', mua: 'Đơn giản, giải thích được', gia: 'Từ chưa từng thấy = 0', c: 'var(--bg-sunken)', b: undefined },
+      { x: 214, t: 'TF-IDF', s: 'đếm + phạt từ phổ biến', mua: 'Nêu bật từ mang tin', gia: 'Vẫn không hiểu từ đồng nghĩa', c: 'var(--info-soft)', b: 'var(--info-border)' },
+      { x: 418, t: 'Embedding', s: 'vector học từ ngữ cảnh', mua: 'Gần nghĩa thì gần nhau', gia: 'Nặng, khó giải thích, cần dữ liệu', c: 'var(--lab-soft)', b: 'var(--lab-border)' },
+    ].map((r, i) => (
+      <g key={i}>
+        <Box x={r.x} y={40} w={192} h={152} fill={r.c} stroke={r.b} />
+        <T x={r.x + 96} y={64} strong>{r.t}</T>
+        <T x={r.x + 96} y={84} size={11}>{r.s}</T>
+        <T x={r.x + 96} y={122} size={11}>Được: {r.mua}</T>
+        <T x={r.x + 96} y={158} size={11}>Trả: {r.gia}</T>
+        {i < 2 && <Arrow x1={r.x + 194} y1={116} x2={r.x + 212} y2={116} />}
+      </g>
+    ))}
+    <T x={310} y={216} size={11}>Với log và dòng lệnh, bậc hai thường đã đủ — leo lên bậc ba chỉ đáng khi bạn cần</T>
+    <T x={310} y={234} size={11}>bắt biến thể chưa từng thấy, và chấp nhận mất khả năng chỉ vào một từ để giải thích</T>
+  </Svg>
+);
+
+/** t3-l6 — k-NN nhớ hàng xóm, SVM tìm lề rộng nhất giữa hai lớp. */
+const MarginIdea = () => (
+  <Svg vb="0 0 620 250">
+    <Defs />
+    <T x={310} y={18} strong>Cùng một dữ liệu: k-NN hỏi hàng xóm, SVM tìm lề rộng nhất</T>
+    <Box x={12} y={38} w={288} h={196} fill="var(--bg-sunken)" />
+    <T x={156} y={60} strong>k-NN</T>
+    {[[70, 110], [98, 132], [76, 152], [112, 96], [60, 132]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r={6} fill={C.ok} />)}
+    {[[210, 120], [238, 146], [216, 168], [246, 104]].map(([x, y], i) => <rect key={i} x={x - 5} y={y - 5} width={10} height={10} rx={2} fill={C.bad} />)}
+    <circle cx={150} cy={140} r={7} fill="none" stroke={C.brand} strokeWidth="2.4" />
+    <circle cx={150} cy={140} r={46} fill="none" stroke={C.brand} strokeWidth="1.4" strokeDasharray="5 4" />
+    <T x={156} y={212} size={11}>Nhãn của điểm mới = phiếu của k hàng xóm gần nhất</T>
+    <T x={156} y={230} size={11}>Không có &ldquo;mô hình&rdquo; nào được học — chỉ có bộ nhớ</T>
+
+    <Box x={320} y={38} w={288} h={196} fill="var(--bg-sunken)" />
+    <T x={464} y={60} strong>SVM</T>
+    {[[378, 110], [406, 132], [384, 152], [420, 96], [368, 132]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r={6} fill={C.ok} />)}
+    {[[518, 120], [546, 146], [524, 168], [554, 104]].map(([x, y], i) => <rect key={i} x={x - 5} y={y - 5} width={10} height={10} rx={2} fill={C.bad} />)}
+    <line x1={444} y1={82} x2={492} y2={196} stroke={C.brand} strokeWidth="2.4" />
+    <line x1={424} y1={82} x2={472} y2={196} stroke={C.brand} strokeWidth="1.2" strokeDasharray="5 4" />
+    <line x1={464} y1={82} x2={512} y2={196} stroke={C.brand} strokeWidth="1.2" strokeDasharray="5 4" />
+    <circle cx={420} cy={96} r={10} fill="none" stroke={C.warn} strokeWidth="2" />
+    <rect x={513} y={115} width={20} height={20} rx={4} fill="none" stroke={C.warn} strokeWidth="2" />
+    {/* Hai dòng này đặt ở tâm 464 nên bề rộng tối đa là 2×(620−464) = 312 đơn
+        vị; bản đầu dài hơn thế và tràn qua mép phải 9 và 15 đơn vị. */}
+    <T x={464} y={212} size={11}>Chỉ vài điểm sát lề quyết định đường</T>
+    <T x={464} y={230} size={11}>Chịu được dữ liệu ít, nhạy với nhiễu sát lề</T>
+  </Svg>
+);
+
 /* ========================================================================== */
 
 const REGISTRY: Record<string, () => ReactNode> = {
+  'fig-label-maturity': LabelMaturity,
+  'fig-injection-paths': InjectionPaths,
+  'fig-poison-timeline': PoisonTimeline,
+  'fig-alert-funnel': AlertFunnel,
+  'fig-text-ladder': TextLadder,
+  'fig-margin-idea': MarginIdea,
   'fig-pandas-three': PandasThree,
   'fig-dataset-age': DatasetAge,
   'fig-attack-cost': AttackCost,

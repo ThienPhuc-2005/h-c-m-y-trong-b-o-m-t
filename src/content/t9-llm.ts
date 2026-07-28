@@ -510,6 +510,12 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
         },
         { t: 'h', text: 'Những kênh chèn có thật trong một doanh nghiệp', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-injection-paths',
+          caption:
+            'Đường trên là thứ ai cũng nghĩ tới; đường dưới mới là thứ gây thiệt hại thật, vì nạn nhân không gõ gì cả và nội dung độc đã nằm sẵn ở một nơi bạn không kiểm soát. Mô hình đọc cả hai như nhau.',
+        },
+        {
           t: 'list',
           items: [
             '**Email** — kênh phổ biến nhất, vì bất kỳ ai trên Internet cũng gửi được tới bạn mà không cần đặc quyền.',

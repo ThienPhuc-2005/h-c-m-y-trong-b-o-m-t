@@ -2042,7 +2042,7 @@ print(f'Tỉ lệ tập một nhãn — phần tự động hoá được: {co_d
       trackId: 'do-luong',
       title: 'Toán học của mệt mỏi cảnh báo',
       subtitle: 'Quy mọi chỉ số về đơn vị mà tổ chức thực sự chi trả: giờ người và vụ bị bỏ lọt',
-      minutes: 23,
+      minutes: 24,
       practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t4-l4', 't4-l2'],
@@ -2070,6 +2070,12 @@ print(f'Tỉ lệ tập một nhãn — phần tự động hoá được: {co_d
             '**Kịch bản A:** analyst xem được 195/10.000 = 1,95% hàng đợi, chọn ngẫu nhiên → kỳ vọng bắt được 40 × 0,0195 ≈ **0,8 vụ mỗi ngày**.\n\n**Kịch bản B:** 195 cảnh báo đầu bảng với precision 12% → **23 vụ mỗi ngày**.\n\nCùng một mô hình. Cùng một số người. Cùng một ngân sách. Khác nhau **gần 30 lần** về số vụ thật được phát hiện — chỉ vì thứ tự của hàng đợi.\n\nĐây là lý do toàn bộ chặng này tồn tại, và là câu trả lời cho câu hỏi “ML mang lại gì cho SOC”. Nó thường không tạo ra khả năng phát hiện mới. Nó quyết định **cảnh báo nào được con người nhìn thấy** trong điều kiện công suất hữu hạn — và đó là đòn bẩy lớn nhất trong toàn bộ quy trình.',
         },
         { t: 'h', text: 'Phép tính đầu tiên: từ tỉ lệ ra con người', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-alert-funnel',
+          caption:
+            'Mọi tầng phía trên co giãn được bằng kỹ thuật; tầng cuối thì không. Đó là lý do một cải tiến 0,1 điểm FPR nghe nhỏ nhưng đổi được cả ca trực, còn tuyển thêm người lại là đòn bẩy yếu nhất.',
+        },
         {
           t: 'steps',
           title: 'Bốn bước quy cảnh báo thành nhân sự',

@@ -52,6 +52,12 @@ export const FIGURE_IDS = [
   'fig-ml-redteam', // Sáu bước đánh giá ML, bước 6 quay lại bước 1
   'fig-owasp-llm', // Sáu mục OWASP LLM gắn vào kiến trúc ứng dụng
   'fig-project-readme', // Sáu mục README và câu hỏi mỗi mục trả lời
+  'fig-label-maturity', // Nhãn chín dần, và cửa sổ chín muồi
+  'fig-injection-paths', // Chèn trực tiếp qua ô nhập, gián tiếp qua nội dung
+  'fig-poison-timeline', // Đầu độc lúc huấn luyện, nổ lúc suy luận
+  'fig-alert-funnel', // Phễu cảnh báo kết thúc ở giờ người
+  'fig-text-ladder', // Đếm từ, TF-IDF, embedding: được gì trả gì
+  'fig-margin-idea', // k-NN hỏi hàng xóm, SVM tìm lề rộng nhất
 ] as const;
 
 export type KnownFigureId = (typeof FIGURE_IDS)[number];

@@ -776,6 +776,12 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
         },
         { t: 'h', text: 'Ba loại đầu độc, ba mức nguy hiểm khác nhau', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-poison-timeline',
+          caption:
+            'Khoảng cách giữa lúc gieo và lúc nổ là thứ làm đầu độc khó phát hiện: mọi chỉ số bạn nhìn đều được đo ở giữa hai mốc đó, khi cửa hậu đang nằm im.',
+        },
+        {
           t: 'table',
           caption: 'Phân loại đầu độc theo mục tiêu — chú ý cột cuối cùng',
           head: ['Loại', 'Kẻ tấn công muốn gì', 'Tỉ lệ dữ liệu cần', 'Chỉ số tổng thể có phát hiện được không?'],
