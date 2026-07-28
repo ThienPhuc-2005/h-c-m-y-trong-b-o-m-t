@@ -382,10 +382,13 @@
   color-scheme: dark;
 
   --bg: #12100b;
-  --bg-elev: #1b1710;
+  /* Sáng hơn #1b1710 của bản đầu: qua lớp kính 72%, bề mặt nổi cũ chỉ sáng hơn
+     nền khoảng 1,4 lần — mắt gần như không thấy thẻ NỔI lên, mà thấy một mảng
+     hơi khác màu. Bậc nổi là thứ mang toàn bộ thứ bậc thị giác của trang. */
+  --bg-elev: #221d14;
   --bg-sunken: #0d0b07;
-  --bg-hover: #241f15;
-  --bg-active: #2e2719;
+  --bg-hover: #2b2419;
+  --bg-active: #362d1e;
 
   --border: #322a1b;
   --border-strong: #4d4229;
@@ -402,34 +405,42 @@
   --brand-border: #5c4720;
   --brand-text: #f2cd88;
 
-  --ok: #4ecfa0;
-  --ok-strong: #80e2bd;
-  --ok-soft: #0f2620;
-  --ok-border: #235a49;
-  --ok-text: #80e2bd;
+  /* Đo bản đầu bằng số: brand vàng có độ bão hoà 68, trong khi bad 86, lab 85,
+     info 75 và warn 73 — tức bốn màu ĐI KÈM đều chói hơn màu chính. Vàng chỉ
+     đọc ra "kim loại quý" khi nó là thứ đậm nhất khung hình; bị vây bởi các màu
+     bão hoà hơn thì nó tụt xuống thành màu nâu vàng bình thường.
 
-  --bad: #f2556b;
-  --bad-strong: #f88f9d;
-  --bad-soft: #2b1216;
-  --bad-border: #6f2531;
-  --bad-text: #f88f9d;
+     Nên mọi màu ngữ nghĩa ở đây bị hạ về khoảng 38–54, và brand giữ nguyên 68
+     làm TRẦN. Khoảng cách hue vẫn được giữ trên 20 độ để năm màu không lẫn nhau
+     — scripts/check-contrast.mjs kiểm cả hai điều đó. */
+  --ok: #70c29c;
+  --ok-strong: #98d7ba;
+  --ok-soft: #13201a;
+  --ok-border: #355a49;
+  --ok-text: #a0dabf;
 
-  --warn: #e0673c;
-  --warn-strong: #f2916b;
-  --warn-soft: #2b1710;
-  --warn-border: #6d3520;
-  --warn-text: #f2916b;
+  --bad: #d37380;
+  --bad-strong: #e298a1;
+  --bad-soft: #241416;
+  --bad-border: #63363c;
+  --bad-text: #e4a0a9;
 
-  --info: #5cb8e8;
-  --info-strong: #93d2f3;
-  --info-soft: #0f2028;
-  --info-border: #1f5170;
-  --info-text: #93d2f3;
+  --warn: #ce755a;
+  --warn-strong: #df9b86;
+  --warn-soft: #251713;
+  --warn-border: #623d32;
+  --warn-text: #e1a28e;
 
-  --lab: #b79af7;
-  --lab-soft: #201830;
-  --lab-border: #4d3a82;
-  --lab-text: #ccb8fb;
+  --info: #75aec7;
+  --info-strong: #9ec9db;
+  --info-soft: #141f24;
+  --info-border: #35525f;
+  --info-text: #a6cdde;
+
+  --lab: #ba95d0;
+  --lab-soft: #211727;
+  --lab-border: #553a64;
+  --lab-text: #d2b7e1;
 
   /* Bóng đổ nhuốm ấm: bóng xám lạnh trên nền nâu trông như bụi bẩn. */
   --shadow-sm: 0 1px 2px rgb(8 5 0 / 0.5);
@@ -441,8 +452,8 @@
   --code-bg: #15120c;
 
   /* ---- Kính: chỉ chủ đề này bật, xem components.css ---------------------- */
-  --glass-bg: color-mix(in srgb, var(--bg-elev) 62%, transparent);
-  --glass-bg-strong: color-mix(in srgb, var(--bg-elev) 82%, transparent);
+  --glass-bg: color-mix(in srgb, var(--bg-elev) 72%, transparent);
+  --glass-bg-strong: color-mix(in srgb, var(--bg-elev) 88%, transparent);
   --glass-blur: 16px;
   /* Vạch sáng mảnh ở mép trên: thứ làm bề mặt trông như có độ dày, thay vì chỉ
      là một hình chữ nhật mờ. Vàng nhạt chứ không phải trắng, để không lạnh. */
@@ -456,15 +467,19 @@
    thì mọi thanh tiến độ trông y như màu brand và người học mất tín hiệu vị trí.
    Cái ĐỔI là nền nhạt: pha thẳng từ --bg ấm bằng color-mix, để một vệt lạnh
    không nằm chỏng chơ trên nền nâu. */
-[data-theme='gold'] [data-hue='t0']  { --hue: #6cb2e5; --hue-text: #96c9ee; }
-[data-theme='gold'] [data-hue='t1']  { --hue: #6ca2e5; --hue-text: #96bdee; }
-[data-theme='gold'] [data-hue='t2']  { --hue: #6c91e5; --hue-text: #96b1ee; }
-[data-theme='gold'] [data-hue='t3']  { --hue: #6c80e5; --hue-text: #96a5ee; }
-[data-theme='gold'] [data-hue='t4']  { --hue: #6c6fe5; --hue-text: #9698ee; }
-[data-theme='gold'] [data-hue='t5']  { --hue: #796ce5; --hue-text: #9f96ee; }
-[data-theme='gold'] [data-hue='t6']  { --hue: #8a6ce5; --hue-text: #ab96ee; }
-[data-theme='gold'] [data-hue='t7']  { --hue: #9a6ce5; --hue-text: #b896ee; }
-[data-theme='gold'] [data-hue='t8']  { --hue: #ab6ce5; --hue-text: #c496ee; }
-[data-theme='gold'] [data-hue='t9']  { --hue: #bc6ce5; --hue-text: #d096ee; }
-[data-theme='gold'] [data-hue='t10'] { --hue: #cd6ce5; --hue-text: #dc96ee; }
-[data-theme='gold'] [data-hue] { --hue-soft: color-mix(in srgb, var(--hue) 13%, var(--bg)); }
+[data-theme='gold'] [data-hue='t0']  { --hue: #7baac1; }
+[data-theme='gold'] [data-hue='t1']  { --hue: #7b9ec1; }
+[data-theme='gold'] [data-hue='t2']  { --hue: #7b92c1; }
+[data-theme='gold'] [data-hue='t3']  { --hue: #7b87c1; }
+[data-theme='gold'] [data-hue='t4']  { --hue: #7b7bc1; }
+[data-theme='gold'] [data-hue='t5']  { --hue: #877bc1; }
+[data-theme='gold'] [data-hue='t6']  { --hue: #927bc1; }
+[data-theme='gold'] [data-hue='t7']  { --hue: #9e7bc1; }
+[data-theme='gold'] [data-hue='t8']  { --hue: #aa7bc1; }
+[data-theme='gold'] [data-hue='t9']  { --hue: #b57bc1; }
+[data-theme='gold'] [data-hue='t10'] { --hue: #c17bc1; }
+[data-theme='gold'] [data-hue] {
+  --hue-soft: color-mix(in srgb, var(--hue) 14%, var(--bg));
+  /* Suy ra từ --hue thay vì chép tay 11 giá trị: đổi một chỗ là cả bộ theo. */
+  --hue-text: color-mix(in srgb, var(--hue) 62%, #ffffff);
+}
