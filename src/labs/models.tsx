@@ -500,6 +500,49 @@ export function LabKnn() {
 /*  lab-overfit — Quá khớp                                                     */
 /* ========================================================================== */
 
+/**
+ * Khớp đa thức bậc `degree` lên `nPoints` điểm nhiễu, rồi đo lỗi trên tập
+ * huấn luyện và trên dữ liệu mới. Tách khỏi component để chốt hình chữ U mà
+ * lời kết luận hứa: lỗi huấn luyện giảm đều, lỗi trên dữ liệu mới chạm đáy
+ * rồi bật lên.
+ */
+export function overfitErrors(degree: number, nPoints: number, seed = 12345) {
+  const rng = mulberry32(seed);
+  const f = (x: number) => 0.5 + 0.36 * Math.sin(x * 5.2) - 0.1 * x;
+  const mk = (n: number, s: number) =>
+    Array.from({ length: n }, (_, i) => {
+      const x = (i + 0.5) / n;
+      return { x, y: clamp(f(x) + gaussian(rng, 0, s), 0, 1) };
+    });
+  const train = mk(nPoints, 0.07);
+  const test = mk(40, 0.07);
+
+  // Bình phương tối thiểu bằng khử Gauss trên ma trận Vandermonde.
+  const d = degree;
+  const A: number[][] = Array.from({ length: d + 1 }, () => new Array(d + 2).fill(0));
+  for (let i = 0; i <= d; i++) {
+    for (let j = 0; j <= d; j++) A[i][j] = train.reduce((s, p) => s + Math.pow(p.x, i + j), 0);
+    A[i][d + 1] = train.reduce((s, p) => s + p.y * Math.pow(p.x, i), 0);
+  }
+  for (let i = 0; i <= d; i++) {
+    let piv = i;
+    for (let r = i + 1; r <= d; r++) if (Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+    [A[i], A[piv]] = [A[piv], A[i]];
+    if (Math.abs(A[i][i]) < 1e-12) continue;
+    for (let r = 0; r <= d; r++) {
+      if (r === i) continue;
+      const fac = A[r][i] / A[i][i];
+      for (let c = i; c <= d + 1; c++) A[r][c] -= fac * A[i][c];
+    }
+  }
+  const coef = Array.from({ length: d + 1 }, (_, i) => (Math.abs(A[i][i]) < 1e-12 ? 0 : A[i][d + 1] / A[i][i]));
+  const predict = (x: number) => coef.reduce((s, c, i) => s + c * Math.pow(x, i), 0);
+  const rmse = (set: { x: number; y: number }[]) =>
+    Math.sqrt(set.reduce((s, p) => s + (predict(p.x) - p.y) ** 2, 0) / set.length);
+
+  return { train, test, coef, predict, trainErr: rmse(train), testErr: rmse(test) };
+}
+
 export function LabOverfit() {
   const [degree, setDegree] = useState(3);
   const [seed, reseed] = useSeed();
@@ -596,29 +639,68 @@ export function LabOverfit() {
 /*  lab-gradient — Hạ gradient                                                 */
 /* ========================================================================== */
 
+/** Mặt lỗi một chiều có nhiều cực tiểu địa phương. */
+export const gradSurface = (x: number) => 0.55 + 0.35 * Math.sin(6.1 * x) - 0.42 * x + 0.42 * x * x;
+const gradSlope = (x: number) => 0.35 * 6.1 * Math.cos(6.1 * x) - 0.42 + 0.84 * x;
+
+/**
+ * Đường đi của hạ gradient. Tách khỏi component để chốt hai khẳng định trong
+ * lời kết luận: tốc độ học trên 0,4 thì bật lên bật xuống, và điểm khởi đầu
+ * khác nhau dẫn tới cực tiểu địa phương khác nhau.
+ */
+const GRAD_LO = -0.05;
+const GRAD_HI = 1.05;
+
+export type GradStatus = 'hoi-tu' | 'dao-dong' | 'ra-khoi-mien';
+
+export function gradientPath(lr: number, start: number, steps: number) {
+  const path: [number, number][] = [];
+  let x = start;
+  for (let i = 0; i < steps; i++) {
+    path.push([x, gradSurface(x)]);
+    x = clamp(x - lr * gradSlope(x), GRAD_LO, GRAD_HI);
+  }
+  path.push([x, gradSurface(x)]);
+  const final = path[path.length - 1];
+
+  /**
+   * Ba trạng thái, không phải hai.
+   *
+   * Bản trước chỉ có cờ `diverged` và nó bỏ sót đúng trường hợp tệ nhất: với
+   * tốc độ học lớn, bước nhảy vọt ra ngoài miền rồi bị `clamp` ghim vào mép.
+   * Hai bước cuối khi đó bằng nhau nên phép kiểm cũ kết luận "hội tụ" — trong
+   * khi thứ vừa xảy ra là trọng số nổ tung. Người học kéo tốc độ học lên hết cỡ
+   * và được báo là mọi thứ vẫn ổn.
+   */
+  const chamMep = path.some(([xx]) => xx <= GRAD_LO + 1e-9 || xx >= GRAD_HI - 1e-9);
+  let doiChieu = 0;
+  for (let i = 2; i < path.length; i++) {
+    const d1 = path[i - 1][0] - path[i - 2][0];
+    const d2 = path[i][0] - path[i - 1][0];
+    if (d1 * d2 < 0 && Math.abs(d2) > 0.02) doiChieu++;
+  }
+  const status: GradStatus = chamMep ? 'ra-khoi-mien' : doiChieu >= 3 ? 'dao-dong' : 'hoi-tu';
+  return { path, final, status, chamMep, doiChieu, diverged: status !== 'hoi-tu' };
+}
+
 export function LabGradient() {
   const [lr, setLr] = useState(0.12);
-  const [start, setStart] = useState(0.12);
+  /**
+   * Khởi đầu 0,5 chứ không phải 0,12. Từ 0,12 gradient đi thẳng sang trái, ra
+   * khỏi miền vẽ rồi bị ghim vào mép — tức trạng thái mặc định của lab từng là
+   * một ca hỏng, mà lại còn được báo là "Hội tụ". Từ 0,5 nó rơi vào một cực
+   * tiểu địa phương thật, và kéo thanh trượt về 0,1 là thấy ngay cực tiểu khác.
+   */
+  const [start, setStart] = useState(0.5);
   const [steps, setSteps] = useState(18);
 
-  const f = (x: number) => 0.55 + 0.35 * Math.sin(6.1 * x) - 0.42 * x + 0.42 * x * x;
-  const df = (x: number) => 0.35 * 6.1 * Math.cos(6.1 * x) - 0.42 + 0.84 * x;
-
-  const path = useMemo(() => {
-    const out: [number, number][] = [];
-    let x = start;
-    for (let i = 0; i < steps; i++) {
-      out.push([x, f(x)]);
-      x = clamp(x - lr * df(x), -0.05, 1.05);
-    }
-    out.push([x, f(x)]);
-    return out;
-  }, [lr, start, steps]);
+  const f = gradSurface;
+  const { path } = useMemo(() => gradientPath(lr, start, steps), [lr, start, steps]);
 
   const p = mkPlot(460, 280, [0, 1], [0, 1.1], { l: 44, r: 14, t: 14, b: 36 });
   const curve: [number, number][] = Array.from({ length: 200 }, (_, i) => [i / 199, f(i / 199)]);
-  const final = path[path.length - 1];
-  const diverged = path.some(([, y]) => y > 1.05) || Math.abs(final[1] - path[path.length - 2][1]) > 0.08;
+  const { final, status } = gradientPath(lr, start, steps);
+  const diverged = status !== 'hoi-tu';
 
   return (
     <LabShell
@@ -626,10 +708,21 @@ export function LabGradient() {
       title="Hạ gradient: đi xuống dốc trong sương mù"
       takeaway={
         <>
-          Thuật toán chỉ biết <b>độ dốc ngay dưới chân</b>, không nhìn thấy toàn cảnh. Vì thế: tốc độ học quá
-          nhỏ thì bò mãi không tới; quá lớn thì nhảy qua đáy và bật lên bật xuống (thử lr trên 0,4). Điểm khởi
-          đầu khác nhau dẫn tới <b>cực tiểu địa phương</b> khác nhau — đây là lý do huấn luyện hai lần cho hai
-          mô hình không giống nhau, và là lý do người ta phải chạy nhiều lần rồi chọn.
+          Thuật toán chỉ biết <b>độ dốc ngay dưới chân</b>, không nhìn thấy toàn cảnh. Ba chuyện xảy ra được,
+          và ô &ldquo;Trạng thái&rdquo; gọi tên từng cái.
+          <br />
+          <br />
+          Ở mặc định (lr 0,12, khởi đầu 0,5) nó <b>hội tụ</b> vào một cực tiểu địa phương tại x ≈ 0,76 với mất
+          mát 0,124. Nhích tốc độ học lên <b>0,2</b> và nó chuyển sang <b>dao động</b>: nhảy qua đáy rồi bật
+          lại, không đứng yên được. Từ <b>0,3 trở đi</b> thì bước nhảy vọt hẳn ra ngoài miền và bị ghim vào
+          mép, mất mát mắc kẹt ở 0,467 — trong một mô hình thật, đó chính là lúc trọng số nổ tung thành{' '}
+          <code>NaN</code>. Khoảng dùng được hẹp hơn nhiều so với cảm giác ban đầu.
+          <br />
+          <br />
+          Còn điểm khởi đầu thì quyết định bạn rơi vào <b>đáy nào</b>: từ 0,5 và từ 0,9 đều về x ≈ 0,76 với
+          mất mát 0,124, nhưng từ 0,1 thì gradient đi thẳng sang trái và trượt khỏi miền — cùng một thuật
+          toán, cùng một tốc độ học, hai số phận khác hẳn. Đây là lý do huấn luyện hai lần cho hai mô hình
+          không giống nhau, và là lý do người ta chạy nhiều lần rồi chọn.
         </>
       }
     >
@@ -649,7 +742,12 @@ export function LabGradient() {
         items={[
           { k: 'Vị trí cuối', v: final[0].toFixed(3) },
           { k: 'Mất mát cuối', v: final[1].toFixed(4), tone: final[1] < 0.25 ? 'ok' : final[1] < 0.5 ? 'warn' : 'bad' },
-          { k: 'Trạng thái', v: diverged ? 'Phân kỳ' : 'Hội tụ', tone: diverged ? 'bad' : 'ok' },
+          {
+            k: 'Trạng thái',
+            v: status === 'hoi-tu' ? 'Hội tụ' : status === 'dao-dong' ? 'Dao động' : 'Chạy ra khỏi miền',
+            tone: status === 'hoi-tu' ? 'ok' : 'bad',
+            sub: status === 'ra-khoi-mien' ? 'tương đương trọng số nổ tung' : '',
+          },
         ]}
       />
     </LabShell>

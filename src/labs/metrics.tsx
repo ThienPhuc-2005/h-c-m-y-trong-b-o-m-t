@@ -16,22 +16,34 @@ import { Icon } from '../components/Icon';
 /*  lab-base-rate — Nghịch lý tỉ lệ nền                                        */
 /* ========================================================================== */
 
-export function LabBaseRate() {
-  const [prevPer100k, setPrev] = useState(10); // số ca thật trên 100.000
-  const [tpr, setTpr] = useState(95);
-  const [fpr, setFpr] = useState(1);
-  const [volume, setVolume] = useState(1_000_000);
-
+/**
+ * Nghịch lý tỉ lệ nền, viết thẳng ra thành số. Tách khỏi component để chốt được
+ * lời kết luận: giữ bộ dò "rất tốt" mà hạ tỉ lệ nền thì độ chuẩn xác sụp đổ.
+ */
+export function baseRateStats(prevPer100k: number, tpr: number, fpr: number, volume: number) {
   const positives = (volume * prevPer100k) / 100_000;
   const negatives = volume - positives;
   const tp = positives * (tpr / 100);
   const fn = positives - tp;
   const fp = negatives * (fpr / 100);
   const tn = negatives - fp;
-  const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
   const alerts = tp + fp;
-  const minutesPerAlert = 12;
-  const analystHours = (alerts * minutesPerAlert) / 60;
+  return {
+    positives, negatives, tp, fn, fp, tn, alerts,
+    precision: alerts > 0 ? tp / alerts : 0,
+    /** 12 phút mỗi cảnh báo — cùng giả định với lab tải cảnh báo SOC. */
+    analystHours: (alerts * 12) / 60,
+  };
+}
+
+export function LabBaseRate() {
+  const [prevPer100k, setPrev] = useState(10); // số ca thật trên 100.000
+  const [tpr, setTpr] = useState(95);
+  const [fpr, setFpr] = useState(1);
+  const [volume, setVolume] = useState(1_000_000);
+
+  const { tp, fn, fp, tn, precision, alerts, analystHours } =
+    baseRateStats(prevPer100k, tpr, fpr, volume);
 
   return (
     <LabShell
@@ -355,24 +367,29 @@ export function LabRocPr() {
 /*  lab-cost-threshold — Ngưỡng tối ưu theo chi phí                            */
 /* ========================================================================== */
 
+/**
+ * Quét ngưỡng và tính chi phí kỳ vọng ở từng mức. Tách khỏi component để lời
+ * kết luận — "ngưỡng tối ưu hầu như không bao giờ là 0,5" — chốt được bằng test.
+ */
+export function costCurve(costFN: number, costFP: number, posRatePct: number) {
+  const data = makeScores(4242, 6000, 2.0, posRatePct / 100);
+  const out: { t: number; cost: number; alerts: number; missed: number }[] = [];
+  for (let t = 0.01; t <= 0.99; t += 0.01) {
+    const fn = data.filter((d) => d.y === 1 && d.score < t).length;
+    const fp = data.filter((d) => d.y === 0 && d.score >= t).length;
+    const tp = data.filter((d) => d.y === 1 && d.score >= t).length;
+    out.push({ t, cost: fn * costFN + fp * costFP, alerts: tp + fp, missed: fn });
+  }
+  const best = out.reduce((a, b) => (b.cost < a.cost ? b : a), out[0]);
+  return { curve: out, best };
+}
+
 export function LabCostThreshold() {
   const [costFN, setCostFN] = useState(50000);
   const [costFP, setCostFP] = useState(15);
   const [posRate, setPosRate] = useState(1);
-  const data = useMemo(() => makeScores(4242, 6000, 2.0, posRate / 100), [posRate]);
 
-  const curve = useMemo(() => {
-    const out: { t: number; cost: number; alerts: number; missed: number }[] = [];
-    for (let t = 0.01; t <= 0.99; t += 0.01) {
-      const fn = data.filter((d) => d.y === 1 && d.score < t).length;
-      const fp = data.filter((d) => d.y === 0 && d.score >= t).length;
-      const tp = data.filter((d) => d.y === 1 && d.score >= t).length;
-      out.push({ t, cost: fn * costFN + fp * costFP, alerts: tp + fp, missed: fn });
-    }
-    return out;
-  }, [data, costFN, costFP]);
-
-  const best = curve.reduce((a, b) => (b.cost < a.cost ? b : a), curve[0]);
+  const { curve, best } = useMemo(() => costCurve(costFN, costFP, posRate), [costFN, costFP, posRate]);
   const at05 = curve.find((c) => Math.abs(c.t - 0.5) < 0.006) ?? curve[Math.floor(curve.length / 2)];
   const maxCost = Math.max(...curve.map((c) => c.cost));
   const p = mkPlot(460, 240, [0, 1], [0, maxCost || 1], { l: 62, r: 12, t: 12, b: 36 });

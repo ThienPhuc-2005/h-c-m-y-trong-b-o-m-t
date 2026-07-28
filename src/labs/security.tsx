@@ -53,27 +53,36 @@ const vowelRatio = (s: string) => {
   return (t.match(/[aeiou]/g) ?? []).length / t.length;
 };
 
+/**
+ * Điểm nghi ngờ DGA: entropy cao + bigram lạ + ít nguyên âm.
+ *
+ * Tách khỏi component để chốt được lời kết luận, vốn nêu số cụ thể cho hai tên
+ * miền giả mạo thương hiệu và khẳng định chúng LỌT QUA ngưỡng mặc định.
+ */
+export function dgaScore(domain: string, wEnt = 1, wBi = 1) {
+  const label = domain.split('.')[0];
+  const ent = shannonEntropy(label);
+  const bi = bigramScore(label);
+  const vw = vowelRatio(label);
+  const score = clamp(
+    (wEnt * clamp((ent - 2.2) / 1.6, 0, 1) + wBi * (1 - bi) + 0.6 * clamp((0.38 - vw) / 0.38, 0, 1)) /
+      (wEnt + wBi + 0.6),
+    0,
+    1,
+  );
+  return { d: domain, label, ent, bi, vw, score };
+}
+
+/** Ngưỡng cảnh báo mặc định của lab — cũng là mốc mà lời kết luận nói tới. */
+export const DGA_THR = 0.5;
+
 export function LabEntropy() {
   const [input, setInput] = useState('kq3v9zx7wp1m.com');
   const [wEnt, setWEnt] = useState(1);
   const [wBi, setWBi] = useState(1);
-  const [thr, setThr] = useState(0.5);
+  const [thr, setThr] = useState(DGA_THR);
 
-  const analyse = (d: string) => {
-    const label = d.split('.')[0];
-    const ent = shannonEntropy(label);
-    const bi = bigramScore(label);
-    const vw = vowelRatio(label);
-    // Điểm nghi ngờ: entropy cao + bigram lạ + ít nguyên âm
-    const score = clamp(
-      (wEnt * clamp((ent - 2.2) / 1.6, 0, 1) + wBi * (1 - bi) + 0.6 * clamp((0.38 - vw) / 0.38, 0, 1)) /
-        (wEnt + wBi + 0.6),
-      0,
-      1,
-    );
-    return { d, label, ent, bi, vw, score };
-  };
-
+  const analyse = (d: string) => dgaScore(d, wEnt, wBi);
   const cur = analyse(input);
   const all = SAMPLE_DOMAINS.map(analyse);
 

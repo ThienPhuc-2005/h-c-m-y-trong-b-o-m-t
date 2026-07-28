@@ -19,9 +19,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
-import { makeScores, conformalRun, mcnemar, rocPrCurves } from './metrics';
-import { seasonalRun, authGraph } from './security';
-import { trainPerceptron } from './models';
+import { makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve } from './metrics';
+import { seasonalRun, authGraph, dgaScore, DGA_THR } from './security';
+import { trainPerceptron, gradientPath, overfitErrors } from './models';
 import { intervalForRetention } from '../lib/srs';
 
 describe('lab-poison — cửa hậu ẩn được nhờ dung lượng mô hình', () => {
@@ -80,6 +80,102 @@ describe('lab-confusion — accuracy chỉ nói dối khi lớp dương hiếm',
   it('ở tỉ lệ 20%, accuracy có phản ứng với thiệt hại', () => {
     // Cùng công thức, hành vi khác hẳn — đó là điều lab muốn cho thấy.
     expect(stats(0.2, 0.98).acc).toBeLessThan(0.85);
+  });
+});
+
+describe('lab-base-rate — bộ dò không đổi, tỉ lệ nền đổi, độ chuẩn xác sụp', () => {
+  const tot = (prev: number) => baseRateStats(prev, 95, 1, 1_000_000);
+
+  it('giữ TPR 95% và FPR 1% mà hạ tỉ lệ nền thì độ chuẩn xác rơi tự do', () => {
+    expect(tot(1000).precision).toBeGreaterThan(0.45);
+    expect(tot(10).precision).toBeLessThan(0.02);
+    expect(tot(1).precision).toBeLessThan(0.002);
+  });
+
+  it('số cảnh báo gần như không giảm — đó mới là chỗ đau', () => {
+    // Tỉ lệ nền giảm 1000 lần nhưng tải cảnh báo chỉ giảm chưa tới hai lần,
+    // vì gần như toàn bộ cảnh báo là dương tính giả.
+    expect(tot(1).alerts).toBeGreaterThan(tot(1000).alerts * 0.5);
+  });
+});
+
+describe('lab-cost-threshold — ngưỡng tối ưu hầu như không bao giờ là 0,5', () => {
+  it('bỏ sót đắt hơn báo động giả rất nhiều thì ngưỡng tụt xuống dưới 0,5', () => {
+    expect(costCurve(50_000, 15, 1).best.t).toBeLessThan(0.4);
+  });
+
+  it('hai loại lỗi ngang giá thì ngưỡng bị đẩy lên rất cao', () => {
+    // Chiều ngược lại cũng phải đúng, nếu không lời kết luận chỉ đúng một nửa.
+    expect(costCurve(100, 100, 1).best.t).toBeGreaterThan(0.9);
+  });
+});
+
+describe('lab-overfit — lỗi trên dữ liệu mới có hình chữ U', () => {
+  const testErr = (d: number, n: number) => overfitErrors(d, n).testErr;
+  const trainErr = (d: number, n: number) => overfitErrors(d, n).trainErr;
+
+  it('lỗi huấn luyện giảm đơn điệu theo bậc', () => {
+    for (let d = 2; d <= 9; d++) {
+      expect(trainErr(d, 14), `bậc ${d}`).toBeLessThanOrEqual(trainErr(d - 1, 14) + 1e-9);
+    }
+  });
+
+  it('lỗi trên dữ liệu mới chạm đáy rồi bật lên', () => {
+    expect(testErr(5, 14)).toBeLessThan(testErr(1, 14));
+    expect(testErr(9, 14)).toBeGreaterThan(testErr(5, 14));
+  });
+
+  it('ít dữ liệu làm mọi thứ tệ đi nhanh hơn hẳn — đúng lời mời "giảm xuống 8"', () => {
+    // Với 8 điểm, bậc 7 khớp hoàn hảo tập huấn luyện (lỗi 0) trong khi lỗi trên
+    // dữ liệu mới nhảy vọt. Đây chính là "100% trên tập huấn luyện là tin xấu".
+    expect(trainErr(7, 8)).toBeLessThan(1e-6);
+    expect(testErr(7, 8)).toBeGreaterThan(testErr(7, 14) * 2);
+  });
+});
+
+describe('lab-gradient — ba trạng thái, và trạng thái tệ nhất từng bị báo là hội tụ', () => {
+  it('mặc định hội tụ vào cực tiểu địa phương tại x ≈ 0,76', () => {
+    const r = gradientPath(0.12, 0.5, 18);
+    expect(r.status).toBe('hoi-tu');
+    expect(r.final[0]).toBeCloseTo(0.756, 2);
+    expect(r.final[1]).toBeCloseTo(0.124, 2);
+  });
+
+  it('tốc độ học 0,2 gây dao động, từ 0,3 thì chạy ra khỏi miền', () => {
+    expect(gradientPath(0.2, 0.5, 18).status).toBe('dao-dong');
+    for (const lr of [0.3, 0.4, 0.6]) {
+      expect(gradientPath(lr, 0.5, 18).status, `lr ${lr}`).toBe('ra-khoi-mien');
+    }
+  });
+
+  it('điểm khởi đầu quyết định rơi vào đáy nào', () => {
+    expect(gradientPath(0.12, 0.9, 18).final[0]).toBeCloseTo(0.756, 2);
+    expect(gradientPath(0.12, 0.1, 18).status).toBe('ra-khoi-mien');
+  });
+});
+
+describe('lab-entropy — hai tên miền giả mạo thương hiệu phải LỌT QUA', () => {
+  it('điểm nghi ngờ nằm đúng khoảng 0,45–0,47 mà lời kết luận nêu', () => {
+    const a = dgaScore('paypal-login.com').score;
+    const b = dgaScore('vietcombank-online.com').score;
+    expect(a).toBeGreaterThan(0.44);
+    expect(a).toBeLessThan(0.48);
+    expect(b).toBeGreaterThan(0.44);
+    expect(b).toBeLessThan(0.48);
+  });
+
+  it('và cả hai đều dưới ngưỡng, tức bộ dò thật sự mù trước chúng', () => {
+    expect(dgaScore('paypal-login.com').score).toBeLessThan(DGA_THR);
+    expect(dgaScore('vietcombank-online.com').score).toBeLessThan(DGA_THR);
+  });
+
+  it('trong khi tên miền DGA thật thì bị bắt', () => {
+    expect(dgaScore('kq3v9zx7wp1m.com').score).toBeGreaterThan(DGA_THR);
+  });
+
+  it('entropy một mình không đủ: aaaaaaaa.com có entropy bằng 0 mà vẫn là rác', () => {
+    expect(dgaScore('aaaaaaaa.com').ent).toBe(0);
+    expect(dgaScore('vietcombank.com.vn').ent).toBeGreaterThan(3);
   });
 });
 
