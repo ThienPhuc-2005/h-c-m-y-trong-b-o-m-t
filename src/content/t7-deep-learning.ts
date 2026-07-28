@@ -1754,7 +1754,7 @@ export const track7: Track = {
       title: 'Khi nào KHÔNG nên dùng deep learning',
       subtitle: 'Bài quan trọng nhất chặng này: phần lớn bài toán bảo mật là dữ liệu bảng, và cây vẫn thắng',
       minutes: 27,
-      practiceMinutes: 3,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t7-l3', 't7-l5', 't3-l5', 't6-l2'],
       why: {
@@ -1885,6 +1885,12 @@ export const track7: Track = {
               why: 'Không miễn nhiễm — chỉ **đắt hơn để tấn công**. Kẻ tấn công vẫn có thể dò theo kiểu hộp đen (thử và quan sát điểm số), tấn công bằng thuật toán tiến hoá, hoặc huấn luyện một mô hình thay thế khả vi rồi chuyển mẫu đối kháng sang. Điểm khác biệt thật nằm ở chỗ **không có đường tối ưu trơn để đi theo**, nên chi phí mỗi lần né cao hơn nhiều và kẻ tấn công cần nhiều lượt truy vấn hơn — đó là thứ bạn có thể giám sát và giới hạn. Đừng bán "không có gradient" như một sự an toàn; hãy bán nó như một mức chi phí. Chi tiết ở chặng 8.',
             },
           ],
+        },
+        {
+          t: 'lab',
+          id: 'lab-tabular',
+          intro:
+            'Đừng tin câu "cây thắng trên dữ liệu bảng" chỉ vì bài học nói vậy — hãy tự đo. Lab cho bạn ba núm của mạng nơ-ron và **không núm nào** cho rừng. Ở cấu hình mặc định, rừng dẫn 3,3 điểm. Nhưng có một điểm đặt cho mạng chạm được trần lý thuyết và vượt rừng; hãy đi tìm nó, rồi đếm xem bạn đã kéo bao nhiêu lần. Con số đó mới là bài học thật của bài này.',
         },
         { t: 'h', text: 'Năm chi phí ẩn không nằm trong bảng chất lượng', level: 2 },
         {

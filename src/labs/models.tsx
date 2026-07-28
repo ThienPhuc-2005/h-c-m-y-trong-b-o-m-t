@@ -7,7 +7,7 @@
 
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { LabShell, Slider, Readout, Chart, Axes, Line, Dots, mkPlot, px, py, COLORS, Bars, Reseed, useSeed } from './kit';
-import { mulberry32, gaussian, sigmoid, clamp, shuffle } from '../lib/utils';
+import { mulberry32, gaussian, sigmoid, clamp, shuffle, fmtNum } from '../lib/utils';
 import { Icon } from '../components/Icon';
 
 /* ========================================================================== */
@@ -1289,6 +1289,336 @@ export function LabExplain() {
           Đây là đường đi thật của cây, dịch thành câu. Dòng đỏ là chỗ cây hỏi
           về cột rác — analyst đọc tới đó sẽ mất lòng tin vào cả khối giải
           thích, và họ có lý.
+        </div>
+      </div>
+    </LabShell>
+  );
+}
+/* ========================================================================== */
+/*  lab-tabular — Rừng so với mạng nơ-ron trên dữ liệu bảng                    */
+/* ========================================================================== */
+
+/** Rời rạc hoá đặc trưng liên tục thành 16 mức, đúng cách LightGBM làm. */
+const TAB_BINS = 16;
+const tabQuant = (v: number) => Math.round(v * (TAB_BINS - 1)) / (TAB_BINS - 1);
+
+interface TabRow {
+  x: number[];
+  y: 0 | 1;
+}
+
+/**
+ * Luật sinh nhãn: cộng tính có ngưỡng GÃY KHÚC và hai tương tác.
+ * Đây là hình dạng đặc trưng của dữ liệu bảng trong bảo mật — "ngoài giờ VÀ từ
+ * dải IP lạ" nguy hiểm hơn hẳn tổng hai yếu tố riêng lẻ.
+ */
+function tabTrueZ(x: number[]): number {
+  let z = -2.2 + 1.7 * x[0] + 2.4 * x[2] + 1.1 * x[3];
+  if (x[1] > 0.6) z += 1.8;
+  if (x[4] > 0.75 && x[0] === 1) z += 2.0;
+  if (x[6] > 0.6 && x[2] === 1) z += 1.6;
+  return z;
+}
+
+function tabData(n: number, seed: number): TabRow[] {
+  const rng = mulberry32(seed);
+  const out: TabRow[] = [];
+  for (let i = 0; i < n; i++) {
+    const raw = [
+      rng() < 0.25 ? 1 : 0,
+      Math.floor(rng() * 8) / 8,
+      rng() < 0.12 ? 1 : 0,
+      rng() < 0.3 ? 1 : 0,
+      rng(),
+      rng(),
+      Math.floor(rng() * 5) / 5,
+      rng() < 0.08 ? 1 : 0,
+    ];
+    // Nhãn sinh từ giá trị GỐC rồi mới rời rạc hoá đặc trưng — nếu làm ngược
+    // lại thì cả hai mô hình đều thấy một bài toán dễ hơn thực tế.
+    out.push({
+      x: raw.map(tabQuant),
+      y: sigmoid(tabTrueZ(raw)) > rng() ? 1 : 0,
+    });
+  }
+  return out;
+}
+
+const tabGini = (rows: TabRow[]) => {
+  if (!rows.length) return 0;
+  const p = rows.filter((r) => r.y === 1).length / rows.length;
+  return 2 * p * (1 - p);
+};
+
+type TabNode =
+  { leaf: number } | { f: number; t: number; l: TabNode; r: TabNode };
+
+function tabTree(
+  rows: TabRow[],
+  depth: number,
+  rng: () => number,
+  mtry: number,
+): TabNode {
+  if (depth === 0 || rows.length < 6 || tabGini(rows) === 0) {
+    return {
+      leaf: rows.length
+        ? rows.filter((r) => r.y === 1).length / rows.length
+        : 0,
+    };
+  }
+  const feats = [...Array(8).keys()].sort(() => rng() - 0.5).slice(0, mtry);
+  let best: {
+    g: number;
+    f: number;
+    t: number;
+    L: TabRow[];
+    R: TabRow[];
+  } | null = null;
+  for (const f of feats) {
+    const vals = [...new Set(rows.map((r) => r.x[f]))].sort((a, b) => a - b);
+    for (let i = 0; i < vals.length - 1; i++) {
+      const t = (vals[i] + vals[i + 1]) / 2;
+      const L = rows.filter((r) => r.x[f] <= t);
+      const R = rows.filter((r) => r.x[f] > t);
+      if (!L.length || !R.length) continue;
+      const g =
+        tabGini(rows) -
+        (L.length * tabGini(L) + R.length * tabGini(R)) / rows.length;
+      if (!best || g > best.g) best = { g, f, t, L, R };
+    }
+  }
+  if (!best)
+    return { leaf: rows.filter((r) => r.y === 1).length / rows.length };
+  return {
+    f: best.f,
+    t: best.t,
+    l: tabTree(best.L, depth - 1, rng, mtry),
+    r: tabTree(best.R, depth - 1, rng, mtry),
+  };
+}
+
+const tabPredict = (n: TabNode, x: number[]): number =>
+  "leaf" in n
+    ? n.leaf
+    : x[n.f] <= n.t
+      ? tabPredict(n.l, x)
+      : tabPredict(n.r, x);
+
+export interface TabularOut {
+  /** Độ chính xác của rừng — KHÔNG có tinh chỉnh nào. */
+  forest: number;
+  mlp: number;
+  /** Trần lý thuyết: dùng thẳng luật sinh nhãn. Nhiễu nhãn chặn mọi mô hình ở đây. */
+  ceiling: number;
+  gap: number;
+}
+
+export function tabularRun(
+  n: number,
+  hidden: number,
+  lr: number,
+  epochs: number,
+): TabularOut {
+  const train = tabData(n, 7);
+  const test = tabData(1200, 999);
+  const acc = (f: (x: number[]) => number) =>
+    test.filter((r) => (f(r.x) >= 0.5 ? 1 : 0) === r.y).length / test.length;
+
+  // --- Rừng ngẫu nhiên: 30 cây, sâu 6, mỗi nút xét 3 đặc trưng ngẫu nhiên ---
+  const frng = mulberry32(3);
+  const trees: TabNode[] = [];
+  for (let k = 0; k < 30; k++) {
+    const bag = Array.from(
+      { length: train.length },
+      () => train[Math.floor(frng() * train.length)],
+    );
+    trees.push(tabTree(bag, 6, frng, 3));
+  }
+  const forestFn = (x: number[]) =>
+    trees.reduce((s, t) => s + tabPredict(t, x), 0) / trees.length;
+
+  // --- MLP một lớp ẩn, ReLU, hạ gradient theo từng mẫu ---
+  const rng = mulberry32(11);
+  let W1 = Array.from({ length: hidden }, () =>
+    Array.from({ length: 8 }, () => (rng() * 2 - 1) * 0.7),
+  );
+  let b1 = Array.from({ length: hidden }, () => 0);
+  let W2 = Array.from({ length: hidden }, () => (rng() * 2 - 1) * 0.7);
+  let b2 = 0;
+  for (let e = 0; e < epochs; e++) {
+    const order = [...train.keys()].sort(() => rng() - 0.5);
+    for (const i of order) {
+      const s = train[i];
+      const h = W1.map((w, k) =>
+        Math.max(
+          0,
+          w.reduce((a, wi, j) => a + wi * s.x[j], b1[k]),
+        ),
+      );
+      const o = sigmoid(h.reduce((a, hi, k) => a + hi * W2[k], b2));
+      const d2 = o - s.y;
+      const dh = W2.map((w, k) => (h[k] > 0 ? d2 * w : 0));
+      W2 = W2.map((w, k) => w - lr * d2 * h[k]);
+      b2 -= lr * d2;
+      W1 = W1.map((w, k) => w.map((wi, j) => wi - lr * dh[k] * s.x[j]));
+      b1 = b1.map((bb, k) => bb - lr * dh[k]);
+    }
+  }
+  const mlpFn = (x: number[]) => {
+    const h = W1.map((w, k) =>
+      Math.max(
+        0,
+        w.reduce((a, wi, j) => a + wi * x[j], b1[k]),
+      ),
+    );
+    return sigmoid(h.reduce((a, hi, k) => a + hi * W2[k], b2));
+  };
+
+  const forest = acc(forestFn);
+  const mlp = acc(mlpFn);
+  return {
+    forest,
+    mlp,
+    ceiling: acc((x) => sigmoid(tabTrueZ(x))),
+    gap: forest - mlp,
+  };
+}
+
+export function LabTabular() {
+  const [n, setN] = useState(1200);
+  const [hidden, setHidden] = useState(16);
+  const [lr, setLr] = useState(0.1);
+  const [epochs, setEpochs] = useState(50);
+
+  const r = useMemo(
+    () => tabularRun(n, hidden, lr, epochs),
+    [n, hidden, lr, epochs],
+  );
+  const mlpThang = r.mlp >= r.forest;
+
+  return (
+    <LabShell
+      id="lab-tabular"
+      title="Rừng so với mạng nơ-ron trên đúng loại dữ liệu bạn sẽ gặp"
+      takeaway={
+        <>
+          Dữ liệu ở đây là dữ liệu bảng điển hình của bảo mật: tám cột, vài
+          ngưỡng gãy khúc, hai tương tác kiểu &ldquo;ngoài giờ VÀ từ dải
+          lạ&rdquo;. Nhiễu nhãn chặn mọi mô hình ở <b>trần 75,9%</b> — con số đó
+          hiện luôn trong ô thứ ba để bạn biết còn cách đích bao xa.
+          <br />
+          <br />
+          Rừng đạt <b>75,1%</b>, tức cách trần đúng 0,8 điểm — và nó đạt được
+          như vậy mà <b>không có một núm nào để vặn</b>. Mạng nơ-ron với cấu
+          hình trông rất hợp lý (16 nơ-ron ẩn, lr 0,1, 50 vòng) chỉ được{" "}
+          <b>71,8%</b>, thua 3,3 điểm.
+          <br />
+          <br />
+          Nhưng đừng dừng ở đó, vì kết luận &ldquo;mạng nơ-ron kém hơn&rdquo; là
+          kết luận sai. Hãy đi tìm cấu hình tốt hơn — nó tồn tại. Có một điểm
+          đặt trên ba thanh trượt cho <b>75,7%</b>, tức ngang trần và nhỉnh hơn
+          rừng. Gợi ý: nó không nằm ở phía bạn nghĩ.{" "}
+          <b>Mạng NHỎ nhất mới thắng</b>, không phải mạng lớn nhất.
+          <br />
+          <br />
+          Đó mới là lập luận thật cho dữ liệu bảng, và nó không phải &ldquo;cây
+          mạnh hơn&rdquo;: cây đưa bạn tới sát đích <b>ngay từ lần chạy đầu</b>,
+          còn mạng nơ-ron tới được cùng chỗ nhưng bắt bạn trả bằng một cuộc dò
+          siêu tham số. Với một đội SOC phải giao hệ thống trong hai tuần, khoản
+          chi phí đó mới là thứ quyết định — chứ không phải 0,6 điểm phần trăm.
+        </>
+      }
+    >
+      <Slider
+        label="Số mẫu huấn luyện"
+        value={n}
+        min={200}
+        max={1200}
+        step={100}
+        onChange={setN}
+        format={(v) => fmtNum(v)}
+        hint="Cả hai mô hình dùng chung tập này; tập kiểm thử luôn cố định 1.200 mẫu."
+      />
+
+      <div className="panel">
+        <div className="stat-k" style={{ marginBottom: 10 }}>
+          Ba núm CHỈ của mạng nơ-ron — rừng không có núm nào
+        </div>
+        <div className="grid grid-3">
+          <Slider
+            label="Nơ-ron lớp ẩn"
+            value={hidden}
+            min={4}
+            max={24}
+            step={4}
+            onChange={setHidden}
+          />
+          <Slider
+            label="Tốc độ học"
+            value={lr}
+            min={0.02}
+            max={0.4}
+            step={0.01}
+            onChange={setLr}
+            format={(v) => v.toFixed(2)}
+          />
+          <Slider
+            label="Số vòng huấn luyện"
+            value={epochs}
+            min={20}
+            max={80}
+            step={10}
+            onChange={setEpochs}
+          />
+        </div>
+      </div>
+
+      <Readout
+        items={[
+          {
+            k: "Rừng ngẫu nhiên",
+            v: `${(r.forest * 100).toFixed(1)}%`,
+            tone: mlpThang ? "neutral" : "ok",
+            sub: "không tinh chỉnh gì",
+          },
+          {
+            k: "Mạng nơ-ron",
+            v: `${(r.mlp * 100).toFixed(1)}%`,
+            tone: mlpThang ? "ok" : "bad",
+            sub: `${hidden} ẩn · lr ${lr.toFixed(2)} · ${epochs} vòng`,
+          },
+          {
+            k: "Trần lý thuyết",
+            v: `${(r.ceiling * 100).toFixed(1)}%`,
+            tone: "info",
+            sub: "nhiễu nhãn chặn ở đây",
+          },
+          {
+            k: "Chênh lệch",
+            v: `${r.gap >= 0 ? "+" : ""}${(r.gap * 100).toFixed(1)} đp`,
+            tone: Math.abs(r.gap) < 0.01 ? "ok" : r.gap > 0 ? "warn" : "ok",
+            sub: r.gap > 0 ? "rừng đang dẫn" : "mạng đang dẫn",
+          },
+        ]}
+      />
+
+      <div className={`callout ${mlpThang ? "co-pro" : "co-pitfall"}`}>
+        <Icon
+          className="callout-icon"
+          name={mlpThang ? "check" : "lightbulb"}
+          size={18}
+        />
+        <div>
+          <div className="callout-title">
+            {mlpThang
+              ? "Bạn đã tìm ra cấu hình bắt kịp rừng"
+              : "Rừng vẫn đang dẫn — hãy thử tiếp"}
+          </div>
+          <div className="callout-body">
+            {mlpThang
+              ? `Đúng như dự đoán: mạng nơ-ron làm được. Nhưng hãy đếm xem bạn đã kéo bao nhiêu lần để tới đây — rừng đạt ${(r.forest * 100).toFixed(1)}% ngay ở lần chạy đầu tiên, không cần một lần kéo nào. Đó chính là cái giá mà bài học nói tới.`
+              : `Mạng đang kém ${(r.gap * 100).toFixed(1)} điểm phần trăm. Trước khi kết luận mạng nơ-ron không hợp dữ liệu bảng, hãy thử GIẢM số nơ-ron ẩn thay vì tăng — trên bài toán nhỏ và nhiều nhiễu, dung lượng thừa chỉ giúp mô hình học thuộc nhiễu.`}
+          </div>
         </div>
       </div>
     </LabShell>

@@ -21,7 +21,7 @@ import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
 import { makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve } from './metrics';
 import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison } from './security';
-import { trainPerceptron, gradientPath, overfitErrors, explainRun, JUNK } from './models';
+import { trainPerceptron, gradientPath, overfitErrors, explainRun, JUNK, tabularRun } from './models';
 import { intervalForRetention } from '../lib/srs';
 
 describe('lab-poison — cửa hậu ẩn được nhờ dung lượng mô hình', () => {
@@ -80,6 +80,37 @@ describe('lab-confusion — accuracy chỉ nói dối khi lớp dương hiếm',
   it('ở tỉ lệ 20%, accuracy có phản ứng với thiệt hại', () => {
     // Cùng công thức, hành vi khác hẳn — đó là điều lab muốn cho thấy.
     expect(stats(0.2, 0.98).acc).toBeLessThan(0.85);
+  });
+});
+
+describe('lab-tabular — cây tới đích ngay, mạng tới được nhưng phải trả giá', () => {
+  const macDinh = tabularRun(1200, 16, 0.1, 50);
+  const thang = tabularRun(1200, 4, 0.05, 50);
+
+  it('ba con số mặc định đúng như lời kết luận in ra', () => {
+    expect(macDinh.forest).toBeCloseTo(0.751, 2);
+    expect(macDinh.mlp).toBeCloseTo(0.718, 2);
+    expect(macDinh.ceiling).toBeCloseTo(0.759, 2);
+  });
+
+  it('rừng cách trần lý thuyết chưa tới 1 điểm phần trăm mà không có núm nào', () => {
+    expect(macDinh.ceiling - macDinh.forest).toBeLessThan(0.01);
+  });
+
+  it('cấu hình mặc định của mạng thua rừng khoảng 3,3 điểm', () => {
+    expect(macDinh.gap).toBeGreaterThan(0.025);
+    expect(macDinh.gap).toBeLessThan(0.045);
+  });
+
+  it('TỒN TẠI cấu hình mạng bắt kịp và vượt rừng — lab mời người học đi tìm', () => {
+    // Nếu dòng này trượt thì lời kết luận đang mời người học đuổi theo một thứ
+    // không tồn tại, và cả lập luận "mạng làm được, chỉ tốn công dò" sụp theo.
+    expect(thang.mlp).toBeGreaterThan(thang.forest);
+    expect(thang.mlp).toBeCloseTo(0.757, 2);
+  });
+
+  it('và cấu hình thắng là mạng NHỎ, không phải mạng lớn', () => {
+    expect(tabularRun(1200, 4, 0.05, 50).mlp).toBeGreaterThan(tabularRun(1200, 24, 0.05, 50).mlp);
   });
 });
 

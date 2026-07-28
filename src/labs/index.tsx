@@ -8,7 +8,7 @@ import type { ComponentType } from 'react';
 import { Icon } from '../components/Icon';
 import type { IconName } from '../components/Icon';
 import { LabBaseRate, LabConfusion, LabRocPr, LabCostThreshold, LabCalibration, LabAlertLoad, LabConformal, LabMcnemar } from './metrics';
-import { LabLogistic, LabNaiveBayes, LabTree, LabKnn, LabOverfit, LabGradient, LabPerceptron, LabKmeans, LabExplain } from './models';
+import { LabLogistic, LabNaiveBayes, LabTree, LabKnn, LabOverfit, LabGradient, LabPerceptron, LabKmeans, LabExplain, LabTabular } from './models';
 import { LabEntropy, LabUrlFeatures, LabPeFeatures, LabTfidf, LabAnomaly, LabDrift, LabSeasonality, LabAuthGraph, LabSplit } from './security';
 import { LabAdversarial, LabPoison, LabPromptInjection, LabForgetting } from './adversarial';
 
@@ -48,6 +48,7 @@ export const LABS: LabMeta[] = [
   { id: 'lab-seasonality', title: 'Mùa vụ và phần dư', blurb: 'Xem một đợt tấn công tự nâng mức nền của chính khung giờ nó xảy ra.', track: 'ung-dung', icon: 'activity', Component: LabSeasonality },
   { id: 'lab-auth-graph', title: 'Đồ thị xác thực', blurb: 'Di chuyển ngang nhìn từ trên xuống — và cách dựng đồ thị sai làm đảo ngược tín hiệu.', track: 'ung-dung', icon: 'network', Component: LabAuthGraph },
   { id: 'lab-perceptron', title: 'Perceptron & XOR', blurb: 'Bài toán từng khiến ngành AI đóng băng 17 năm.', track: 'deep-learning', icon: 'network', Component: LabPerceptron },
+  { id: 'lab-tabular', title: 'Rừng so với mạng nơ-ron', blurb: 'Trên dữ liệu bảng, cây tới đích ngay — mạng tới được, nhưng bắt bạn trả giá.', track: 'deep-learning', icon: 'git-fork', Component: LabTabular },
   { id: 'lab-adversarial', title: 'Tấn công né tránh', blurb: 'Chỉnh đặc trưng để lật nhãn — và đo công sức phải bỏ ra.', track: 'adversarial', icon: 'crosshair', Component: LabAdversarial },
   { id: 'lab-poison', title: 'Đầu độc dữ liệu', blurb: 'Mở cửa hậu trong mô hình mà mọi chỉ số vẫn xanh.', track: 'adversarial', icon: 'skull', Component: LabPoison },
   { id: 'lab-prompt-injection', title: 'Hộp cát prompt injection', blurb: 'Thử các lớp phòng thủ cho tác tử LLM và xem cái nào thật sự hiệu quả.', track: 'llm-genai', icon: 'message-alert', Component: LabPromptInjection },
