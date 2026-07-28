@@ -1481,6 +1481,12 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
         },
         { t: 'h', text: 'Những phòng thủ thực sự làm việc trong hệ thống đang chạy', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-attack-cost',
+          caption:
+            'Không lớp phòng thủ nào chặn được mọi thứ, và đó không phải mục tiêu. Mỗi lớp đẩy công sức phải bỏ ra lên cao thêm một bậc; khi nó vượt phần kẻ tấn công thu được, hắn đổi mục tiêu chứ không đổi kỹ thuật.',
+        },
+        {
           t: 'p',
           md: 'Chuyển sang nửa quan trọng hơn. Trong vận hành, bạn không cần chứng minh độ bền toán học — bạn cần làm cho cuộc tấn công **đắt hơn giá trị nó mang lại**. Đó là mục tiêu khả thi, và các biện pháp sau đây phục vụ đúng mục tiêu đó.',
         },
@@ -1788,6 +1794,12 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
           },
         },
         { t: 'h', text: 'Quy trình sáu bước', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-ml-redteam',
+          caption:
+            'Bước 6 nối lại bước 1: mỗi lần mô hình được huấn luyện lại là một phạm vi mới, nên đánh giá ML là việc lặp chứ không phải một đợt rồi xong.',
+        },
         {
           t: 'steps',
           title: 'Một đợt đánh giá ML từ đầu tới cuối',

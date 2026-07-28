@@ -46,6 +46,12 @@ export const FIGURE_IDS = [
   'fig-llm-three-risks', // Jailbreak / rò rỉ / ảo giác: ba chiều khác nhau
   'fig-ai-rmf', // NIST AI RMF với GOVERN ở giữa
   'fig-role-overlap', // Hai vai trò chồng lấn 60%
+  'fig-pandas-three', // Ba thao tác pandas và chỗ mỗi cái âm thầm sai
+  'fig-dataset-age', // Bộ dữ liệu công khai đóng băng ở năm nó được tạo
+  'fig-attack-cost', // Phòng thủ làm tấn công đắt hơn phần thu được
+  'fig-ml-redteam', // Sáu bước đánh giá ML, bước 6 quay lại bước 1
+  'fig-owasp-llm', // Sáu mục OWASP LLM gắn vào kiến trúc ứng dụng
+  'fig-project-readme', // Sáu mục README và câu hỏi mỗi mục trả lời
 ] as const;
 
 export type KnownFigureId = (typeof FIGURE_IDS)[number];

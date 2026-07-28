@@ -2139,6 +2139,12 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
         },
         { t: 'h', text: 'README — mười phút quyết định số phận dự án', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-project-readme',
+          caption:
+            'Sáu mục, mỗi mục trả lời một câu người đọc đang hỏi trong đầu. Mục thứ tư — chỗ mô hình hoạt động kém — là mục người mới hay bỏ, và cũng là mục làm người trong nghề tin bạn.',
+        },
+        {
           t: 'steps',
           title: 'Cấu trúc README mà người trong nghề đọc hết',
           steps: [

@@ -1669,6 +1669,12 @@ cursor.execute('SELECT * FROM nguoi_dung WHERE ma = %s', (ket_qua['ma_nguoi_dung
         },
         { t: 'h', text: 'Dùng danh sách này thế nào cho có ích', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-owasp-llm',
+          caption:
+            'Danh sách chỉ có ích khi bạn biết mỗi mục sống ở đâu trong kiến trúc. Sáu mục hay bị hiểu sai nhất được gắn vào đúng chặng của chúng — đầu vào, mô hình, đầu ra, công cụ.',
+        },
+        {
           t: 'compare',
           title: 'Hai cách dùng OWASP Top 10, một cách hỏng',
           left: {

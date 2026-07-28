@@ -406,7 +406,7 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Python và pandas cho dữ liệu bảo mật',
       subtitle: 'Đủ để làm việc thật: đọc log, gộp theo thời gian, ghép threat intel',
-      minutes: 25,
+      minutes: 26,
       practiceMinutes: 3,
       level: 'co-ban',
       prereqs: ['t2-l1'],
@@ -470,6 +470,12 @@ export const track2: Track = {
           md: '**(1)** Cột chứa cả số và chuỗi bị pandas suy ra thành `object`, và mọi phép so sánh sau đó cho kết quả sai mà không báo lỗi.\n\n**(2)** ID có số 0 đứng đầu (một số mã sự kiện, số hiệu tài sản) bị đọc thành số nguyên và mất luôn số 0 — sau đó không ghép được với bảng tham chiếu.\n\n**(3)** Timestamp không có múi giờ được giữ nguyên dạng chuỗi, rồi bạn sắp xếp theo thứ tự chữ cái và tưởng đó là thứ tự thời gian. **Luôn in `df.dtypes` sau khi đọc.**',
         },
         { t: 'h', text: 'Bước 2 — Ba thao tác tổng hợp chiếm phần lớn công việc', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-pandas-three',
+          caption:
+            'Ba thao tác này chiếm phần lớn thời gian làm việc với log, và mỗi cái có một cách sai âm thầm riêng: đếm trên thực thể chưa hợp nhất, chọn cửa sổ không theo hành vi kẻ tấn công, và ghép threat intel mà bỏ chiều thời gian.',
+        },
         {
           t: 'code',
           lang: 'python',
@@ -1630,6 +1636,12 @@ export const track2: Track = {
           ],
         },
         { t: 'h', text: 'Vấn đề thật của từng bộ', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-dataset-age',
+          caption:
+            'Mỗi bộ dữ liệu đóng băng ở năm nó được tạo, còn hạ tầng bạn bảo vệ thì không đứng yên. Dùng chúng để học cách làm và để so sánh thuật toán thì tốt; lấy điểm số trên chúng đi hứa với ban lãnh đạo thì không.',
+        },
         {
           t: 'steps',
           title: 'Đọc kỹ trước khi trích dẫn bất kỳ kết quả nào',

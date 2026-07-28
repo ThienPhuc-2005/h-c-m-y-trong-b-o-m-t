@@ -964,9 +964,208 @@ const RoleOverlap = () => (
   </Svg>
 );
 
+/** t2-l2 — ba thao tác chiếm phần lớn công việc, và chỗ mỗi cái âm thầm sai. */
+const PandasThree = () => (
+  <Svg vb="0 0 620 250">
+    <Defs />
+    <T x={310} y={18} strong>Ba thao tác gánh phần lớn công việc trên dữ liệu bảo mật</T>
+
+    <Box x={10} y={38} w={192} h={188} fill="var(--info-soft)" stroke="var(--info-border)" />
+    <T x={106} y={62} strong>Gộp theo thực thể</T>
+    <T x={106} y={82} size={11}>groupby(user).nunique(host)</T>
+    {[0, 1, 2, 3].map((i) => <rect key={i} x={38} y={98 + i * 13} width={64} height={9} rx={2} fill={C.info} opacity={0.55} />)}
+    <Arrow x1={112} y1={118} x2={140} y2={118} />
+    <rect x={144} y={112} width={40} height={12} rx={2} fill={C.info} />
+    <T x={106} y={178} size={11}>Sai nếu chưa hợp nhất</T>
+    <T x={106} y={196} size={11}>bí danh: một người thành</T>
+    <T x={106} y={214} size={11}>tám, mọi phép đếm phồng</T>
+
+    <Box x={214} y={38} w={192} h={188} fill="var(--ok-soft)" stroke="var(--ok-border)" />
+    <T x={310} y={62} strong>Gộp theo cửa sổ</T>
+    <T x={310} y={82} size={11}>resample(&apos;5min&apos;).count()</T>
+    <line x1={238} y1={124} x2={382} y2={124} stroke={C.line} strokeWidth="1.5" />
+    {[0, 1, 2, 3, 4].map((i) => (
+      <rect key={i} x={240 + i * 29} y={124 - (i === 2 ? 26 : 10)} width={22} height={i === 2 ? 26 : 10} rx={2}
+        fill={i === 2 ? C.bad : C.ok} opacity={i === 2 ? 1 : 0.6} />
+    ))}
+    <T x={310} y={178} size={11}>Sai nếu chọn cửa sổ không</T>
+    <T x={310} y={196} size={11}>theo hành vi kẻ tấn công:</T>
+    <T x={310} y={214} size={11}>đỉnh bị trải phẳng thành nền</T>
+
+    <Box x={418} y={38} w={192} h={188} fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <T x={514} y={62} strong>Ghép threat intel</T>
+    <T x={514} y={82} size={11}>merge theo khoảng hiệu lực</T>
+    <rect x={442} y={98} width={62} height={30} rx={3} fill="var(--bg-elev)" stroke={C.line} />
+    <rect x={524} y={98} width={62} height={30} rx={3} fill="var(--bg-elev)" stroke={C.line} />
+    <T x={473} y={117} size={11}>log</T>
+    <T x={555} y={117} size={11}>IOC</T>
+    <Arrow x1={506} y1={113} x2={522} y2={113} color={C.warn} />
+    <T x={514} y={146} size={11}>ip + [từ ngày, tới ngày]</T>
+    <T x={514} y={178} size={11}>Sai nếu ghép theo IP mà bỏ</T>
+    <T x={514} y={196} size={11}>thời gian: IOC hết hạn vẫn</T>
+    <T x={514} y={214} size={11}>khớp, sinh báo động giả</T>
+  </Svg>
+);
+
+/** t2-l5 — bộ dữ liệu công khai đứng yên, còn bề mặt tấn công thì không. */
+const DatasetAge = () => (
+  <Svg vb="0 0 620 230">
+    <Defs />
+    <T x={310} y={18} strong>Bộ dữ liệu công khai đóng băng ở năm nó được tạo</T>
+    <line x1={40} y1={150} x2={580} y2={150} stroke={C.line} strokeWidth="1.5" />
+    {[
+      { n: 'KDD Cup 99', y: 1999, dy: 0 },
+      { n: 'NSL-KDD', y: 2009, dy: 1 },
+      { n: 'CTU-13', y: 2013, dy: 0 },
+      { n: 'UNSW-NB15', y: 2015, dy: 1 },
+      { n: 'CIC-IDS2017', y: 2017, dy: 0 },
+      { n: 'EMBER', y: 2018, dy: 1 },
+      { n: 'SOREL-20M', y: 2020, dy: 0 },
+    ].map((d, i) => {
+      const x = 40 + ((d.y - 1997) / 27) * 540;
+      const yTop = d.dy ? 78 : 112;
+      return (
+        <g key={i}>
+          <line x1={x} y1={150} x2={x} y2={yTop + 16} stroke={C.line} strokeWidth="1.2" />
+          <circle cx={x} cy={150} r={4} fill={C.info} />
+          <T x={x} y={yTop} size={11}>{d.n}</T>
+          <T x={x} y={yTop + 14} size={11}>{String(d.y)}</T>
+        </g>
+      );
+    })}
+    <T x={40} y={172} anchor="start" size={11}>1997</T>
+    <T x={580} y={172} anchor="end" size={11}>hôm nay</T>
+    <Box x={392} y={182} w={218} h={42} fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <T x={501} y={200} strong>Mạng bạn đang bảo vệ</T>
+    <T x={501} y={216} size={11}>đám mây, SaaS, mã hoá khắp nơi</T>
+    <T x={186} y={202} size={11}>Điểm số cao trên các bộ này KHÔNG chuyển</T>
+    <T x={186} y={218} size={11}>sang mạng của bạn — dùng để học, không để hứa</T>
+  </Svg>
+);
+
+/** t8-l5 — mục tiêu không phải chặn hết, mà là làm tấn công đắt hơn phần thu. */
+const AttackCost = () => (
+  /* Giữ viewBox HẸP (560) có chủ đích: quy tắc `.figure svg { min-width: 620px }`
+     trên màn hẹp vẽ mọi hình ở 620px, nên viewBox nhỏ hơn được co giãn LÊN và
+     chữ hiện ra to hơn — 12,1px thay vì 11px. Đừng nới viewBox cho rộng rãi. */
+  <Svg vb="0 0 560 262">
+    <Defs />
+    <T x={280} y={18} strong>Phòng thủ chỉ cần đắt hơn phần kẻ tấn công thu được</T>
+    <line x1={64} y1={204} x2={540} y2={204} stroke={C.line} strokeWidth="1.5" />
+    <line x1={64} y1={46} x2={64} y2={204} stroke={C.line} strokeWidth="1.5" />
+    <text transform="rotate(-90 22 126)" x={22} y={126} textAnchor="middle" className="svg-label-strong">Công sức phải bỏ ra</text>
+    {[
+      { t: 'Không có gì', h: 18, them: false },
+      { t: 'Giới hạn truy vấn', h: 50, them: true },
+      { t: 'Che điểm số', h: 86, them: true },
+      { t: 'Phát hiện dò', h: 122, them: true },
+      { t: 'Adversarial training', h: 150, them: true },
+    ].map((s, i) => (
+      <g key={i}>
+        <rect x={80 + i * 92} y={204 - s.h} width={62} height={s.h} rx={3} fill={C.brand} opacity={0.32 + i * 0.14} />
+        <T x={111 + i * 92} y={222} size={11}>{s.t}</T>
+        {s.them && <T x={111 + i * 92} y={240} size={11}>cộng thêm</T>}
+      </g>
+    ))}
+    <line x1={64} y1={118} x2={540} y2={118} stroke={C.bad} strokeWidth="2" strokeDasharray="7 4" />
+    <T x={536} y={110} anchor="end" size={11}>Giá trị kẻ tấn công thu được</T>
+    <T x={296} y={64} size={11}>Từ vạch này trở lên, tấn công không còn đáng làm —</T>
+    <T x={296} y={82} size={11}>kẻ tấn công đổi mục tiêu, chứ không đổi kỹ thuật</T>
+  </Svg>
+);
+
+/** t8-l6 — sáu bước, và bước cuối quay lại bước đầu chứ không kết thúc. */
+const MlRedTeam = () => (
+  <Svg vb="0 0 620 250">
+    <Defs />
+    <T x={310} y={18} strong>Một đợt đánh giá ML là một vòng, không phải một đường thẳng</T>
+    {[
+      { t: '1. Phạm vi', s: 'và uỷ quyền' },
+      { t: '2. Kiểm kê', s: 'tài sản, luồng dữ liệu' },
+      { t: '3. Mô hình đe doạ', s: 'theo MITRE ATLAS' },
+    ].map((b, i) => (
+      <g key={i}>
+        <Box x={14 + i * 200} y={44} w={172} h={58} label={b.t} sub={b.s}
+          fill={i === 2 ? 'var(--lab-soft)' : 'var(--bg-sunken)'} stroke={i === 2 ? 'var(--lab-border)' : undefined} />
+        {i < 2 && <Arrow x1={188 + i * 200} y1={73} x2={212 + i * 200} y2={73} />}
+      </g>
+    ))}
+    <Arrow x1={500} y1={104} x2={500} y2={132} />
+    {[
+      { t: '4. Xếp ưu tiên', s: 'hiệu quả trên chi phí' },
+      { t: '5. Thực thi', s: 'đo bằng đường cong' },
+      { t: '6. Báo cáo', s: 'bàn giao, tái kiểm' },
+    ].map((b, i) => (
+      <g key={i}>
+        <Box x={414 - i * 200} y={134} w={172} h={58} label={b.t} sub={b.s}
+          fill={i === 2 ? 'var(--ok-soft)' : 'var(--bg-sunken)'} stroke={i === 2 ? 'var(--ok-border)' : undefined} />
+        {i < 2 && <Arrow x1={412 - i * 200} y1={163} x2={390 - i * 200} y2={163} />}
+      </g>
+    ))}
+    <path d="M100 134 L100 118 L60 118 L60 104" fill="none" stroke={C.ok} strokeWidth="1.6" strokeDasharray="5 4" markerEnd="url(#ah)" />
+    <T x={310} y={222} size={11}>Bước 6 nối lại bước 1: mỗi lần mô hình được huấn luyện lại là một phạm vi mới</T>
+    <T x={310} y={240} size={11}>Không có uỷ quyền viết ra giấy thì bước 5 là hành vi tấn công, không phải đánh giá</T>
+  </Svg>
+);
+
+/** t9-l5 — sáu mục hay bị hiểu sai nhất, đặt lên đúng chỗ trong kiến trúc. */
+const OwaspLlm = () => (
+  <Svg vb="0 0 620 250">
+    <Defs />
+    <T x={310} y={18} strong>Sáu mục OWASP hay bị hiểu sai, gắn vào đúng chỗ chúng sống</T>
+    <Box x={12} y={92} w={108} h={56} label="Đầu vào" sub="người dùng, web, tệp" />
+    <Arrow x1={122} y1={120} x2={168} y2={120} />
+    <Box x={170} y={80} w={132} h={80} label="Mô hình" sub="+ ngữ cảnh, prompt hệ thống" fill="var(--brand-soft)" stroke="var(--brand-border)" />
+    <Arrow x1={304} y1={120} x2={350} y2={120} />
+    <Box x={352} y={92} w={116} h={56} label="Đầu ra" sub="đưa vào hệ thống khác" fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <Arrow x1={470} y1={120} x2={512} y2={120} />
+    <Box x={514} y={92} w={96} h={56} label="Công cụ" sub="shell, DB, API" fill="var(--bad-soft)" stroke="var(--bad-border)" />
+
+    <T x={66} y={70} size={11}>LLM01 Prompt Injection</T>
+    <T x={236} y={62} size={11}>LLM02 lộ dữ liệu nhạy cảm</T>
+    <T x={236} y={186} size={11}>LLM09 Misinformation</T>
+    <T x={410} y={70} size={11}>LLM05 xử lý đầu ra sai</T>
+    <T x={562} y={70} size={11}>LLM06 quyền thừa</T>
+    <T x={562} y={186} size={11}>LLM10 hoá đơn</T>
+    <T x={310} y={222} size={11}>LLM05 là lỗ hổng web cổ điển, chỉ khác nguồn đầu vào: đầu ra LLM là đầu vào KHÔNG tin cậy</T>
+    <T x={310} y={240} size={11}>của hệ thống kế tiếp. Câu kiểm LLM06: nếu mô hình bị chiếm hoàn toàn, nó làm được gì?</T>
+  </Svg>
+);
+
+/** t10-l6 — sáu mục README, mỗi mục trả lời một câu người đọc đang hỏi. */
+const ProjectReadme = () => (
+  <Svg vb="0 0 600 268">
+    <T x={300} y={18} strong>README mà người trong nghề đọc hết: sáu mục, sáu câu hỏi</T>
+    <rect x={40} y={32} width={520} height={196} rx={8} fill="var(--bg-sunken)" stroke={C.line} strokeWidth="1.5" />
+    {[
+      { n: '1', t: 'Mở đầu ba câu', q: 'Bài toán gì, dữ liệu nào, kết quả bao nhiêu' },
+      { n: '2', t: 'Cách chia dữ liệu', q: 'Nói ngay — người đọc sẽ tìm chỗ này trước' },
+      { n: '3', t: 'Đường cơ sở trước', q: 'Mô hình của bạn hơn luật đơn giản bao nhiêu' },
+      { n: '4', t: 'Chỗ mô hình kém', q: 'Mục bắt buộc; thiếu nó là mất tin cậy' },
+      { n: '5', t: 'Tái lập một lệnh', q: 'Người ta chạy lại được không' },
+      { n: '6', t: 'Thứ đã thử mà trượt', q: 'Kết quả âm tính cũng là kết quả' },
+    ].map((r, i) => (
+      <g key={i}>
+        <circle cx={64} cy={56 + i * 30} r={9} fill={i === 3 ? C.warn : C.brand} opacity={i === 3 ? 1 : 0.75} />
+        <text x={64} y={60 + i * 30} textAnchor="middle" className="svg-label-strong" style={{ fontSize: 11, fill: 'var(--text-inverse)' }}>{r.n}</text>
+        <T x={82} y={60 + i * 30} anchor="start" strong>{r.t}</T>
+        <T x={246} y={60 + i * 30} anchor="start" size={11}>{r.q}</T>
+      </g>
+    ))}
+    <T x={300} y={250} size={11}>Bốn dấu hiệu khiến người phỏng vấn đóng tab: không nói cách chia, không có đường cơ sở,</T>
+    <T x={300} y={264} size={11}>chỉ báo accuracy, và không có mục nào nói mô hình sai ở đâu</T>
+  </Svg>
+);
+
 /* ========================================================================== */
 
 const REGISTRY: Record<string, () => ReactNode> = {
+  'fig-pandas-three': PandasThree,
+  'fig-dataset-age': DatasetAge,
+  'fig-attack-cost': AttackCost,
+  'fig-ml-redteam': MlRedTeam,
+  'fig-owasp-llm': OwaspLlm,
+  'fig-project-readme': ProjectReadme,
   'fig-bayes-direction': BayesDirection,
   'fig-precision-recall': PrecisionRecall,
   'fig-model-stealing': ModelStealing,
