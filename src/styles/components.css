@@ -1071,7 +1071,9 @@ textarea {
   /* Bộ chọn hậu duệ, không phải con trực tiếp: mỗi hình được bọc trong một
      div nên `.figure > svg` không khớp gì cả. */
   .figure svg {
-    min-width: 560px;
+    /* Nhân --user-scale: chữ trong SVG không nghe thanh cỡ chữ, nên cách duy
+       nhất để người cần chữ to đọc được hình là phóng cả hình. */
+    min-width: calc(560px * var(--user-scale, 1));
   }
 }
 .figure-caption {
@@ -1082,12 +1084,15 @@ textarea {
   line-height: var(--lh-snug);
 }
 .svg-label {
-  font-size: 11px;
+  /* Đơn vị viewBox, không phải px trên màn: cỡ thật còn nhân với tỉ lệ co giãn
+     của SVG. Nâng từ 11 lên 12 vì với tỉ lệ 0,9 quen thuộc trên máy tính xách
+     tay, 11 đơn vị chỉ còn 9,9px. */
+  font-size: 12px;
   font-family: var(--ff-sans);
   fill: var(--text-muted);
 }
 .svg-label-strong {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   fill: var(--text);
 }
@@ -1726,4 +1731,51 @@ kbd {
   [data-theme='gold'] .nav {
     background: var(--bg);
   }
+}
+
+/* --------------------------------------------------------------------------
+   Biểu đồ trong phòng lab — cỡ hiển thị đi theo thanh cỡ chữ
+   --------------------------------------------------------------------------
+   Chữ bên trong một SVG có viewBox nằm trong hệ toạ độ của viewBox, nên nó
+   KHÔNG nghe --user-scale: người học kéo cỡ chữ lên 140% thì bài đọc to lên
+   còn nhãn trục vẫn đứng nguyên. Đo trên máy thật: nhãn khai báo 10 đơn vị,
+   biểu đồ 470 đơn vị co vào 297px trên màn 375px, tức tỉ lệ 0,63 — chữ HIỆN RA
+   6,3px, và ở cỡ đó dấu tiếng Việt dính thành vệt.
+
+   Cách sửa là phóng CẢ KHUNG chứ không phóng riêng chữ. Phóng riêng chữ trong
+   một viewBox có toạ độ đặt tay là cách chắc chắn làm nhãn tràn khỏi khung —
+   đúng lỗi đã xảy ra ở ba hình minh hoạ. Phóng cả khung thì mọi thứ giữ nguyên
+   tỉ lệ với nhau.
+
+   Trên màn hẹp thì áp đúng quy ước đã dùng cho `.figure`: cuộn ngang trong
+   khung riêng thay vì co nhỏ tới mức vô dụng. Bản thân trang vẫn không cuộn
+   ngang, vì vùng cuộn nằm ở `.lab-chart-wrap`.
+   -------------------------------------------------------------------------- */
+.lab-chart-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.lab-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-inline: auto;
+  max-width: calc(var(--chart-w, 460px) * 1.45 * var(--user-scale, 1));
+}
+@media (max-width: 640px) {
+  .lab-chart {
+    min-width: calc(var(--chart-w, 460px) * 0.92 * var(--user-scale, 1));
+  }
+}
+
+/* Hình minh hoạ: cùng cơ chế như .lab-chart — cỡ hiển thị nhân với --user-scale
+   để người cần chữ to đọc được hình, thay vì chỉ đọc được bài. --fig-h do
+   component truyền vào vì mỗi hình có chiều cao riêng. */
+.fig-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-inline: auto;
+  max-width: calc(760px * var(--user-scale, 1));
+  max-height: calc(var(--fig-h, 340px) * var(--user-scale, 1));
 }

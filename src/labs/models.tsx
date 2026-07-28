@@ -879,7 +879,7 @@ export function LabPerceptron() {
           {data.map((d, i) => (
             <g key={i}>
               <circle cx={px(p, d.x[0])} cy={py(p, d.x[1])} r={11} fill={d.y ? COLORS.bad : COLORS.ok} stroke="var(--bg-elev)" strokeWidth={2.5} />
-              <text x={px(p, d.x[0])} y={py(p, d.x[1]) + 4} textAnchor="middle" style={{ fontSize: 11, fill: '#fff', fontWeight: 700 }}>{d.y}</text>
+              <text x={px(p, d.x[0])} y={py(p, d.x[1]) + 4} textAnchor="middle" style={{ fontSize: 12, fill: '#fff', fontWeight: 700 }}>{d.y}</text>
             </g>
           ))}
         </Chart>

@@ -417,10 +417,10 @@ export function LabCostThreshold() {
         <Axes p={p} xLabel="Ngưỡng" yLabel="Tổng chi phí ($)" yTicks={4} fmtY={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)))} />
         <Line p={p} pts={curve.map((c) => [c.t, c.cost])} color={COLORS.warn} />
         <line x1={px(p, 0.5)} y1={p.pad.t} x2={px(p, 0.5)} y2={p.h - p.pad.b} stroke="var(--text-faint)" strokeWidth={1.5} strokeDasharray="4 4" />
-        <text x={px(p, 0.5) + 5} y={p.pad.t + 14} className="svg-label" style={{ fontSize: 10 }}>mặc định 0,5</text>
+        <text x={px(p, 0.5) + 5} y={p.pad.t + 14} className="svg-label" style={{ fontSize: 12.5 }}>mặc định 0,5</text>
         <line x1={px(p, best.t)} y1={p.pad.t} x2={px(p, best.t)} y2={p.h - p.pad.b} stroke="var(--ok)" strokeWidth={2.2} />
         <circle cx={px(p, best.t)} cy={py(p, best.cost)} r={6} fill="var(--ok)" />
-        <text x={px(p, best.t) + 6} y={py(p, best.cost) - 8} className="svg-label-strong" style={{ fontSize: 11 }}>tối ưu {best.t.toFixed(2)}</text>
+        <text x={px(p, best.t) + 6} y={py(p, best.cost) - 8} className="svg-label-strong" style={{ fontSize: 12 }}>tối ưu {best.t.toFixed(2)}</text>
       </Chart>
 
       <Readout

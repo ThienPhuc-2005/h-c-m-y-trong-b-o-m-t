@@ -214,12 +214,12 @@ export function Axes({
         <line key={`gy${i}`} x1={p.pad.l} y1={py(p, v)} x2={p.w - p.pad.r} y2={py(p, v)} className="svg-grid" />
       ))}
       {xs.map((v, i) => (
-        <text key={`tx${i}`} x={px(p, v)} y={p.h - p.pad.b + 15} textAnchor="middle" className="svg-label" style={{ fontSize: 10 }}>
+        <text key={`tx${i}`} x={px(p, v)} y={p.h - p.pad.b + 15} textAnchor="middle" className="svg-label" style={{ fontSize: 12.5 }}>
           {fmtX(v)}
         </text>
       ))}
       {ys.map((v, i) => (
-        <text key={`ty${i}`} x={p.pad.l - 6} y={py(p, v) + 3} textAnchor="end" className="svg-label" style={{ fontSize: 10 }}>
+        <text key={`ty${i}`} x={p.pad.l - 6} y={py(p, v) + 3} textAnchor="end" className="svg-label" style={{ fontSize: 12.5 }}>
           {fmtY(v)}
         </text>
       ))}
@@ -230,8 +230,11 @@ export function Axes({
           {xLabel}
         </text>
       )}
+      {/* Tâm quay của nhãn trục dọc ở 14, không phải 11: chữ quay 90° có hộp cao
+          bằng cả ascender + descender, nên tâm ở 11 đẩy khoảng 3 đơn vị ra ngoài
+          mép trái viewBox. Đo bằng getBBox nhân getCTM trên bốn góc hộp. */}
       {yLabel && (
-        <text transform={`rotate(-90 11 ${(p.pad.t + p.h - p.pad.b) / 2})`} x={11} y={(p.pad.t + p.h - p.pad.b) / 2} textAnchor="middle" className="svg-label-strong">
+        <text transform={`rotate(-90 14 ${(p.pad.t + p.h - p.pad.b) / 2})`} x={14} y={(p.pad.t + p.h - p.pad.b) / 2} textAnchor="middle" className="svg-label-strong">
           {yLabel}
         </text>
       )}
@@ -278,15 +281,24 @@ export function Chart({ p, children, label }: { p: Plot; children: ReactNode; la
   // theo khung. Trên màn hình rộng, một biểu đồ 460px kéo giãn ra 1800px sẽ có
   // nhãn trục to bằng tiêu đề trang, phá vỡ hoàn toàn thứ bậc thị giác.
   // Giới hạn 1,45 lần kích thước thiết kế là mức chữ vẫn còn đúng vai trò.
+  // Bề rộng tối đa đi qua CSS custom property, KHÔNG phải maxWidth nội tuyến:
+  // biến này được `.lab-chart` nhân với --user-scale, nên khi người học kéo
+  // thanh cỡ chữ thì cả biểu đồ to lên theo. Chữ trong SVG nằm trong hệ toạ độ
+  // viewBox nên không nghe thanh cỡ chữ — phóng cả khung là cách duy nhất làm
+  // nhãn trục to lên mà không xê dịch một toạ độ nào, tức không có nguy cơ chữ
+  // tràn khỏi khung như đã từng xảy ra với hình minh hoạ.
   return (
-    <svg
-      viewBox={`0 0 ${p.w} ${p.h}`}
-      style={{ width: '100%', maxWidth: Math.round(p.w * 1.45), height: 'auto', margin: '0 auto' }}
-      role="img"
-      aria-label={label}
-    >
-      {children}
-    </svg>
+    <div className="lab-chart-wrap">
+      <svg
+        viewBox={`0 0 ${p.w} ${p.h}`}
+        className="lab-chart"
+        style={{ '--chart-w': `${p.w}px` } as React.CSSProperties}
+        role="img"
+        aria-label={label}
+      >
+        {children}
+      </svg>
+    </div>
   );
 }
 

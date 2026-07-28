@@ -628,7 +628,7 @@ export function LabDrift() {
       <Chart p={p} label="Hiệu năng mô hình theo thời gian">
         <Axes p={p} xLabel="Tháng kể từ khi triển khai" yLabel="Điểm F1" xTicks={6} yTicks={5} fmtX={(v) => String(Math.round(v))} />
         <Line p={p} pts={[[0, 0.6], [months, 0.6]]} color={COLORS.bad} width={1.6} dash="6 4" />
-        <text x={px(p, months) - 4} y={py(p, 0.6) - 6} textAnchor="end" className="svg-label" style={{ fontSize: 10 }}>ngưỡng ngừng dùng</text>
+        <text x={px(p, months) - 4} y={py(p, 0.6) - 6} textAnchor="end" className="svg-label" style={{ fontSize: 12.5 }}>ngưỡng ngừng dùng</text>
         <Line p={p} pts={series.map((s) => [s.m, s.f1] as [number, number])} color={COLORS.brand} />
         {series.filter((s) => s.retrained).map((s, i) => (
           <line key={i} x1={px(p, s.m)} y1={p.pad.t} x2={px(p, s.m)} y2={p.h - p.pad.b} stroke={COLORS.ok} strokeWidth={1.4} strokeDasharray="3 3" />
@@ -1012,7 +1012,7 @@ export function LabAuthGraph() {
                 x={p0.x} y={p0.y + 3.5}
                 textAnchor="middle"
                 className="svg-label"
-                style={{ fontSize: 8, fontWeight: laW3 ? 700 : 500 }}
+                style={{ fontSize: 10, fontWeight: laW3 ? 700 : 500 }}
               >
                 {name}
               </text>

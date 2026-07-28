@@ -37,7 +37,10 @@
 
 :root {
   /* ---- Bậc chữ (Major Third 1.2 — đủ tương phản, không nhảy vọt) --------- */
-  --fs-2xs: 0.6875rem;
+  /* 0,6875rem cho ra 11,7px ở gốc 17px — quá nhỏ cho tiếng Việt: dấu của "ệ",
+     "ữ" và "ỗ" bắt đầu dính vào nhau, và token này dùng cho chữ THẬT (mô tả huy
+     hiệu, nhãn ô số, ngày trong chuỗi) chứ không chỉ cho nhãn trang trí. */
+  --fs-2xs: 0.75rem;
   --fs-xs: 0.78125rem;
   --fs-sm: 0.875rem;
   --fs-base: 1rem;
