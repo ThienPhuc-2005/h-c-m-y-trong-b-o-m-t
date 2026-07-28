@@ -2890,7 +2890,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
       title: 'Học máy trên đồ thị cho di chuyển ngang',
       subtitle: 'Từ đặc trưng đồ thị sang học TRÊN đồ thị — và vì sao PageRank thường đã đủ',
       minutes: 25,
-      practiceMinutes: 3,
+      practiceMinutes: 7,
       level: 'chuyen-gia',
       prereqs: ['t5-l4', 't6-l7'],
       why: {
@@ -2953,6 +2953,12 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           kind: 'math',
           title: 'Hai tham số quyết định node2vec học ra cái gì',
           md: 'node2vec điều khiển bước đi bằng hai tham số, và chọn sai chúng là lý do phổ biến nhất khiến nhúng đồ thị “không hoạt động”:\n\n**Tham số quay lại p** điều chỉnh khả năng đi ngược về nút vừa rời.\n\n**Tham số ra vào q** mới là cái quan trọng. Với **q nhỏ (dưới 1)**, bước đi có xu hướng đi xa dần, giống duyệt theo chiều sâu, nên nhúng học ra **cộng đồng**: hai nút gần nhau vì chúng ở cùng một cụm. Với **q lớn (trên 1)**, bước đi quanh quẩn gần nút gốc, giống duyệt theo chiều rộng, nên nhúng học ra **vai trò cấu trúc**: hai nút gần nhau vì chúng có hình dạng lân cận giống nhau, kể cả khi nằm ở hai đầu mạng.\n\nTrong bảo mật, thứ ta thường cần là **vai trò**: “máy này hành xử như một bộ điều khiển miền” là câu hỏi hữu ích hơn “máy này thuộc cụm nào”. Vậy nên với bài toán vai trò, hãy bắt đầu từ q lớn hơn 1. Với bài toán phân vùng mạng hay tìm cụm bị chiếm, dùng q nhỏ.',
+        },
+        {
+          t: 'lab',
+          id: 'lab-auth-graph',
+          intro:
+            'Mười ba nút, một máy trạm bị chiếm. Kéo số cạnh di chuyển ngang lên và để ý ô "đổi hạng" chứ không phải ô "hạng" — FS và DC luôn đứng đầu bảng nên con số tuyệt đối không bao giờ là tín hiệu. Rồi tắt "quan hệ hai chiều": cùng dữ liệu đó, thứ hạng của máy bị chiếm sẽ đi ngược chiều, vì PageRank trên đồ thị có hướng đo tầm quan trọng chảy vào chứ không phải chảy ra.',
         },
         {
           t: 'checkpoint',

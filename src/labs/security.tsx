@@ -638,6 +638,223 @@ export function LabDrift() {
 }
 
 /* ========================================================================== */
+/*  lab-auth-graph — Đồ thị xác thực và di chuyển ngang                        */
+/* ========================================================================== */
+
+const AG_NODES = [
+  'W1', 'W2', 'W3', 'W4', 'W5', 'W6',
+  'S-web', 'S-db', 'S-app', 'S-file', 'S-mail', 'DC', 'FS',
+] as const;
+
+/** Đăng nhập bình thường: mỗi máy trạm chạm 1–2 máy chủ, ai cũng chạm FS và DC. */
+const AG_BASE: [string, string][] = [
+  ['W1', 'S-web'], ['W1', 'FS'], ['W2', 'S-app'], ['W2', 'FS'],
+  ['W3', 'S-web'], ['W3', 'FS'], ['W4', 'S-mail'], ['W4', 'FS'],
+  ['W5', 'S-app'], ['W5', 'FS'], ['W6', 'S-mail'], ['W6', 'FS'],
+  ['S-web', 'DC'], ['S-db', 'DC'], ['S-app', 'DC'], ['S-file', 'DC'],
+  ['S-mail', 'DC'], ['FS', 'DC'], ['S-db', 'S-app'],
+];
+
+/** W3 bị chiếm: các cạnh này chưa từng tồn tại trong 90 ngày trước. */
+const AG_LATERAL: [string, string][] = [
+  ['W3', 'S-db'], ['W3', 'S-app'], ['W3', 'S-file'], ['W3', 'S-mail'],
+  ['W3', 'DC'], ['W3', 'W5'], ['W3', 'W2'], ['W3', 'W4'],
+];
+
+export interface AuthGraphOut {
+  edges: [string, string][];
+  pagerank: number[];
+  /** Thứ hạng PageRank của W3, 1 là cao nhất. */
+  rankW3: number;
+  /** Bậc của W3 trong đồ thị đang xét. */
+  degreeW3: number;
+  newEdges: number;
+  /** Ba nút đứng đầu bảng — gần như luôn là hạ tầng. */
+  top3: string[];
+}
+
+/**
+ * PageRank bằng lặp luỹ thừa, hệ số tắt dần 0,85.
+ *
+ * Tham số `undirected` không phải tuỳ chọn cho vui: nó ĐẢO NGƯỢC kết luận. Trên
+ * đồ thị có hướng, PageRank đo tầm quan trọng CHẢY VÀO một nút, nên một máy trạm
+ * càng chủ động kết nối ra thì thứ hạng càng TỤT (nó phát rank đi chứ không nhận
+ * về). Coi mỗi lần xác thực là quan hệ hai chiều thì máy trạm bị chiếm mới leo
+ * hạng như trực giác mong đợi. Đây chính là điều bài t6-l11 nói: quyết định nút
+ * là gì và cạnh là gì ảnh hưởng tới kết quả nhiều hơn việc chọn thuật toán.
+ */
+export function authGraph(newEdges: number, undirected: boolean): AuthGraphOut {
+  const edges: [string, string][] = [...AG_BASE, ...AG_LATERAL.slice(0, newEdges)];
+  const idx = new Map(AG_NODES.map((n, i) => [n as string, i]));
+  const n = AG_NODES.length;
+  const adj: number[][] = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) {
+    adj[idx.get(a)!].push(idx.get(b)!);
+    if (undirected) adj[idx.get(b)!].push(idx.get(a)!);
+  }
+
+  const d = 0.85;
+  let pr = new Array<number>(n).fill(1 / n);
+  for (let it = 0; it < 60; it++) {
+    const next = new Array<number>(n).fill((1 - d) / n);
+    for (let i = 0; i < n; i++) {
+      const out = adj[i];
+      // Nút không có cạnh ra sẽ rò rỉ rank; rải đều cho cả đồ thị.
+      if (!out.length) {
+        for (let j = 0; j < n; j++) next[j] += (d * pr[i]) / n;
+        continue;
+      }
+      for (const j of out) next[j] += (d * pr[i]) / out.length;
+    }
+    pr = next;
+  }
+
+  const order = AG_NODES.map((name, i) => ({ name, p: pr[i] })).sort((a, b) => b.p - a.p);
+  return {
+    edges,
+    pagerank: pr,
+    rankW3: order.findIndex((o) => o.name === 'W3') + 1,
+    degreeW3: adj[idx.get('W3')!].length,
+    newEdges,
+    top3: order.slice(0, 3).map((o) => o.name),
+  };
+}
+
+export function LabAuthGraph() {
+  const [lateral, setLateral] = useState(0);
+  const [undirected, setUndirected] = useState(true);
+
+  const r = useMemo(() => authGraph(lateral, undirected), [lateral, undirected]);
+  const goc = useMemo(() => authGraph(0, undirected), [undirected]);
+  const doiHang = goc.rankW3 - r.rankW3;
+
+  // Bố trí tròn: đủ để nhìn ra hình dạng mà không cần thuật toán dàn đồ thị.
+  const R = 118;
+  const pos = new Map(
+    AG_NODES.map((name, i) => {
+      const a = (i / AG_NODES.length) * Math.PI * 2 - Math.PI / 2;
+      return [name as string, { x: 170 + R * Math.cos(a), y: 150 + R * Math.sin(a) }];
+    }),
+  );
+  const laCanhMoi = (a: string, b: string) =>
+    AG_LATERAL.slice(0, lateral).some(([x, y]) => x === a && y === b);
+
+  return (
+    <LabShell
+      id="lab-auth-graph"
+      title="Đồ thị xác thực — di chuyển ngang nhìn từ trên xuống"
+      takeaway={
+        <>
+          Ba điều đáng mang đi. <b>Một:</b> ở 0 cạnh mới, ba nút đứng đầu bảng PageRank là FS, DC và S-app —
+          hạ tầng, ngày nào cũng vậy. Cảnh báo theo thứ hạng tuyệt đối sẽ cho ra đúng một danh sách mỗi ngày và
+          không mang tin gì. Thứ mang tin là <b>mức thay đổi thứ hạng của một nút so với chính nó</b>: kéo lên 6
+          cạnh và W3 leo từ hạng 7 lên hạng 1.
+          <br />
+          <br />
+          <b>Hai:</b> tắt &ldquo;quan hệ hai chiều&rdquo; và xem tín hiệu <b>đảo ngược</b> — W3 càng chạm nhiều
+          máy thì thứ hạng càng TỤT (7 xuống 12). Không phải lỗi: trên đồ thị có hướng, PageRank đo tầm quan
+          trọng chảy VÀO một nút, mà máy trạm bị chiếm thì chủ yếu kết nối RA. Chọn sai cách dựng đồ thị không
+          làm bạn mất tín hiệu, nó làm bạn đọc ngược tín hiệu.
+          <br />
+          <br />
+          <b>Ba:</b> ô &ldquo;bậc của W3&rdquo; đi lên đều đặn ở cả hai chế độ, không cần thuật toán nào. Với
+          phần lớn tổ chức, đếm số đích riêng biệt so với trung vị 30 ngày của chính máy đó đã chiếm gần hết
+          giá trị — hãy làm nó trước khi nghĩ tới nhúng nút hay mạng nơ-ron đồ thị.
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <Slider
+          label="Số cạnh di chuyển ngang"
+          value={lateral}
+          min={0}
+          max={AG_LATERAL.length}
+          step={1}
+          onChange={setLateral}
+          format={(v) => (v === 0 ? 'chưa có gì bất thường' : `${v} cạnh CHƯA TỪNG thấy`)}
+          hint="Đây là các cặp (nguồn, đích) không xuất hiện trong 90 ngày trước."
+        />
+        <Toggle
+          label="Coi mỗi lần xác thực là quan hệ hai chiều"
+          checked={undirected}
+          onChange={setUndirected}
+        />
+      </div>
+
+      <svg viewBox="0 0 340 300" className="fig" role="img" aria-label="Đồ thị xác thực với các cạnh di chuyển ngang">
+        {r.edges.map(([a, b], i) => {
+          const pa = pos.get(a)!;
+          const pb = pos.get(b)!;
+          const moi = laCanhMoi(a, b);
+          return (
+            <line
+              key={i}
+              x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+              stroke={moi ? 'var(--bad)' : 'var(--border)'}
+              strokeWidth={moi ? 2 : 1}
+              strokeDasharray={moi ? '4 3' : undefined}
+            />
+          );
+        })}
+        {AG_NODES.map((name) => {
+          const p0 = pos.get(name)!;
+          const laW3 = name === 'W3';
+          const laHaTang = name === 'DC' || name === 'FS';
+          return (
+            <g key={name}>
+              <circle
+                cx={p0.x} cy={p0.y}
+                r={laW3 ? 13 : laHaTang ? 11 : 9}
+                fill={laW3 ? 'var(--bad-soft)' : laHaTang ? 'var(--brand-soft)' : 'var(--bg-sunken)'}
+                stroke={laW3 ? 'var(--bad)' : laHaTang ? 'var(--brand)' : 'var(--border)'}
+                strokeWidth={laW3 ? 2.2 : 1.4}
+              />
+              <text
+                x={p0.x} y={p0.y + 3.5}
+                textAnchor="middle"
+                className="svg-label"
+                style={{ fontSize: 8, fontWeight: laW3 ? 700 : 500 }}
+              >
+                {name}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+
+      <Readout
+        items={[
+          { k: 'Bậc của W3', v: String(r.degreeW3), tone: r.degreeW3 > goc.degreeW3 * 2 ? 'bad' : 'neutral', sub: `bình thường là ${goc.degreeW3}` },
+          { k: 'Hạng PageRank của W3', v: `${r.rankW3}/${AG_NODES.length}`, tone: r.rankW3 <= 3 ? 'bad' : 'neutral', sub: `trước đó hạng ${goc.rankW3}` },
+          { k: 'Đổi hạng', v: `${doiHang > 0 ? '+' : ''}${doiHang}`, tone: doiHang > 2 ? 'bad' : doiHang < 0 ? 'warn' : 'neutral', sub: doiHang > 0 ? 'leo lên' : doiHang < 0 ? 'tụt xuống' : 'không đổi' },
+          { k: 'Đứng đầu bảng', v: r.top3[0], tone: 'info', sub: `rồi ${r.top3.slice(1).join(', ')}` },
+        ]}
+      />
+
+      <div className={`callout ${!undirected && lateral > 0 ? 'co-warn' : doiHang > 2 ? 'co-pro' : 'co-insight'}`}>
+        <Icon className="callout-icon" name={!undirected && lateral > 0 ? 'siren' : 'lightbulb'} size={18} />
+        <div>
+          <div className="callout-title">
+            {!undirected && lateral > 0
+              ? 'Đồ thị có hướng đang cho bạn tín hiệu ngược'
+              : doiHang > 2
+                ? 'W3 đã trở thành điểm trung chuyển'
+                : 'Chưa có gì nổi lên'}
+          </div>
+          <div className="callout-body">
+            {!undirected && lateral > 0
+              ? `W3 chạm thêm ${lateral} máy chưa từng chạm, nhưng thứ hạng PageRank của nó ${doiHang < 0 ? `TỤT ${-doiHang} bậc` : 'không leo lên'}. PageRank trên đồ thị có hướng đo tầm quan trọng chảy VÀO một nút; máy trạm bị chiếm thì chủ yếu kết nối RA nên nó phát rank đi chứ không nhận về. Bật lại quan hệ hai chiều để thấy tín hiệu đúng chiều.`
+              : doiHang > 2
+                ? `Bậc tăng từ ${goc.degreeW3} lên ${r.degreeW3} và thứ hạng leo ${doiHang} bậc lên vị trí ${r.rankW3}. Một máy trạm kế toán không có lý do gì để trở nên trung tâm như hạ tầng — đó là hình dạng của một máy đang bị dùng làm bàn đạp.`
+                : `Ở mức này W3 vẫn lẫn trong đám đông. Kéo thanh trượt lên và để ý ô "đổi hạng" chứ không phải ô "hạng": FS và DC luôn đứng đầu, nên con số tuyệt đối không bao giờ là tín hiệu.`}
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
 /*  lab-seasonality — Phân rã mùa vụ và cái bẫy tự nâng mức nền                */
 /* ========================================================================== */
 

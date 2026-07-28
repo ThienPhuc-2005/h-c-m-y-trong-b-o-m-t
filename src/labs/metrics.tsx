@@ -562,6 +562,161 @@ export function LabAlertLoad() {
 }
 
 /* ========================================================================== */
+/*  lab-mcnemar — So sánh hai mô hình bằng phép kiểm theo cặp                  */
+/* ========================================================================== */
+
+/** Xấp xỉ hàm lỗi Abramowitz–Stegun 7.1.26, sai số dưới 1,5 × 10⁻⁷. */
+function erf(x: number): number {
+  const s = Math.sign(x);
+  const z = Math.abs(x);
+  const a = [0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429];
+  const t = 1 / (1 + 0.3275911 * z);
+  let y = 0;
+  for (let i = 4; i >= 0; i--) y = y * t + a[i];
+  return s * (1 - y * t * Math.exp(-z * z));
+}
+const normalCdf = (z: number) => 0.5 * (1 + erf(z / Math.SQRT2));
+
+export interface McnemarOut {
+  /** Số mẫu hai mô hình bất đồng — phần dữ liệu DUY NHẤT mang thông tin. */
+  n: number;
+  /** true nếu dùng nhị thức chính xác thay cho xấp xỉ chi bình phương. */
+  exact: boolean;
+  /** Thống kê chi bình phương có hiệu chỉnh liên tục; 0 khi dùng nhị thức. */
+  chi2: number;
+  p: number;
+}
+
+/**
+ * Kiểm định McNemar trên bảng bất đồng.
+ *
+ * Chỉ hai ô lệch tâm tham gia. Các mẫu mà hai mô hình cùng đúng hoặc cùng sai
+ * không mang thông tin so sánh nào, nên vứt chúng đi KHÔNG phải là lãng phí —
+ * đó chính là nguồn sức mạnh của phép kiểm theo cặp.
+ */
+export function mcnemar(n01: number, n10: number): McnemarOut {
+  const n = n01 + n10;
+  if (n === 0) return { n: 0, exact: true, chi2: 0, p: 1 };
+
+  // Dưới 25 mẫu bất đồng thì xấp xỉ chi bình phương cho giá trị p lạc quan
+  // quá mức — quy tắc ngón tay cái chuẩn, và bài t4-l8 nói thẳng điều này.
+  if (n < 25) {
+    const k = Math.min(n01, n10);
+    let sum = 0;
+    let c = 1; // C(n, 0)
+    for (let i = 0; i <= k; i++) {
+      sum += c;
+      c = (c * (n - i)) / (i + 1);
+    }
+    return { n, exact: true, chi2: 0, p: Math.min(1, 2 * sum * Math.pow(0.5, n)) };
+  }
+
+  // Hiệu chỉnh liên tục của Edwards: trừ 1 trước khi bình phương.
+  const chi2 = Math.pow(Math.abs(n01 - n10) - 1, 2) / n;
+  return { n, exact: false, chi2, p: Math.min(1, 2 * (1 - normalCdf(Math.sqrt(Math.max(chi2, 0))))) };
+}
+
+export function LabMcnemar() {
+  const [n01, setN01] = useState(412);
+  const [n10, setN10] = useState(350);
+  const [total, setTotal] = useState(50_000);
+
+  const r = mcnemar(n01, n10);
+  const dongThuan = Math.max(0, total - r.n);
+  const chenh = ((n01 - n10) / Math.max(total, 1)) * 100;
+  const coYNghia = r.p < 0.05;
+  // "Đáng thay" là một quyết định vận hành, không phải một giá trị p. Ngưỡng
+  // 0,5 điểm phần trăm ở đây chỉ để lab có một mốc cụ thể mà nói chuyện.
+  const dangKe = Math.abs(chenh) >= 0.5;
+
+  return (
+    <LabShell
+      id="lab-mcnemar"
+      title="McNemar — hai mô hình có thật sự khác nhau không"
+      takeaway={
+        <>
+          Để nguyên mặc định: 412 mẫu A đúng B sai, 350 mẫu ngược lại, trên 50.000 mẫu kiểm thử. Giá trị p ra
+          0,027 — <b>có ý nghĩa thống kê</b>. Nhưng nhìn ô bên cạnh: chênh lệch accuracy chỉ 0,124 điểm phần
+          trăm. Khác biệt là <b>thật</b>, và gần như chắc chắn <b>không đáng</b> để thay một mô hình đang chạy
+          ổn. Đó là toàn bộ bài học: p trả lời &ldquo;có thật không&rdquo;, không trả lời &ldquo;có đáng
+          không&rdquo;.
+          <br />
+          <br />
+          Giờ hạ n₀₁ xuống 12 và n₁₀ xuống 4. Tỉ lệ ba-trên-một trông rất thuyết phục, nhưng chỉ có 16 mẫu bất
+          đồng nên lab tự chuyển sang <b>kiểm định nhị thức chính xác</b> và cho p = 0,077 — không đủ để kết
+          luận gì. Nhân cả hai lên mười lần (120 và 40) và p tụt xuống cỡ 10⁻¹⁰. Cùng một tỉ lệ, hai kết luận
+          trái ngược: thứ quyết định là <b>số mẫu bất đồng</b>, không phải tỉ lệ giữa chúng.
+        </>
+      }
+    >
+      <div className="grid grid-3">
+        <Slider label="A đúng, B sai (n₀₁)" value={n01} min={0} max={500} step={1} onChange={setN01} format={(v) => String(v)} />
+        <Slider label="A sai, B đúng (n₁₀)" value={n10} min={0} max={500} step={1} onChange={setN10} format={(v) => String(v)} />
+        <Slider
+          label="Cỡ tập kiểm thử"
+          value={total}
+          min={1000}
+          max={200_000}
+          step={1000}
+          onChange={setTotal}
+          format={(v) => fmtNum(v)}
+          hint="Chỉ ảnh hưởng tới ĐỘ LỚN khác biệt, không ảnh hưởng tới giá trị p."
+        />
+      </div>
+
+      <div className="table-wrap">
+        <table className="data">
+          <thead>
+            <tr><th /><th>B đúng</th><th>B sai</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>A đúng</b></td>
+              <td className="faint">{fmtNum(dongThuan)} tổng hai ô đồng thuận — không mang thông tin</td>
+              <td className="mono"><b>{n01}</b></td>
+            </tr>
+            <tr>
+              <td><b>A sai</b></td>
+              <td className="mono"><b>{n10}</b></td>
+              <td className="faint">↖ gộp chung ở ô trên</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <Readout
+        items={[
+          { k: 'Mẫu bất đồng', v: fmtNum(r.n), tone: 'info', sub: r.exact ? 'ít → nhị thức chính xác' : 'đủ → chi bình phương' },
+          { k: 'Giá trị p', v: r.p < 0.0001 ? r.p.toExponential(1) : r.p.toFixed(4), tone: coYNghia ? 'ok' : 'warn', sub: coYNghia ? 'khác biệt là thật' : 'không kết luận được' },
+          { k: 'Chênh accuracy', v: `${chenh >= 0 ? '+' : ''}${chenh.toFixed(3)} đp`, tone: dangKe ? 'ok' : 'warn', sub: 'điểm phần trăm' },
+          { k: 'Nên thay mô hình?', v: coYNghia && dangKe ? 'CÂN NHẮC' : coYNghia ? 'không' : 'chưa đủ dữ liệu', tone: coYNghia && dangKe ? 'ok' : 'warn' },
+        ]}
+      />
+
+      <div className={`callout ${coYNghia && !dangKe ? 'co-warn' : 'co-pro'}`}>
+        <Icon className="callout-icon" name={coYNghia && !dangKe ? 'siren' : 'lightbulb'} size={18} />
+        <div>
+          <div className="callout-title">
+            {coYNghia && !dangKe
+              ? 'Có ý nghĩa thống kê, nhưng vô nghĩa về vận hành'
+              : coYNghia
+                ? 'Khác biệt vừa thật vừa đủ lớn để bàn'
+                : 'Chưa đủ bằng chứng để nói mô hình nào hơn'}
+          </div>
+          <div className="callout-body">
+            {coYNghia && !dangKe
+              ? `p = ${r.p < 0.0001 ? r.p.toExponential(1) : r.p.toFixed(4)} nói khác biệt không do may rủi, nhưng ${Math.abs(chenh).toFixed(3)} điểm phần trăm thì không đổi được gì trong vận hành. Với cỡ mẫu đủ lớn, MỌI khác biệt khác 0 đều sẽ đạt ý nghĩa thống kê — nên độ lớn và chi phí mới là thứ ra quyết định.`
+              : coYNghia
+                ? `Khác biệt thật và đủ lớn để đưa ra bàn. Bước tiếp theo không phải là thay ngay, mà là quy nó về đơn vị vận hành: thêm bao nhiêu vụ bắt được mỗi ngày, và đổi lại tốn thêm bao nhiêu độ trễ cùng công vận hành.`
+                : `Chỉ có ${r.n} mẫu bất đồng nên dữ liệu chưa phân biệt được hai mô hình. Chú ý: điều này KHÔNG có nghĩa chúng bằng nhau — không bác bỏ được giả thuyết không không bao giờ đồng nghĩa với chấp nhận nó.`}
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
 /*  lab-conformal — Tập dự đoán có bảo đảm phủ                                 */
 /* ========================================================================== */
 

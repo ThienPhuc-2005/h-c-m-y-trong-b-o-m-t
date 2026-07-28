@@ -19,8 +19,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
-import { makeScores, conformalRun } from './metrics';
-import { seasonalRun } from './security';
+import { makeScores, conformalRun, mcnemar } from './metrics';
+import { seasonalRun, authGraph } from './security';
 import { intervalForRetention } from '../lib/srs';
 
 describe('lab-poison — cửa hậu ẩn được nhờ dung lượng mô hình', () => {
@@ -82,6 +82,40 @@ describe('lab-confusion — accuracy chỉ nói dối khi lớp dương hiếm',
   });
 });
 
+describe('lab-mcnemar — số mẫu bất đồng quyết định, không phải tỉ lệ', () => {
+  it('tái lập đúng ví dụ đã tính tay trong bài t4-l8', () => {
+    // Bài viết "χ² ≈ 4,88" và "p ≈ 0,027". Lab phải cho ra đúng hai số đó,
+    // nếu không thì người học kéo thanh trượt và thấy bài học nói dối.
+    const r = mcnemar(412, 350);
+    expect(r.exact).toBe(false);
+    expect(r.chi2).toBeCloseTo(4.883, 2);
+    expect(r.p).toBeCloseTo(0.027, 3);
+  });
+
+  it('dưới 25 mẫu bất đồng thì tự chuyển sang nhị thức chính xác', () => {
+    // Câu hỏi t4l8-cp1 dạy rằng 12 so với 4 cho p ≈ 0,077 — KHÔNG đủ để bác bỏ,
+    // dù tỉ lệ ba-trên-một trông rất thuyết phục.
+    const r = mcnemar(12, 4);
+    expect(r.n).toBe(16);
+    expect(r.exact).toBe(true);
+    expect(r.p).toBeCloseTo(0.077, 3);
+    expect(r.p).toBeGreaterThan(0.05);
+  });
+
+  it('cùng tỉ lệ nhưng nhiều mẫu hơn thì kết luận đảo ngược', () => {
+    expect(mcnemar(12, 4).p).toBeGreaterThan(0.05);
+    expect(mcnemar(120, 40).p).toBeLessThan(1e-6);
+  });
+
+  it('hai mô hình bất đồng cân bằng thì không có bằng chứng nào', () => {
+    // p ≈ 0,967 chứ không tròn 1: hiệu chỉnh liên tục lấy (|n₀₁ − n₁₀| − 1)²,
+    // nên bảng cân bằng hoàn hảo vẫn còn dư một lượng nhỏ. Đây là công thức
+    // chuẩn mà statsmodels dùng, giữ nguyên để lab khớp thư viện bài học nhắc.
+    expect(mcnemar(300, 300).p).toBeGreaterThan(0.9);
+    expect(mcnemar(0, 0).p).toBe(1);
+  });
+});
+
 describe('lab-conformal — phủ biên đạt mục tiêu trong khi lớp hiếm bị bỏ rơi', () => {
   // Mặc định của lab: α = 0,1 và mô hình đánh giá thấp lớp hiếm ở mức -1,5.
   const bien = conformalRun(0.1, false, -1.5);
@@ -118,6 +152,35 @@ describe('lab-conformal — phủ biên đạt mục tiêu trong khi lớp hiế
     // Chốt lại rằng hiện tượng đến từ độ lệch chứ không phải từ conformal:
     // đây là điều phân biệt một lab trung thực với một lab dàn dựng.
     expect(conformalRun(0.1, false, 0).coveragePos).toBeGreaterThan(0.9);
+  });
+});
+
+describe('lab-auth-graph — cách dựng đồ thị quyết định chiều của tín hiệu', () => {
+  it('hạ tầng luôn đứng đầu bảng, nên thứ hạng tuyệt đối vô nghĩa', () => {
+    // Lời kết luận nói thẳng "FS, DC và S-app — hạ tầng, ngày nào cũng vậy".
+    expect(authGraph(0, true).top3).toEqual(['FS', 'DC', 'S-app']);
+  });
+
+  it('đồ thị vô hướng: máy bị chiếm leo từ hạng 7 lên hạng 1', () => {
+    expect(authGraph(0, true).rankW3).toBe(7);
+    expect(authGraph(6, true).rankW3).toBe(1);
+  });
+
+  it('đồ thị CÓ HƯỚNG đảo ngược tín hiệu — máy bị chiếm TỤT hạng', () => {
+    // Đây là lý do lab tồn tại chứ không phải một chi tiết phụ. Nếu dòng này
+    // trượt thì hai đoạn dài trong lời kết luận đang mô tả một hiện tượng
+    // mà mã không còn tạo ra.
+    const truoc = authGraph(0, false).rankW3;
+    const sau = authGraph(8, false).rankW3;
+    expect(sau).toBeGreaterThan(truoc);
+  });
+
+  it('bậc của máy bị chiếm tăng đều ở CẢ HAI cách dựng', () => {
+    // Thông điệp thứ ba: đếm bậc là tín hiệu rẻ nhất và không phụ thuộc lựa
+    // chọn mô hình hoá.
+    for (const undirected of [true, false]) {
+      expect(authGraph(6, undirected).degreeW3).toBeGreaterThan(authGraph(0, undirected).degreeW3);
+    }
   });
 });
 

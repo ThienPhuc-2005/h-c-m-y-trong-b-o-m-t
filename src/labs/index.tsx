@@ -7,9 +7,9 @@
 import type { ComponentType } from 'react';
 import { Icon } from '../components/Icon';
 import type { IconName } from '../components/Icon';
-import { LabBaseRate, LabConfusion, LabRocPr, LabCostThreshold, LabCalibration, LabAlertLoad, LabConformal } from './metrics';
+import { LabBaseRate, LabConfusion, LabRocPr, LabCostThreshold, LabCalibration, LabAlertLoad, LabConformal, LabMcnemar } from './metrics';
 import { LabLogistic, LabNaiveBayes, LabTree, LabKnn, LabOverfit, LabGradient, LabPerceptron, LabKmeans } from './models';
-import { LabEntropy, LabUrlFeatures, LabPeFeatures, LabTfidf, LabAnomaly, LabDrift, LabSeasonality } from './security';
+import { LabEntropy, LabUrlFeatures, LabPeFeatures, LabTfidf, LabAnomaly, LabDrift, LabSeasonality, LabAuthGraph } from './security';
 import { LabAdversarial, LabPoison, LabPromptInjection, LabForgetting } from './adversarial';
 
 export interface LabMeta {
@@ -37,6 +37,7 @@ export const LABS: LabMeta[] = [
   { id: 'lab-roc-pr', title: 'ROC và PR cạnh nhau', blurb: 'Chứng kiến ROC-AUC nói dối khi lớp dương hiếm.', track: 'do-luong', icon: 'trending-down', Component: LabRocPr },
   { id: 'lab-cost-threshold', title: 'Ngưỡng theo chi phí', blurb: 'Tìm ngưỡng tối ưu bằng ma trận chi phí thật.', track: 'do-luong', icon: 'coins', Component: LabCostThreshold },
   { id: 'lab-calibration', title: 'Hiệu chuẩn xác suất', blurb: 'Điểm 0,9 của mô hình có thật sự nghĩa là 90%?', track: 'do-luong', icon: 'sliders', Component: LabCalibration },
+  { id: 'lab-mcnemar', title: 'So sánh hai mô hình', blurb: 'Chênh 62 mẫu là tiến bộ thật hay là nhiễu? Và có đáng thay không?', track: 'do-luong', icon: 'scale', Component: LabMcnemar },
   { id: 'lab-conformal', title: 'Tập dự đoán conformal', blurb: 'Đặt trước mức bỏ sót, rồi xem lớp hiếm có thật sự được bảo vệ không.', track: 'do-luong', icon: 'shield', Component: LabConformal },
   { id: 'lab-url-features', title: 'Bóc tách URL', blurb: 'Dán một URL bất kỳ và xem 11 đặc trưng được trích ra.', track: 'dac-trung', icon: 'link', Component: LabUrlFeatures },
   { id: 'lab-pe-features', title: 'Đặc trưng tệp PE', blurb: 'Đọc một tệp thực thi theo cách mô hình đọc.', track: 'dac-trung', icon: 'package', Component: LabPeFeatures },
@@ -44,6 +45,7 @@ export const LABS: LabMeta[] = [
   { id: 'lab-anomaly', title: 'Phát hiện bất thường', blurb: 'So sánh ba phương pháp trên dữ liệu truy cập tệp.', track: 'ung-dung', icon: 'search', Component: LabAnomaly },
   { id: 'lab-kmeans', title: 'Phân cụm k-means', blurb: 'Nhóm hành vi mạng và tìm những kẻ lạc loài.', track: 'ung-dung', icon: 'puzzle', Component: LabKmeans },
   { id: 'lab-seasonality', title: 'Mùa vụ và phần dư', blurb: 'Xem một đợt tấn công tự nâng mức nền của chính khung giờ nó xảy ra.', track: 'ung-dung', icon: 'activity', Component: LabSeasonality },
+  { id: 'lab-auth-graph', title: 'Đồ thị xác thực', blurb: 'Di chuyển ngang nhìn từ trên xuống — và cách dựng đồ thị sai làm đảo ngược tín hiệu.', track: 'ung-dung', icon: 'network', Component: LabAuthGraph },
   { id: 'lab-perceptron', title: 'Perceptron & XOR', blurb: 'Bài toán từng khiến ngành AI đóng băng 17 năm.', track: 'deep-learning', icon: 'network', Component: LabPerceptron },
   { id: 'lab-adversarial', title: 'Tấn công né tránh', blurb: 'Chỉnh đặc trưng để lật nhãn — và đo công sức phải bỏ ra.', track: 'adversarial', icon: 'crosshair', Component: LabAdversarial },
   { id: 'lab-poison', title: 'Đầu độc dữ liệu', blurb: 'Mở cửa hậu trong mô hình mà mọi chỉ số vẫn xanh.', track: 'adversarial', icon: 'skull', Component: LabPoison },

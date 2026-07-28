@@ -1305,8 +1305,8 @@ export const track4: Track = {
       trackId: 'do-luong',
       title: 'So sánh hai mô hình cho ra kết luận đứng vững',
       subtitle: 'Chênh 0,03 PR-AUC là tiến bộ thật hay là nhiễu của một tập kiểm thử?',
-      minutes: 24,
-      practiceMinutes: 3,
+      minutes: 25,
+      practiceMinutes: 7,
       level: 'nang-cao',
       prereqs: ['t4-l3'],
       why: {
@@ -1411,6 +1411,12 @@ print(f'p = {kq.pvalue:.4f}  ({"chính xác" if it_mau else "chi bình phương"
 # như thể nó là một bước tiến
 chenh = (n01 - n10) / len(y_that)
 print(f'Chênh lệch accuracy: {chenh * 100:+.3f} điểm phần trăm')`,
+        },
+        {
+          t: 'lab',
+          id: 'lab-mcnemar',
+          intro:
+            'Mặc định là đúng ví dụ vừa tính tay ở trên: 412 và 350 trên 50.000 mẫu, ra p = 0,027 và chênh 0,124 điểm phần trăm. Rồi hạ hai thanh trượt xuống 12 và 4 — lab tự chuyển sang nhị thức chính xác và cho p = 0,077, tức tỉ lệ ba-trên-một không kết luận được gì. Nhân cả hai lên mười lần và xem p tụt xuống cỡ 10⁻¹⁰: thứ quyết định là số mẫu bất đồng, không phải tỉ lệ giữa chúng.',
         },
         {
           t: 'checkpoint',
