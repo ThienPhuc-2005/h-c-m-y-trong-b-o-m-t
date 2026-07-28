@@ -1649,6 +1649,12 @@ export interface LabelPoint {
   precision: number;
   recallCommon: number;
   recallNovel: number;
+  /**
+   * Số nhãn dương ở ngưỡng này. Nơi vẽ PHẢI bỏ các điểm bằng 0: `precision`
+   * khi đó là 0 theo quy ước, và vẽ nó thành một điểm trên trục 0% nói rằng
+   * "nhãn dương của bạn sai hết", trong khi sự thật là không có nhãn dương nào.
+   */
+  positives: number;
 }
 
 export interface LabelOut {
@@ -1766,7 +1772,13 @@ export function labelRun(threshold: number, maturityDays: number): LabelOut {
   const curve: LabelPoint[] = [];
   for (let thr = 1; thr <= 20; thr++) {
     const m = measure(thr, maturityDays);
-    curve.push({ thr, precision: m.precision, recallCommon: m.recallCommon, recallNovel: m.recallNovel });
+    curve.push({
+      thr,
+      precision: m.precision,
+      recallCommon: m.recallCommon,
+      recallNovel: m.recallNovel,
+      positives: m.positives,
+    });
   }
 
   return { ...now, churn: changed / LBL_N, curve };
@@ -1871,7 +1883,12 @@ export function LabLabels() {
           strokeWidth={1.4}
           strokeDasharray="3 3"
         />
-        <Line p={p} pts={r.curve.map((c) => [c.thr, c.precision] as [number, number])} color={COLORS.brand} />
+        {/* Đường độ sạch DỪNG ở chỗ hết nhãn dương, không kéo về 0. */}
+        <Line
+          p={p}
+          pts={r.curve.filter((c) => c.positives > 0).map((c) => [c.thr, c.precision] as [number, number])}
+          color={COLORS.brand}
+        />
         <Line p={p} pts={r.curve.map((c) => [c.thr, c.recallCommon] as [number, number])} color={COLORS.info} width={1.9} dash="7 4" />
         <Line p={p} pts={r.curve.map((c) => [c.thr, c.recallNovel] as [number, number])} color={COLORS.warn} width={1.9} dash="2 3" />
       </Chart>

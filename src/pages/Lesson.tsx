@@ -20,10 +20,11 @@ import { href } from '../lib/router';
 import { useProgress, touchLesson, setNote, getCard, putCard, logMinutes } from '../lib/storage';
 import { lessonState } from '../lib/mastery';
 import { Icon } from '../components/Icon';
-import { useT } from '../i18n';
+import { useT, useLang } from '../i18n';
 import { currentRetention } from '../lib/srs';
 
 export function LessonPage({ id }: { id?: string }) {
+  const lang = useLang();
   const t = useT();
   const p = useProgress();
   const lesson = id ? getLesson(id) : undefined;
@@ -141,6 +142,14 @@ export function LessonPage({ id }: { id?: string }) {
           </div>
           <h1 style={{ fontSize: 'var(--fs-3xl)' }}>{lesson.title}</h1>
           <p className="muted" style={{ fontSize: 'var(--fs-lg)', lineHeight: 'var(--lh-snug)' }}>{lesson.subtitle}</p>
+          {/* Câu ngắn, đặt ngay dưới tiêu đề: đây là chỗ người chọn English
+              chạm mặt giáo trình tiếng Việt lần đầu. */}
+          {lang === 'en' && (
+            <div className="row faint" style={{ gap: 6, fontSize: 'var(--fs-sm)' }}>
+              <Icon name="languages" size={13} />
+              <span>{t('content.notice')}</span>
+            </div>
+          )}
         </header>
 
         {blocked.length > 0 && (

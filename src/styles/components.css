@@ -268,6 +268,14 @@
    Thẻ / bề mặt
    -------------------------------------------------------------------------- */
 .card {
+  /* `display: block` KHÔNG phải thừa. Rất nhiều thẻ là <a>, và anchor mặc định
+     là inline: hộp inline chứa một khối block (ví dụ `.row` flex bên trong) sẽ
+     bị CHẺ ĐÔI — viền chỉ vẽ được một mảnh, padding không có tác dụng, và nội
+     dung tràn ra ngoài mép thẻ. Trang chủ đã hỏng đúng như vậy ở thẻ "Ôn trước"
+     và "Luyện tập xen kẽ", trong khi các thẻ nằm trong `grid` thì thoát nhờ
+     grid tự blockify con của nó. Đặt ở đây để mọi thẻ đều đúng, thay vì bắt
+     từng component nhớ viết display:'block' nội tuyến. */
+  display: block;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
@@ -290,6 +298,7 @@
 }
 
 .panel {
+  display: block; /* cùng lý do như .card ở trên */
   background: var(--bg-sunken);
   border: 1px solid var(--border-subtle);
   border-radius: var(--r-lg);

@@ -96,7 +96,11 @@ const MlPipeline = () => (
     <Box x={504} y={62} w={106} h={62} label="Hành động" sub="cảnh báo / chặn" fill="var(--ok-soft)" stroke="var(--ok-border)" />
     <path d="M557 128 L557 160 L60 160 L60 128" fill="none" stroke={C.ok} strokeWidth="1.5" strokeDasharray="4 4" markerEnd="url(#ah)" />
     <T x={310} y={175} size={10}>Vòng phản hồi: kết luận của analyst quay lại thành nhãn mới</T>
-    <T x={56} y={40} strong>Nơi kiến thức bảo mật quyết định</T>
+    {/* Nhãn này CĂN GIỮA (mặc định của T), nên x phải là tâm chữ chứ không phải
+        lề trái. Trước đây x=56 đẩy nửa đầu dòng chữ ra ngoài viewBox và người
+        học đọc được "ín thức bảo mật quyết định". Đặt ở 180 để vừa nằm trong
+        khung, vừa đúng trên mũi tên trỏ xuống ô "Đặc trưng". */}
+    <T x={180} y={40} strong>Nơi kiến thức bảo mật quyết định</T>
     <path d="M180 46 L180 58" stroke={C.warn} strokeWidth="1.5" markerEnd="url(#ah)" />
   </Svg>
 );
@@ -164,7 +168,9 @@ const BaseRateFig = () => {
         <T x={238} y={-2} anchor="middle" size={10}>~49 báo động giả</T>
         <rect x={330} y={-9} width={11} height={8} rx={1.5} fill="var(--border-subtle)" />
         <T x={410} y={-2} anchor="middle" size={10}>941 bình thường</T>
-        <T x={548} y={-2} anchor="middle" size={10} >→ chỉ ~17% cảnh báo là thật</T>
+        {/* anchor="end" thay vì căn giữa: nhóm này đã bị translate(12,…) nên
+            chữ căn giữa ở x=548 tràn qua mép phải 620 của viewBox. */}
+        <T x={596} y={-2} anchor="end" size={10}>→ chỉ ~17% cảnh báo là thật</T>
       </g>
     </Svg>
   );
@@ -290,15 +296,20 @@ const FeatureSpace = () => (
 const ImbalanceFig = () => (
   <Svg vb="0 0 600 200">
     <T x={300} y={20} strong>Cùng FPR = 0,1%, khối lượng cảnh báo giả thay đổi theo lưu lượng</T>
+    {/* Thanh dài nhất PHẢI để chừa chỗ cho nhãn nằm bên phải nó: cột nhãn bắt
+        đầu ở 150, nhãn dài nhất đo được ~141px, nên bề rộng tối đa là 290 để
+        150 + 290 + 8 + 141 vẫn nhỏ hơn 600. Bản trước đặt thanh ở x=200 rộng
+        420 — tức chính thanh đó đã vượt khung, và nhãn "10.000 cảnh báo giả —
+        bất khả thi" bị cắt mất gần hết. */}
     {[
-      { l: '10 nghìn sự kiện/ngày', w: 20, n: '10 cảnh báo giả', c: C.ok },
-      { l: '1 triệu sự kiện/ngày', w: 140, n: '1.000 cảnh báo giả', c: C.warn },
-      { l: '10 triệu sự kiện/ngày', w: 420, n: '10.000 cảnh báo giả — bất khả thi', c: C.bad },
+      { l: '10 nghìn sự kiện/ngày', w: 18, n: '10 cảnh báo giả', c: C.ok },
+      { l: '1 triệu sự kiện/ngày', w: 96, n: '1.000 cảnh báo giả', c: C.warn },
+      { l: '10 triệu sự kiện/ngày', w: 290, n: '10.000 cảnh báo giả — bất khả thi', c: C.bad },
     ].map((r, i) => (
       <g key={i}>
-        <T x={16} y={62 + i * 46} anchor="start" size={11}>{r.l}</T>
-        <rect x={200} y={48 + i * 46} width={r.w} height={20} rx={4} fill={r.c} opacity={0.85} />
-        <T x={200 + r.w + 8} y={63 + i * 46} anchor="start" size={10}>{r.n}</T>
+        <T x={12} y={62 + i * 46} anchor="start" size={11}>{r.l}</T>
+        <rect x={150} y={48 + i * 46} width={r.w} height={20} rx={4} fill={r.c} opacity={0.85} />
+        <T x={150 + r.w + 8} y={63 + i * 46} anchor="start" size={10}>{r.n}</T>
       </g>
     ))}
     <T x={300} y={186} size={10}>Tỉ lệ phần trăm che giấu thực tế. Luôn quy về con số tuyệt đối mỗi ngày.</T>

@@ -15,13 +15,14 @@ import { getTrack, COURSE_STATS } from '../content';
 import { href } from '../lib/router';
 import { LessonCard, Ring, SectionHead, MiniBars } from '../components/Shared';
 import { Icon } from '../components/Icon';
-import { useT } from '../i18n';
+import { useT, useLang } from '../i18n';
 import { fmtDuration } from '../lib/utils';
 import { forecast } from '../lib/srs';
 import { ALL_CARDS } from '../content';
 
 export function HomePage() {
   const t = useT();
+  const lang = useLang();
   const p = useProgress();
   const plan = useMemo(() => buildPlan(p), [p]);
   const streak = useMemo(() => computeStreak(p), [p]);
@@ -48,6 +49,16 @@ export function HomePage() {
           {greeting}{p.settings.name ? `, ${p.settings.name}` : ''}
         </div>
         <h1 style={{ fontSize: 'var(--fs-2xl)' }}>{t(plan.headline.key, plan.headline.vars)}</h1>
+        {/* Người chọn English gặp ngay tiêu đề bài học bằng tiếng Việt ở màn
+            hình này. Nói trước một câu thì đó là một giới hạn đã biết; im lặng
+            thì nó thành một lỗi. Onboarding và Cài đặt đã có câu này, nhưng
+            người học không ở hai chỗ đó khi họ thấy nội dung. */}
+        {lang === 'en' && (
+          <div className="row faint" style={{ gap: 'var(--s-2)', fontSize: 'var(--fs-sm)' }}>
+            <Icon name="languages" size={14} />
+            <span>{t('content.noticeLong')}</span>
+          </div>
+        )}
       </header>
 
       {/* ---- Việc cần làm hôm nay --------------------------------------- */}

@@ -298,6 +298,17 @@ describe('lab-labels — ngưỡng đa engine và cửa sổ chín muồi', () =
     expect(bien.negNoise).toBeCloseTo(0.43, 2);
   });
 
+  it('đường độ sạch trên biểu đồ phải DỪNG ở chỗ hết nhãn dương', () => {
+    // Nhìn thấy khi xem lab trong chủ đề mới: ở cửa sổ 0 ngày, đường độ sạch
+    // rơi thẳng xuống 0 tại ngưỡng 20 — nơi không có lấy một nhãn dương. Vẽ
+    // như vậy nói "nhãn dương của bạn sai hết" thay vì "không có nhãn dương".
+    const c = labelRun(5, 0).curve;
+    expect(c.some((x) => x.positives === 0)).toBe(true);
+    const veDuoc = c.filter((x) => x.positives > 0);
+    expect(veDuoc.every((x) => x.precision > 0)).toBe(true);
+    expect(veDuoc[veDuoc.length - 1].thr).toBeLessThan(20);
+  });
+
   it('kho mẫu cố định: đổi thanh trượt không được sinh lại kho', () => {
     // Nếu kho được sinh lại theo tham số, mọi con số trong lời kết luận sẽ
     // nhảy khi người học chỉ vừa kéo một thanh trượt.
