@@ -1101,6 +1101,12 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
         },
         { t: 'h', text: 'Bốn tấn công, xếp theo thứ tự bạn sẽ gặp', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-model-stealing',
+          caption:
+            'Kẻ tấn công không cần trọng số của bạn: đầu vào cộng điểm số trả về là đủ để huấn luyện một bản sao. Bản sao đó vừa là tài sản bị mất, vừa là bàn đạp để dò mẫu đối kháng ngoại tuyến.',
+        },
+        {
           t: 'table',
           caption: 'Bốn tấn công vào tài sản của mô hình',
           head: ['Tấn công', 'Kẻ tấn công lấy được gì', 'Cần điều kiện gì', 'Hậu quả cụ thể'],

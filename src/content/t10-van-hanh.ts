@@ -1630,7 +1630,7 @@ def ly_do(i: int, k: int = 3) -> list[str]:
       title: 'Quản trị, tuân thủ và tài liệu',
       subtitle:
         'Ngày kiểm toán viên hỏi "mô hình này quyết định thế nào và ai chịu trách nhiệm", câu trả lời phải có sẵn trong tài liệu chứ không nằm trong đầu bạn.',
-      minutes: 24,
+      minutes: 25,
       practiceMinutes: 3,
       level: 'trung-cap',
       prereqs: ['t10-l3'],
@@ -1687,6 +1687,12 @@ def ly_do(i: int, k: int = 3) -> list[str]:
           ],
         },
         { t: 'h', text: 'NIST AI RMF — bốn chức năng, bốn câu hỏi', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-ai-rmf',
+          caption:
+            'GOVERN không phải bước đầu tiên trong một quy trình bốn bước — nó là vòng bọc quanh ba chức năng kia. Đọc sai chỗ này là lý do nhiều tổ chức viết chính sách một lần rồi cất đi.',
+        },
         {
           t: 'table',
           caption: 'Bốn chức năng của NIST AI RMF áp vào một mô hình phát hiện',
@@ -2375,6 +2381,12 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
             'Câu trả lời đúng là **một loạt câu hỏi ngược**, không phải một chữ "được". Cụ thể: Tỉ lệ nền là bao nhiêu, và PR-AUC ra sao? Tập kiểm tra chia theo thời gian hay ngẫu nhiên? Điểm hoạt động dự kiến ở đâu, và tại đó precision cùng số cảnh báo mỗi ngày là bao nhiêu? Đội xử lý được bao nhiêu cảnh báo? Có cột nào có thể rò rỉ không? Người phỏng vấn không kiểm tra kiến thức về AUC — họ kiểm tra xem bạn có phản xạ **chuyển từ chỉ số sang hệ quả vận hành** hay không. Ứng viên trả lời "được ạ" bị loại ở đây; ứng viên nói "0,99 trong bảo mật thường là dấu hiệu rò rỉ, cho tôi xem cách chia dữ liệu trước" thì thường được mời sang vòng sau ngay.',
         },
         { t: 'h', text: 'Bản đồ vai trò — ai làm gì trong một ngày', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-role-overlap',
+          caption:
+            'Phần chung chiếm khoảng 60% và là phần khó dạy nhất: hiểu tấn công, đọc log thật, đo bằng số. Phần khác biệt chủ yếu là công cụ hằng ngày và cách báo cáo kết quả.',
+        },
         {
           t: 'table',
           caption: 'Năm vai trò gần với ML bảo mật, so theo sản phẩm và kỹ năng cốt lõi',

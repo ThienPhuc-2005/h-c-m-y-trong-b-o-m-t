@@ -40,6 +40,12 @@ export const FIGURE_IDS = [
   'fig-graph-lateral', // Đồ thị di chuyển ngang trong mạng
   'fig-calibration', // Biểu đồ độ tin cậy (reliability diagram)
   'fig-data-sources', // Bản đồ nguồn dữ liệu bảo mật
+  'fig-bayes-direction', // Đảo chiều điều kiện là đổi mẫu số
+  'fig-precision-recall', // Precision đọc theo cột, recall đọc theo hàng
+  'fig-model-stealing', // Trộm mô hình qua API và suy luận thành viên
+  'fig-llm-three-risks', // Jailbreak / rò rỉ / ảo giác: ba chiều khác nhau
+  'fig-ai-rmf', // NIST AI RMF với GOVERN ở giữa
+  'fig-role-overlap', // Hai vai trò chồng lấn 60%
 ] as const;
 
 export type KnownFigureId = (typeof FIGURE_IDS)[number];

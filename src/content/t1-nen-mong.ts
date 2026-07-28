@@ -441,6 +441,12 @@ diem = mo_hinh.predict_proba(X_te)[:, 1]`,
         },
         { t: 'h', text: 'Ký hiệu, đọc thành lời', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-bayes-direction',
+          caption:
+            'Hai câu hỏi chỉ khác nhau ở chỗ đặt dấu gạch điều kiện, nhưng mẫu số của chúng khác nhau 100 lần. Người dựng mô hình hỏi câu bên trái; analyst phải sống với câu bên phải.',
+        },
+        {
           t: 'list',
           items: [
             '`P(D)` — đọc là "xác suất D". D là sự kiện "email này là lừa đảo". Nếu 20 trong 1.000 email là lừa đảo thì P(D) = 20/1000 = 0,02.',

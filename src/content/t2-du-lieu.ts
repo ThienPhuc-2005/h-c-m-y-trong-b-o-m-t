@@ -2575,7 +2575,7 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Precision, Recall, F1 — và vì sao accuracy là cái bẫy',
       subtitle: 'Hai câu hỏi khác nhau về cùng một mô hình, và cái giá của việc trộn lẫn chúng',
-      minutes: 21,
+      minutes: 22,
       practiceMinutes: 3,
       level: 'co-ban',
       prereqs: ['t4-l1'],
@@ -2603,6 +2603,12 @@ export const track2: Track = {
             'F1 = 2 × (1,00 × 0,02) / (1,00 + 0,02) = 0,04 / 1,02 ≈ **0,039**.\n\nGần bằng **không**, chứ không phải 0,51. Đó chính là lý do F1 dùng **trung bình điều hoà** (harmonic mean) chứ không phải trung bình cộng: trung bình điều hoà luôn bị kéo về phía con số nhỏ hơn. Một mô hình muốn F1 cao thì **cả hai** chỉ số phải cùng cao — không được phép giỏi một cái và bỏ mặc cái kia.\n\nHãy nhớ tính chất này. Nó vừa là điểm mạnh của F1 (không cho phép gian lận bằng cách tối đa hoá một phía), vừa là điểm yếu của nó (nó áp đặt rằng hai phía quan trọng ngang nhau — điều gần như không bao giờ đúng trong bảo mật).',
         },
         { t: 'h', text: 'Hai câu hỏi, không phải hai công thức', level: 2 },
+        {
+          t: 'figure',
+          id: 'fig-precision-recall',
+          caption:
+            'Cùng một bảng, hai hướng đọc. Precision lấy cột "mô hình nói ĐỘC" làm mẫu số; recall lấy hàng "thật ra ĐỘC". Biết mình đang đọc cột hay hàng thì không bao giờ lẫn hai chỉ số.',
+        },
         {
           t: 'p',
           md: 'Trước khi nhìn công thức, hãy phát biểu bằng lời. Đây không phải là mẹo sư phạm — người làm lâu năm cũng dùng đúng hai câu này khi tranh luận.',

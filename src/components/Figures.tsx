@@ -820,7 +820,159 @@ const DataSourcesFig = () => (
 
 /* ========================================================================== */
 
+/* --- Sáu hình cho các bài trước đây không có hình nào --------------------- */
+
+/** t1-l2 — đảo chiều điều kiện là đổi MẪU SỐ, và đó là chỗ sai 100 lần. */
+const BayesDirection = () => (
+  <Svg vb="0 0 620 210">
+    <T x={310} y={20} strong>Cùng một bộ phát hiện, hai câu hỏi, hai đáp số cách nhau 100 lần</T>
+    <Box x={12} y={38} w={290} h={150} fill="var(--info-soft)" stroke="var(--info-border)" />
+    <T x={157} y={62} strong>P( cảnh báo | tấn công )</T>
+    <T x={157} y={84} size={11}>Mẫu số: 10 cuộc tấn công thật</T>
+    <text x={157} y={130} textAnchor="middle" className="svg-label-strong" style={{ fontSize: 30, fill: C.info }}>95%</text>
+    <T x={157} y={156} size={11}>Câu hỏi của người dựng mô hình</T>
+    <T x={157} y={176} size={11}>&ldquo;Bộ dò của tôi nhạy tới đâu?&rdquo;</T>
+
+    <Box x={318} y={38} w={290} h={150} fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <T x={463} y={62} strong>P( tấn công | cảnh báo )</T>
+    <T x={463} y={84} size={11}>Mẫu số: 1.000 cảnh báo đã bật</T>
+    <text x={463} y={130} textAnchor="middle" className="svg-label-strong" style={{ fontSize: 30, fill: C.warn }}>0,95%</text>
+    <T x={463} y={156} size={11}>Câu hỏi của analyst lúc 3 giờ sáng</T>
+    <T x={463} y={176} size={11}>&ldquo;Mở cái này ra có đáng không?&rdquo;</T>
+  </Svg>
+);
+
+/** t4-l2 — hai chỉ số, hai mẫu số: một cột và một hàng của cùng một bảng. */
+const PrecisionRecall = () => (
+  <Svg vb="0 0 560 280">
+    <T x={280} y={18} strong>Precision đọc theo CỘT, recall đọc theo HÀNG</T>
+    <T x={225} y={48} size={11}>Mô hình nói ĐỘC</T>
+    <T x={345} y={48} size={11}>Mô hình nói LÀNH</T>
+    <T x={158} y={96} anchor="end" size={11}>Thật ra ĐỘC</T>
+    <T x={158} y={166} anchor="end" size={11}>Thật ra LÀNH</T>
+
+    <Box x={166} y={60} w={118} h={62} label="TP" sub="bắt đúng" fill="var(--ok-soft)" stroke="var(--ok-border)" />
+    <Box x={286} y={60} w={118} h={62} label="FN" sub="bỏ sót" fill="var(--bad-soft)" stroke="var(--bad-border)" />
+    <Box x={166} y={130} w={118} h={62} label="FP" sub="báo động giả" fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <Box x={286} y={130} w={118} h={62} label="TN" sub="im lặng đúng" fill="var(--bg-sunken)" />
+
+    {/* Khung mẫu số: nét liền quanh CỘT cho precision, nét gạch quanh HÀNG cho recall. */}
+    <rect x={162} y={56} width={126} height={140} rx={6} fill="none" stroke={C.brand} strokeWidth="2.4" />
+    <rect x={162} y={56} width={246} height={70} rx={6} fill="none" stroke={C.lab} strokeWidth="2.4" strokeDasharray="6 4" />
+    <T x={225} y={214} size={11}>mẫu số của precision</T>
+    <T x={470} y={96} size={11}>mẫu số của recall</T>
+    <T x={280} y={246} strong>Precision = TP / (TP+FP) · Recall = TP / (TP+FN)</T>
+    <T x={280} y={268} size={11}>Accuracy cộng cả TN vào tử số, nên nó chỉ nói về ô lớn nhất</T>
+  </Svg>
+);
+
+/** t8-l4 — mỗi câu trả lời là một mẩu mô hình và một mẩu dữ liệu đi ra ngoài. */
+const ModelStealing = () => (
+  <Svg vb="0 0 620 250">
+    <Defs />
+    <T x={310} y={18} strong>Chỉ với API dự đoán, kẻ tấn công dựng lại được mô hình của bạn</T>
+    <Box x={10} y={54} w={110} h={56} label="Kẻ tấn công" sub="chỉ có API" />
+    <Arrow x1={122} y1={72} x2={212} y2={72} />
+    <T x={167} y={64} size={11}>10.000 truy vấn</T>
+    <Box x={216} y={44} w={130} h={76} label="Mô hình của bạn" sub="hộp đen, có phí" fill="var(--brand-soft)" stroke="var(--brand-border)" />
+    <Arrow x1={212} y1={102} x2={122} y2={102} color={C.warn} />
+    <T x={167} y={118} size={11}>điểm số trả về</T>
+    <Arrow x1={65} y1={114} x2={65} y2={150} color={C.warn} />
+    <Box x={10} y={152} w={130} h={56} label="Tập tự gán nhãn" sub="đầu vào + điểm số" fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <Arrow x1={142} y1={180} x2={212} y2={180} color={C.bad} />
+    <Box x={216} y={152} w={130} h={56} label="Mô hình sao chép" sub="miễn phí, ngoại tuyến" fill="var(--bad-soft)" stroke="var(--bad-border)" />
+    <Box x={362} y={44} w={248} h={164} fill="var(--bg-sunken)" />
+    <T x={486} y={70} strong>Hai thứ mất đi cùng lúc</T>
+    <T x={486} y={96} size={11}>1. Tài sản: bản sao chạy không tốn phí</T>
+    <T x={486} y={120} size={11}>2. Phòng thủ: có bản sao thì dò mẫu đối</T>
+    <T x={486} y={138} size={11}>kháng ngoại tuyến rồi mang sang bản gốc</T>
+    <T x={486} y={166} size={11}>Suy luận thành viên đi cùng đường: mẫu</T>
+    <T x={486} y={184} size={11}>ĐÃ học được cho điểm tự tin hơn mẫu chưa</T>
+    <T x={486} y={202} size={11}>từng thấy — chênh lệch đó là kênh rò rỉ</T>
+  </Svg>
+);
+
+/** t9-l3 — ba thứ hay bị gộp làm một, và chiều đi của thông tin khác nhau. */
+const LlmThreeRisks = () => (
+  <Svg vb="0 0 620 240">
+    <Defs />
+    <T x={310} y={18} strong>Ba rủi ro, ba chiều đi của thông tin, ba chỗ chặn khác nhau</T>
+    {[
+      { x: 10, t: 'Jailbreak', c: 'var(--bad-soft)', b: 'var(--bad-border)', vao: true, m: 'Người dùng ép mô hình', m2: 'làm việc đã bị cấm', ch: 'Chặn ở: chính sách cộng', ch2: 'kiểm cả đầu ra' },
+      { x: 214, t: 'Rò rỉ dữ liệu', c: 'var(--warn-soft)', b: 'var(--warn-border)', vao: false, m: 'Bí mật trong ngữ cảnh', m2: 'hoặc trong tham số đi ra', ch: 'Chặn ở: đừng đưa bí mật', ch2: 'vào ngữ cảnh ngay từ đầu' },
+      { x: 418, t: 'Ảo giác', c: 'var(--info-soft)', b: 'var(--info-border)', vao: false, m: 'Mô hình bịa ra thứ', m2: 'nghe rất đúng', ch: 'Chặn ở: buộc dẫn nguồn,', ch2: 'kiểm bằng hệ thống khác' },
+    ].map((r, i) => (
+      <g key={i}>
+        <Box x={r.x} y={38} w={192} h={186} fill={r.c} stroke={r.b} />
+        <T x={r.x + 96} y={62} strong>{r.t}</T>
+        <T x={r.x + 96} y={84} size={11}>{r.vao ? 'người dùng → mô hình' : 'mô hình → người dùng'}</T>
+        {r.vao ? (
+          <Arrow x1={r.x + 44} y1={102} x2={r.x + 148} y2={102} />
+        ) : (
+          <Arrow x1={r.x + 148} y1={102} x2={r.x + 44} y2={102} />
+        )}
+        <T x={r.x + 96} y={132} size={11}>{r.m}</T>
+        <T x={r.x + 96} y={150} size={11}>{r.m2}</T>
+        <T x={r.x + 96} y={184} size={11}>{r.ch}</T>
+        <T x={r.x + 96} y={202} size={11}>{r.ch2}</T>
+      </g>
+    ))}
+  </Svg>
+);
+
+/** t10-l5 — GOVERN nằm GIỮA chứ không nằm đầu: nó bọc ba chức năng kia. */
+const AiRmf = () => (
+  <Svg vb="0 0 560 300">
+    <Defs />
+    <T x={280} y={18} strong>NIST AI RMF: GOVERN bọc ba chức năng kia, không đứng trước chúng</T>
+    <circle cx={280} cy={170} r={130} fill="var(--brand-soft)" stroke="var(--brand-border)" strokeWidth="1.5" />
+    <T x={280} y={58} strong>GOVERN</T>
+    <T x={280} y={78} size={11}>Ai được quyết, và bằng chứng lưu ở đâu</T>
+    <Box x={62} y={112} w={144} h={62} label="MAP" sub="dùng vào việc gì" fill="var(--info-soft)" stroke="var(--info-border)" />
+    <Box x={354} y={112} w={144} h={62} label="MEASURE" sub="đo bằng con số nào" fill="var(--ok-soft)" stroke="var(--ok-border)" />
+    <Box x={208} y={208} w={144} h={62} label="MANAGE" sub="nhận hay giảm rủi ro" fill="var(--warn-soft)" stroke="var(--warn-border)" />
+    <Arrow x1={208} y1={136} x2={350} y2={136} />
+    <Arrow x1={350} y1={152} x2={208} y2={152} />
+    <Arrow x1={140} y1={176} x2={226} y2={206} />
+    <Arrow x1={420} y1={176} x2={334} y2={206} />
+  </Svg>
+);
+
+/** t10-l7 — hai vai trò chồng lấn khoảng 60%; phần khác biệt mới là chỗ chọn. */
+const RoleOverlap = () => (
+  /* Toạ độ chữ đặt theo VÙNG CHỈ THUỘC MỘT VÒNG, không đặt theo tâm vòng: vòng
+     trái trải 138..342 nhưng vùng riêng của nó chỉ tới 278 (chỗ vòng phải bắt
+     đầu), nên tâm chữ đúng là 208 — đặt ở tâm vòng 240 thì chữ lấn sang vùng
+     chồng lấn, còn đặt ở 158 thì chữ chạy ra ngoài vòng. */
+  <Svg vb="0 0 620 268">
+    <T x={310} y={18} strong>Hai vai trò chồng lấn khoảng 60% — phần còn lại mới là chỗ bạn chọn</T>
+    <circle cx={240} cy={146} r={102} fill="var(--info-soft)" stroke="var(--info-border)" strokeWidth="1.5" />
+    <circle cx={380} cy={146} r={102} fill="var(--lab-soft)" stroke="var(--lab-border)" strokeWidth="1.5" opacity={0.88} />
+    <T x={168} y={44} strong>Detection Engineer</T>
+    <T x={452} y={44} strong>Security Data Scientist</T>
+    <T x={206} y={128} size={11}>Viết và tinh luật</T>
+    <T x={206} y={148} size={11}>Sống trong SIEM</T>
+    <T x={206} y={168} size={11}>Đo bằng ca điều tra</T>
+    <T x={310} y={118} strong>60% chung</T>
+    <T x={310} y={142} size={11}>Hiểu tấn công</T>
+    <T x={310} y={160} size={11}>Đọc log thật</T>
+    <T x={310} y={178} size={11}>Đo bằng số</T>
+    <T x={414} y={128} size={11}>Huấn luyện, hiệu chuẩn</T>
+    <T x={414} y={148} size={11}>Sống trong notebook</T>
+    <T x={414} y={168} size={11}>Đo bằng PR-AUC</T>
+    <T x={310} y={262} size={11}>Người từ bảo mật sang ML mạnh nhất ở phần chung, và đó là phần khó dạy nhất</T>
+  </Svg>
+);
+
+/* ========================================================================== */
+
 const REGISTRY: Record<string, () => ReactNode> = {
+  'fig-bayes-direction': BayesDirection,
+  'fig-precision-recall': PrecisionRecall,
+  'fig-model-stealing': ModelStealing,
+  'fig-llm-three-risks': LlmThreeRisks,
+  'fig-ai-rmf': AiRmf,
+  'fig-role-overlap': RoleOverlap,
   'fig-ml-pipeline': MlPipeline,
   'fig-three-learning': ThreeLearning,
   'fig-base-rate': BaseRateFig,

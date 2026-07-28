@@ -894,6 +894,12 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
         },
         { t: 'h', text: 'Bốn kênh rò rỉ dữ liệu, bốn cách chặn khác nhau', level: 2 },
         {
+          t: 'figure',
+          id: 'fig-llm-three-risks',
+          caption:
+            'Ba rủi ro hay bị gộp thành một câu "LLM không an toàn". Chúng khác nhau ở chiều đi của thông tin, nên chỗ đặt lớp phòng thủ cũng khác nhau.',
+        },
+        {
           t: 'table',
           caption: 'Đừng gộp bốn thứ này vào một dòng "rủi ro rò rỉ dữ liệu"',
           head: ['Kênh rò rỉ', 'Cơ chế', 'Biện pháp thật sự hiệu quả'],

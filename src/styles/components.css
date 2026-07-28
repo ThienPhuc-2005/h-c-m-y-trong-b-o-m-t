@@ -1073,7 +1073,10 @@ textarea {
   .figure svg {
     /* Nhân --user-scale: chữ trong SVG không nghe thanh cỡ chữ, nên cách duy
        nhất để người cần chữ to đọc được hình là phóng cả hình. */
-    min-width: calc(560px * var(--user-scale, 1));
+    /* 620px chứ không phải 560: đó là bề rộng viewBox lớn nhất trong thư viện
+       hình, nên ở đây tỉ lệ co giãn về đúng 1,0 và nhãn 11 đơn vị hiện ra đúng
+       11px. Ở 560 thì hình rộng 620 bị co còn 0,90 và chữ tụt xuống 9,9px. */
+    min-width: calc(620px * var(--user-scale, 1));
   }
 }
 .figure-caption {
