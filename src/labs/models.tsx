@@ -660,55 +660,70 @@ export function LabGradient() {
 /*  lab-perceptron — XOR và vì sao cần lớp ẩn                                  */
 /* ========================================================================== */
 
+/** Bốn điểm của bài toán logic; nhãn tuỳ bài AND hay XOR. */
+export function perceptronData(problem: 'and' | 'xor') {
+  const base = [
+    [0, 0], [0, 1], [1, 0], [1, 1],
+  ];
+  const label = (a: number, b: number) => (problem === 'and' ? (a && b ? 1 : 0) : a !== b ? 1 : 0);
+  return base.map(([a, b]) => ({ x: [a, b], y: label(a, b) }));
+}
+
+/**
+ * Huấn luyện lại TỪ ĐẦU với đúng (số nơ-ron ẩn, số vòng) được truyền vào.
+ *
+ * Không có trạng thái tăng dần ở đây — đó là lý do thanh trượt "số nơ-ron" KHÔNG
+ * được reset số vòng về 0. Trước đây nó có reset, và hậu quả là người học làm
+ * đúng hướng dẫn trong lời kết luận ("huấn luyện đủ lâu, rồi thêm 2 nơ-ron ẩn")
+ * lại thấy độ chính xác đứng nguyên 50% — tức lab tự bác bỏ chính nó.
+ */
+export function trainPerceptron(hidden: number, epochs: number, problem: 'and' | 'xor') {
+  const data = perceptronData(problem);
+  const rng = mulberry32(7);
+  const H = Math.max(hidden, 0);
+  let W1 = Array.from({ length: Math.max(H, 1) }, () => [rng() * 2 - 1, rng() * 2 - 1]);
+  let b1 = Array.from({ length: Math.max(H, 1) }, () => rng() * 2 - 1);
+  let W2 = Array.from({ length: H || 2 }, () => rng() * 2 - 1);
+  let b2 = rng() * 2 - 1;
+  const lr = 0.6;
+
+  for (let e = 0; e < epochs; e++) {
+    for (const s of shuffle(data, mulberry32(e + 1))) {
+      if (H === 0) {
+        const z = s.x[0] * W2[0] + s.x[1] * W2[1] + b2;
+        const o = sigmoid(z);
+        const d = o - s.y;
+        W2 = [W2[0] - lr * d * s.x[0], W2[1] - lr * d * s.x[1]];
+        b2 -= lr * d;
+      } else {
+        const h = W1.map((w, i) => sigmoid(w[0] * s.x[0] + w[1] * s.x[1] + b1[i]));
+        const o = sigmoid(h.reduce((a, hi, i) => a + hi * W2[i], b2));
+        const d2 = o - s.y;
+        const dh = W2.map((w, i) => d2 * w * h[i] * (1 - h[i]));
+        W2 = W2.map((w, i) => w - lr * d2 * h[i]);
+        b2 -= lr * d2;
+        W1 = W1.map((w, i) => [w[0] - lr * dh[i] * s.x[0], w[1] - lr * dh[i] * s.x[1]]);
+        b1 = b1.map((bb, i) => bb - lr * dh[i]);
+      }
+    }
+  }
+
+  const predict = (x: number[]) => {
+    if (H === 0) return sigmoid(x[0] * W2[0] + x[1] * W2[1] + b2);
+    const h = W1.map((w, i) => sigmoid(w[0] * x[0] + w[1] * x[1] + b1[i]));
+    return sigmoid(h.reduce((a, hi, i) => a + hi * W2[i], b2));
+  };
+  const accuracy = data.filter((d) => (predict(d.x) >= 0.5 ? 1 : 0) === d.y).length / data.length;
+  return { predict, accuracy, data };
+}
+
 export function LabPerceptron() {
   const [hidden, setHidden] = useState(0);
   const [epochs, setEpochs] = useState(0);
   const [problem, setProblem] = useState<'and' | 'xor'>('xor');
 
-  const data = useMemo(() => {
-    const base = [
-      [0, 0], [0, 1], [1, 0], [1, 1],
-    ];
-    const label = (a: number, b: number) => (problem === 'and' ? (a && b ? 1 : 0) : a !== b ? 1 : 0);
-    return base.map(([a, b]) => ({ x: [a, b], y: label(a, b) }));
-  }, [problem]);
-
-  const model = useMemo(() => {
-    const rng = mulberry32(7);
-    const H = Math.max(hidden, 0);
-    let W1 = Array.from({ length: Math.max(H, 1) }, () => [rng() * 2 - 1, rng() * 2 - 1]);
-    let b1 = Array.from({ length: Math.max(H, 1) }, () => rng() * 2 - 1);
-    let W2 = Array.from({ length: H || 2 }, () => rng() * 2 - 1);
-    let b2 = rng() * 2 - 1;
-    const lr = 0.6;
-
-    for (let e = 0; e < epochs; e++) {
-      for (const s of shuffle(data, mulberry32(e + 1))) {
-        if (H === 0) {
-          const z = s.x[0] * W2[0] + s.x[1] * W2[1] + b2;
-          const o = sigmoid(z);
-          const d = o - s.y;
-          W2 = [W2[0] - lr * d * s.x[0], W2[1] - lr * d * s.x[1]];
-          b2 -= lr * d;
-        } else {
-          const h = W1.map((w, i) => sigmoid(w[0] * s.x[0] + w[1] * s.x[1] + b1[i]));
-          const o = sigmoid(h.reduce((a, hi, i) => a + hi * W2[i], b2));
-          const d2 = o - s.y;
-          const dh = W2.map((w, i) => d2 * w * h[i] * (1 - h[i]));
-          W2 = W2.map((w, i) => w - lr * d2 * h[i]);
-          b2 -= lr * d2;
-          W1 = W1.map((w, i) => [w[0] - lr * dh[i] * s.x[0], w[1] - lr * dh[i] * s.x[1]]);
-          b1 = b1.map((bb, i) => bb - lr * dh[i]);
-        }
-      }
-    }
-    const predict = (x: number[]) => {
-      if (H === 0) return sigmoid(x[0] * W2[0] + x[1] * W2[1] + b2);
-      const h = W1.map((w, i) => sigmoid(w[0] * x[0] + w[1] * x[1] + b1[i]));
-      return sigmoid(h.reduce((a, hi, i) => a + hi * W2[i], b2));
-    };
-    return { predict };
-  }, [hidden, epochs, data]);
+  const model = useMemo(() => trainPerceptron(hidden, epochs, problem), [hidden, epochs, problem]);
+  const data = model.data;
 
   const grid = useMemo(() => {
     const N = 30;
@@ -721,7 +736,7 @@ export function LabPerceptron() {
     return cells;
   }, [model]);
 
-  const acc = data.filter((d) => (model.predict(d.x) >= 0.5 ? 1 : 0) === d.y).length / data.length;
+  const acc = model.accuracy;
   const p = mkPlot(360, 320, [-0.08, 1.08], [-0.08, 1.08], { l: 38, r: 12, t: 12, b: 34 });
   const cw = (p.w - p.pad.l - p.pad.r) / 30;
 
@@ -731,8 +746,10 @@ export function LabPerceptron() {
       title="XOR — bài toán giết chết trí tuệ nhân tạo suốt 17 năm"
       takeaway={
         <>
-          Đặt số nơ-ron ẩn về <b>0</b> (perceptron đơn) và chọn bài toán XOR: dù huấn luyện bao lâu cũng chỉ
-          đạt 50–75%, vì một đường thẳng không tách được XOR. Thêm <b>2 nơ-ron ẩn</b> và nó giải được ngay.
+          Đặt số nơ-ron ẩn về <b>0</b> (perceptron đơn), chọn XOR và kéo số vòng huấn luyện lên hết cỡ: độ
+          chính xác đứng nguyên <b>50%</b>, đúng bằng tung đồng xu. Ngay cả đường thẳng tốt nhất có thể cũng
+          chỉ đúng 3 trên 4 điểm, và hạ gradient trên log-loss thậm chí không tìm tới đó — nó dừng ở nghiệm
+          đối xứng. Giờ thêm <b>2 nơ-ron ẩn</b> mà không đụng gì khác: 100% ngay lập tức.
           Đây chính xác là lý do "học sâu" tồn tại: các lớp ẩn dựng nên những đặc trưng phi tuyến mà bạn không
           phải tự nghĩ ra. Trong bảo mật, "XOR" là những mẫu kiểu <em>"đăng nhập lúc 3 giờ sáng thì bình
           thường với đội vận hành nhưng bất thường với kế toán"</em> — không đặc trưng đơn lẻ nào bắt được.
@@ -742,12 +759,16 @@ export function LabPerceptron() {
       <div className="grid grid-3">
         <div className="field">
           <label htmlFor="pp"><span>Bài toán</span></label>
-          <select id="pp" value={problem} onChange={(e) => { setProblem(e.target.value as 'and' | 'xor'); setEpochs(0); }}>
+          {/* Đổi bài toán hay đổi kiến trúc KHÔNG reset số vòng: mô hình vốn
+              được huấn luyện lại từ đầu mỗi lần, nên reset chẳng phục vụ tính
+              toán nào mà chỉ khiến thao tác lời kết luận hướng dẫn ra kết quả
+              ngược. Ai muốn xem nó học dần thì đã có sẵn thanh trượt số vòng. */}
+          <select id="pp" value={problem} onChange={(e) => setProblem(e.target.value as 'and' | 'xor')}>
             <option value="and">AND (tách được bằng đường thẳng)</option>
             <option value="xor">XOR (không tách được)</option>
           </select>
         </div>
-        <Slider label="Số nơ-ron lớp ẩn" value={hidden} min={0} max={6} step={1} onChange={(v) => { setHidden(v); setEpochs(0); }} format={(v) => (v === 0 ? 'không có lớp ẩn' : String(v))} />
+        <Slider label="Số nơ-ron lớp ẩn" value={hidden} min={0} max={6} step={1} onChange={setHidden} format={(v) => (v === 0 ? 'không có lớp ẩn' : String(v))} />
         <Slider label="Số vòng huấn luyện" value={epochs} min={0} max={3000} step={50} onChange={setEpochs} />
       </div>
       <div className="grid grid-2">

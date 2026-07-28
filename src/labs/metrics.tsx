@@ -258,38 +258,45 @@ export function LabConfusion() {
 /*  lab-roc-pr — ROC và PR cạnh nhau                                           */
 /* ========================================================================== */
 
+/**
+ * Dựng đường ROC và PR cùng hai diện tích dưới đường, trên CÙNG một mô hình chỉ
+ * đổi tỉ lệ lớp dương. Tách ra khỏi component để lời kết luận — "ROC-AUC gần như
+ * không đổi trong khi PR-AUC sụp thẳng đứng" — có thể chốt được bằng kiểm thử.
+ */
+export function rocPrCurves(posRatePct: number, sep: number) {
+  const data = makeScores(777, 4000, sep, posRatePct / 100);
+  const sorted = [...data].sort((a, b) => b.score - a.score);
+  const P = sorted.filter((d) => d.y === 1).length || 1;
+  const N = sorted.length - P || 1;
+  let tp = 0;
+  let fp = 0;
+  const roc: [number, number][] = [[0, 0]];
+  const pr: [number, number][] = [];
+  let auc = 0;
+  let ap = 0;
+  let prevFpr = 0;
+  let prevRec = 0;
+  for (const d of sorted) {
+    if (d.y === 1) tp++;
+    else fp++;
+    const rec = tp / P;
+    const fprv = fp / N;
+    const prec = tp / (tp + fp);
+    roc.push([fprv, rec]);
+    pr.push([rec, prec]);
+    auc += (fprv - prevFpr) * rec;
+    ap += (rec - prevRec) * prec;
+    prevFpr = fprv;
+    prevRec = rec;
+  }
+  return { roc, pr, auc, ap };
+}
+
 export function LabRocPr() {
   const [posRate, setPosRate] = useState(20);
   const [sep, setSep] = useState(1.8);
-  const data = useMemo(() => makeScores(777, 4000, sep, posRate / 100), [sep, posRate]);
 
-  const { roc, pr, auc, ap } = useMemo(() => {
-    const sorted = [...data].sort((a, b) => b.score - a.score);
-    const P = sorted.filter((d) => d.y === 1).length || 1;
-    const N = sorted.length - P || 1;
-    let tp = 0;
-    let fp = 0;
-    const roc: [number, number][] = [[0, 0]];
-    const pr: [number, number][] = [];
-    let auc = 0;
-    let ap = 0;
-    let prevFpr = 0;
-    let prevRec = 0;
-    for (const d of sorted) {
-      if (d.y === 1) tp++;
-      else fp++;
-      const rec = tp / P;
-      const fprv = fp / N;
-      const prec = tp / (tp + fp);
-      roc.push([fprv, rec]);
-      pr.push([rec, prec]);
-      auc += (fprv - prevFpr) * rec;
-      ap += (rec - prevRec) * prec;
-      prevFpr = fprv;
-      prevRec = rec;
-    }
-    return { roc, pr, auc, ap };
-  }, [data]);
+  const { roc, pr, auc, ap } = useMemo(() => rocPrCurves(posRate, sep), [posRate, sep]);
 
   const pRoc = mkPlot(300, 250, [0, 1], [0, 1], { l: 40, r: 10, t: 12, b: 36 });
   const pPr = mkPlot(300, 250, [0, 1], [0, 1], { l: 40, r: 10, t: 12, b: 36 });

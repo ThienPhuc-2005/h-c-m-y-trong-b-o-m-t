@@ -19,8 +19,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
-import { makeScores, conformalRun, mcnemar } from './metrics';
+import { makeScores, conformalRun, mcnemar, rocPrCurves } from './metrics';
 import { seasonalRun, authGraph } from './security';
+import { trainPerceptron } from './models';
 import { intervalForRetention } from '../lib/srs';
 
 describe('lab-poison — cửa hậu ẩn được nhờ dung lượng mô hình', () => {
@@ -79,6 +80,45 @@ describe('lab-confusion — accuracy chỉ nói dối khi lớp dương hiếm',
   it('ở tỉ lệ 20%, accuracy có phản ứng với thiệt hại', () => {
     // Cùng công thức, hành vi khác hẳn — đó là điều lab muốn cho thấy.
     expect(stats(0.2, 0.98).acc).toBeLessThan(0.85);
+  });
+});
+
+describe('lab-roc-pr — ROC-AUC đứng yên trong khi PR-AUC sụp', () => {
+  // Cùng MỘT mô hình (sep = 1,8), chỉ đổi tỉ lệ lớp dương. Đây đúng là thao tác
+  // lời kết luận hướng dẫn: "giữ nguyên mô hình, chỉ kéo tỉ lệ lớp dương".
+  const cao = rocPrCurves(20, 1.8);
+  const thap = rocPrCurves(1, 1.8);
+
+  it('ROC-AUC gần như không đổi khi lớp dương hiếm đi 20 lần', () => {
+    expect(Math.abs(cao.auc - thap.auc)).toBeLessThan(0.05);
+    expect(thap.auc).toBeGreaterThan(0.8);
+  });
+
+  it('PR-AUC thì sụp hơn một nửa', () => {
+    expect(cao.ap).toBeGreaterThan(0.7);
+    expect(thap.ap).toBeLessThan(cao.ap / 2);
+  });
+});
+
+describe('lab-perceptron — XOR cần lớp ẩn, và thao tác trong lời kết luận phải chạy được', () => {
+  it('perceptron đơn không bao giờ giải được XOR, dù huấn luyện bao lâu', () => {
+    // Lời kết luận nói "đứng nguyên 50%". Trước đây nó ghi "50–75%" trong khi
+    // mã chỉ bao giờ cho ra 50%.
+    for (const e of [0, 300, 1500, 3000]) {
+      expect(trainPerceptron(0, e, 'xor').accuracy, `epoch ${e}`).toBe(0.5);
+    }
+  });
+
+  it('thêm 2 nơ-ron ẩn là giải được, KHÔNG cần huấn luyện lại từ 0', () => {
+    // Đây chính là thao tác lời kết luận hướng dẫn: đang ở 3000 vòng thì thêm
+    // nơ-ron. Trước đây thanh trượt nơ-ron reset số vòng về 0 nên người học làm
+    // đúng hướng dẫn lại thấy 50% và tưởng bài học nói sai.
+    expect(trainPerceptron(2, 3000, 'xor').accuracy).toBe(1);
+    expect(trainPerceptron(2, 300, 'xor').accuracy).toBe(1);
+  });
+
+  it('AND thì một đường thẳng là đủ', () => {
+    expect(trainPerceptron(0, 3000, 'and').accuracy).toBe(1);
   });
 });
 
