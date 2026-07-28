@@ -816,8 +816,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Làm sạch và chuẩn hoá log',
       subtitle: 'Chỗ mọi con số bị làm sai trước khi mô hình kịp nhìn thấy dữ liệu',
-      minutes: 23,
-      practiceMinutes: 3,
+      minutes: 24,
+      practiceMinutes: 7,
       level: 'co-ban',
       prereqs: ['t2-l2'],
       why: {
@@ -1072,6 +1072,12 @@ export const track2: Track = {
           kind: 'warn',
           title: 'Ánh xạ IP sang máy phải có chiều thời gian',
           md: 'Trong mạng dùng DHCP, địa chỉ `10.20.3.44` là máy kế toán lúc 9 giờ sáng và là máy của một nhà thầu lúc 3 giờ chiều. Một bảng ánh xạ IP-sang-máy **không có thời gian** sẽ gán sai hành vi cho sai người — và trong điều tra sự cố, sai lầm đó có hậu quả nghiêm trọng hơn nhiều so với một báo động giả. Bảng đúng phải có dạng (ip, host, valid_from, valid_to) và mọi phép ghép phải là ghép theo khoảng thời gian.',
+        },
+        {
+          t: 'lab',
+          id: 'lab-entity',
+          intro:
+            'Bên dưới là đúng một ngày log của mười một tài khoản, và một luật phát hiện di chuyển ngang: cảnh báo khi một tài khoản đăng nhập vào quá nhiều máy trong 24 giờ. Luật đang chạy trên dữ liệu chưa hợp nhất — hãy xem nó tố ai và bỏ sót ai, rồi bật từng bước làm sạch để xem hai kết luận đổi chỗ cho nhau. Để ý riêng bước ánh xạ IP: chế độ "bảng tĩnh" trông gần đúng trên tổng số nhưng gán quá nửa số sự kiện vào sai máy.',
         },
         {
           t: 'p',

@@ -9,7 +9,7 @@ import { Icon } from '../components/Icon';
 import type { IconName } from '../components/Icon';
 import { LabBaseRate, LabConfusion, LabRocPr, LabCostThreshold, LabCalibration, LabAlertLoad, LabConformal, LabMcnemar } from './metrics';
 import { LabLogistic, LabNaiveBayes, LabTree, LabKnn, LabOverfit, LabGradient, LabPerceptron, LabKmeans, LabExplain, LabTabular } from './models';
-import { LabEntropy, LabUrlFeatures, LabPeFeatures, LabTfidf, LabAnomaly, LabDrift, LabSeasonality, LabAuthGraph, LabSplit } from './security';
+import { LabEntropy, LabUrlFeatures, LabPeFeatures, LabTfidf, LabAnomaly, LabDrift, LabSeasonality, LabAuthGraph, LabSplit, LabEntity } from './security';
 import { LabAdversarial, LabPoison, LabPromptInjection, LabForgetting } from './adversarial';
 
 export interface LabMeta {
@@ -33,6 +33,7 @@ export const LABS: LabMeta[] = [
   { id: 'lab-tree', title: 'Cây quyết định', blurb: 'Tự chọn phép chia và so với đáp án máy tìm được.', track: 'ml-cot-loi', icon: 'git-fork', Component: LabTree },
   { id: 'lab-knn', title: 'k-NN & ranh giới quyết định', blurb: 'Nhìn thấy đánh đổi thiên lệch – phương sai bằng hình ảnh.', track: 'ml-cot-loi', icon: 'git-compare', Component: LabKnn },
   { id: 'lab-overfit', title: 'Quá khớp', blurb: 'Tăng độ phức tạp và xem mô hình học thuộc nhiễu.', track: 'ml-cot-loi', icon: 'tornado', Component: LabOverfit },
+  { id: 'lab-entity', title: 'Đếm trên dữ liệu bẩn', blurb: 'Một cảnh báo oan, một kẻ tấn công vô hình — cho tới khi thực thể được hợp nhất.', track: 'du-lieu', icon: 'key-round', Component: LabEntity },
   { id: 'lab-split', title: 'Ba cách chia tập', blurb: '96% khi chia ngẫu nhiên, 59% khi chia theo thời gian — cùng một mô hình.', track: 'du-lieu', icon: 'git-compare', Component: LabSplit },
   { id: 'lab-confusion', title: 'Ma trận nhầm lẫn', blurb: 'Kéo ngưỡng, xem bốn con số và bốn hậu quả thay đổi.', track: 'do-luong', icon: 'calculator', Component: LabConfusion },
   { id: 'lab-roc-pr', title: 'ROC và PR cạnh nhau', blurb: 'Chứng kiến ROC-AUC nói dối khi lớp dương hiếm.', track: 'do-luong', icon: 'trending-down', Component: LabRocPr },

@@ -20,7 +20,7 @@
 import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
 import { makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve } from './metrics';
-import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison } from './security';
+import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison, entityRun } from './security';
 import { trainPerceptron, gradientPath, overfitErrors, explainRun, JUNK, tabularRun } from './models';
 import { intervalForRetention } from '../lib/srs';
 
@@ -173,6 +173,60 @@ describe('lab-split — cùng một mô hình, ba cách chia, ba sự thật', (
     const manh = splitComparison(0.03, 2);
     expect(manh.temporal).toBeGreaterThan(0.8);
     expect(manh.group).toBeGreaterThan(0.8);
+  });
+});
+
+describe('lab-entity — dữ liệu bẩn tố oan người vô can và tha bổng kẻ có tội', () => {
+  const ban = entityRun(4, 6, false, false, 0);
+  const sach = entityRun(4, 6, true, true, 2);
+
+  it('trạng thái mở đầu: đúng một cảnh báo và nó OAN, kẻ tấn công lọt lưới', () => {
+    // Đây là trạng thái người học nhìn thấy đầu tiên — lời kết luận mô tả đúng
+    // nó: "một cảnh báo, và là cảnh báo oan", "minh bị đếm 6 trong khi thật 3".
+    expect(ban.alerts).toBe(1);
+    expect(ban.falseAlerts).toBe(1);
+    expect(ban.attackerCaught).toBe(false);
+    expect(ban.focalCount).toBe(6);
+    expect(ban.focalTruth).toBe(3);
+  });
+
+  it('8 máy thật của kẻ tấn công tách qua ba bí danh thành 5 + 4 + 1', () => {
+    const pieces = ban.rows.filter((r) => r.isAttacker).map((r) => r.count);
+    expect(pieces).toEqual([5, 4, 1]);
+    expect(Math.max(...pieces)).toBeLessThan(6);
+    expect(ban.attackerTruth).toBe(8);
+  });
+
+  it('làm sạch đủ chuỗi: một cảnh báo, đúng người, mọi con số về đúng sự thật', () => {
+    expect(sach.alerts).toBe(1);
+    expect(sach.falseAlerts).toBe(0);
+    expect(sach.attackerCaught).toBe(true);
+    expect(sach.attackerRank).toBe(1);
+    expect(sach.rows.find((r) => r.isAttacker)?.count).toBe(sach.attackerTruth);
+    expect(sach.focalCount).toBe(sach.focalTruth);
+  });
+
+  it('làm sạch nửa vời còn ồn hơn không làm gì: chỉ hợp nhất bí danh -> 8 cảnh báo, 7 oan', () => {
+    // Con số "8 cảnh báo với 7 oan" nằm nguyên văn trong lời kết luận.
+    const nuaVoi = entityRun(4, 6, true, false, 0);
+    expect(nuaVoi.alerts).toBe(8);
+    expect(nuaVoi.falseAlerts).toBe(7);
+  });
+
+  it('bảng IP tĩnh gán 38/54 sự kiện vào sai máy; DHCP đứng yên cả ngày thì hết sai', () => {
+    // "38/54" in trong lời kết luận; gợi ý của thanh trượt DHCP hứa vế sau.
+    const tinh = entityRun(4, 6, true, true, 1);
+    expect(tinh.misattributed).toBe(38);
+    expect(tinh.ipEvents).toBe(54);
+    expect(entityRun(24, 6, true, true, 1).misattributed).toBe(0);
+  });
+
+  it('đổi nhịp DHCP không được làm rung hành vi người dùng', () => {
+    // Thiết kế tách hai dòng ngẫu nhiên: thanh trượt lease chỉ đổi cách phân
+    // giải IP. Nếu ai đó gộp chung rng, mọi con số sẽ rung theo lease và lời
+    // kết luận hết đúng.
+    expect(entityRun(2, 6, false, false, 0).totalEvents).toBe(ban.totalEvents);
+    expect(entityRun(12, 6, false, false, 0).focalCount).toBe(ban.focalCount);
   });
 });
 

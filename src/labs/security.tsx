@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from 'react';
 import { LabShell, Slider, Readout, Chart, Axes, Line, mkPlot, px, py, COLORS, Bars, Toggle, Reseed, useSeed } from './kit';
-import { shannonEntropy, mulberry32, gaussian, clamp } from '../lib/utils';
+import { shannonEntropy, mulberry32, gaussian, clamp, shuffle } from '../lib/utils';
 import { Icon } from '../components/Icon';
 
 /* ========================================================================== */
@@ -1269,6 +1269,344 @@ export function LabSeasonality() {
             {r.detected
               ? `Mức nền ước lượng ${r.baseAttackHour.toFixed(0)} so với sự thật khoảng 46, nên phần dư còn đủ lớn để vượt ngưỡng: z = ${r.zAttack.toFixed(1)}.`
               : `Mức nền của chính khung giờ bị tấn công đã bị kéo lên ${r.baseAttackHour.toFixed(0)} (thật ra khoảng 46), nên phần dư co lại và z chỉ còn ${r.zAttack.toFixed(1)} — dưới ngưỡng ${SEA_THR}. Cuộc tấn công đã tự dạy hệ thống rằng nó là bình thường.`}
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
+/*  lab-entity — Hợp nhất thực thể: đếm trên dữ liệu bẩn                       */
+/* ========================================================================== */
+
+/** 8 máy trạm + 4 máy chủ. Chỉ số mảng là định danh THẬT của máy. */
+const ENT_MACHINES = [
+  'PC01', 'PC02', 'PC03', 'PC04', 'PC05', 'PC06', 'PC07', 'PC08',
+  'SRV-FILE', 'SRV-APP', 'SRV-MAIL', 'DC01',
+] as const;
+
+/** Bể DHCP rộng hơn số máy — IP nhàn rỗi hôm nay có thể thuộc máy khác ngày mai. */
+const ENT_POOL = Array.from({ length: 18 }, (_, i) => `10.20.3.${40 + i}`);
+
+/** 10 người dùng thường + 1 tài khoản bị chiếm (chỉ số 10). */
+const ENT_NAMES = ['lan', 'minh', 'hoa', 'tuan', 'thu', 'nam', 'quyen', 'dung', 'vy', 'khoa', 'hai'] as const;
+const ENT_ATTACKER = 10;
+const ENT_FOCAL = 1; // "minh" — nhân vật trong bài học, 3 máy thật
+
+interface EntityEvent {
+  user: number;
+  machine: number;
+  hour: number;
+  alias: string;
+  /** Máy xuất hiện trong log dưới dạng nào. */
+  rep: 'short' | 'fqdn' | 'ip';
+}
+
+export interface EntityRow {
+  /** Chuỗi tài khoản như analyst nhìn thấy sau khi (không) chuẩn hoá. */
+  key: string;
+  owner: number;
+  isAttacker: boolean;
+  count: number;
+}
+
+export interface EntityOut {
+  /** Mỗi chuỗi tài khoản một dòng, xếp giảm dần theo số máy đếm được. */
+  rows: EntityRow[];
+  alerts: number;
+  falseAlerts: number;
+  attackerCaught: boolean;
+  /** Hạng của dòng thuộc kẻ tấn công đứng cao nhất, 1 là đầu bảng. */
+  attackerRank: number;
+  /** Số sự kiện dạng IP bị bảng tĩnh gán vào SAI máy (chỉ ipMode 1). */
+  misattributed: number;
+  ipEvents: number;
+  /** Số máy đếm được cho "minh" (lấy dòng cao nhất trong các bí danh của minh). */
+  focalCount: number;
+  focalTruth: number;
+  attackerTruth: number;
+  totalEvents: number;
+}
+
+/** Bốn dạng viết của cùng một tài khoản — đúng danh sách trong bài học. */
+const entAliases = (name: string): string[] => [
+  'CORP\\' + name, name, name.toUpperCase(), `${name}@corp.vn`,
+];
+
+/** Máy thật của từng người dùng thường: 1 máy trạm + 1–3 máy chủ/máy khác. */
+function entMachinesOf(u: number): number[] {
+  if (u === ENT_ATTACKER) return [2, 0, 1, 3, 4, 8, 9, 11];
+  const n = 2 + (u % 3);
+  const set = [u % 8, 8 + (u % 4)];
+  if (n >= 3) set.push(8 + ((u + 2) % 4));
+  if (n >= 4) set.push((u + 4) % 8);
+  return [...new Set(set)];
+}
+
+/**
+ * Sinh nhật ký đăng nhập của một ngày làm việc. Dòng ngẫu nhiên này KHÔNG phụ
+ * thuộc leaseHours — đổi nhịp DHCP chỉ đổi cách phân giải IP, không đổi hành vi
+ * người dùng, nên các thanh trượt tách bạch được từng hiệu ứng.
+ */
+function entEvents(): EntityEvent[] {
+  const rng = mulberry32(42);
+  const out: EntityEvent[] = [];
+  for (let u = 0; u < ENT_NAMES.length; u++) {
+    const forms = entAliases(ENT_NAMES[u]).slice(0, 2 + ((u * 7) % 3));
+    for (const m of entMachinesOf(u)) {
+      // Người dùng thường ngồi cả ngày trên vài máy — nhiều sự kiện mỗi máy.
+      // Kẻ di chuyển ngang chạm mỗi máy MỘT lần, vài sự kiện rồi đi tiếp: dấu
+      // chân trên từng máy mỏng hơn hẳn, và đó là lý do phép tách bí danh
+      // (không hợp nhất) đủ sức nhấn chìm hắn xuống dưới ngưỡng.
+      const sessions = u === ENT_ATTACKER ? 1 : 1 + (rng() < 0.4 ? 1 : 0);
+      for (let s = 0; s < sessions; s++) {
+        const hour = u === ENT_ATTACKER ? rng() * 5 : 8 + rng() * 10;
+        const events = u === ENT_ATTACKER ? 1 + Math.floor(rng() * 2) : 2 + Math.floor(rng() * 3);
+        for (let e = 0; e < events; e++) {
+          const roll = rng();
+          out.push({
+            user: u,
+            machine: m,
+            hour,
+            alias: forms[Math.floor(rng() * forms.length)],
+            rep: roll < 0.4 ? 'ip' : roll < 0.7 ? 'short' : 'fqdn',
+          });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Đếm "số máy khác nhau mà một tài khoản đăng nhập trong 24 giờ" trên cùng một
+ * nhật ký, với từng bước làm sạch bật/tắt được.
+ *
+ * ipMode: 0 = không ánh xạ IP (IP là "máy" riêng), 1 = bảng tĩnh chụp cuối ngày
+ * (không có chiều thời gian), 2 = ánh xạ theo khoảng thời gian thuê DHCP.
+ */
+export function entityRun(
+  leaseHours: number,
+  threshold: number,
+  mergeAlias: boolean,
+  mergeHost: boolean,
+  ipMode: 0 | 1 | 2,
+): EntityOut {
+  const events = entEvents();
+
+  // Mỗi kỳ thuê, DHCP xáo lại toàn bộ ánh xạ máy -> IP. Dòng ngẫu nhiên riêng
+  // để leaseHours không làm rung phần hành vi người dùng ở trên.
+  const epochs = Math.max(1, Math.ceil(24 / leaseHours));
+  const ipRng = mulberry32(777);
+  const epochIp: number[][] = [];
+  for (let e = 0; e < epochs; e++) {
+    epochIp.push(shuffle(ENT_POOL.map((_, i) => i), ipRng).slice(0, ENT_MACHINES.length));
+  }
+  const ipOf = (m: number, hour: number) => ENT_POOL[epochIp[Math.min(epochs - 1, Math.floor(hour / leaseHours))][m]];
+  // Bảng tĩnh: ai giữ IP nào ở kỳ thuê CUỐI ngày — đúng kiểu bảng xuất một lần
+  // từ DHCP rồi dùng cho cả ngày log.
+  const staticTable = new Map<string, number>();
+  epochIp[epochs - 1].forEach((ipIdx, m) => staticTable.set(ENT_POOL[ipIdx], m));
+
+  const hostKey = (m: number, form: 'short' | 'fqdn') =>
+    mergeHost ? ENT_MACHINES[m] : form === 'short' ? ENT_MACHINES[m] : `${ENT_MACHINES[m].toLowerCase()}.corp.vn`;
+
+  let misattributed = 0;
+  let ipEvents = 0;
+  const byAccount = new Map<string, { owner: number; machines: Set<string> }>();
+
+  for (const ev of events) {
+    const account = mergeAlias ? `SID-${ev.user}` : ev.alias;
+    let mk: string;
+    if (ev.rep === 'ip') {
+      ipEvents++;
+      const ip = ipOf(ev.machine, ev.hour);
+      if (ipMode === 0) {
+        mk = ip;
+      } else if (ipMode === 1) {
+        const resolved = staticTable.get(ip);
+        if (resolved === undefined) {
+          mk = ip;
+        } else {
+          if (resolved !== ev.machine) misattributed++;
+          mk = hostKey(resolved, 'short');
+        }
+      } else {
+        mk = hostKey(ev.machine, 'short');
+      }
+    } else {
+      mk = hostKey(ev.machine, ev.rep);
+    }
+    let acc = byAccount.get(account);
+    if (!acc) {
+      acc = { owner: ev.user, machines: new Set() };
+      byAccount.set(account, acc);
+    }
+    acc.machines.add(mk);
+  }
+
+  const rows: EntityRow[] = [...byAccount.entries()]
+    .map(([key, a]) => ({ key, owner: a.owner, isAttacker: a.owner === ENT_ATTACKER, count: a.machines.size }))
+    .sort((a, b) => b.count - a.count || (a.key < b.key ? -1 : 1));
+
+  const alertRows = rows.filter((r) => r.count >= threshold);
+  const attackerRank = rows.findIndex((r) => r.isAttacker) + 1;
+
+  return {
+    rows,
+    alerts: alertRows.length,
+    falseAlerts: alertRows.filter((r) => !r.isAttacker).length,
+    attackerCaught: alertRows.some((r) => r.isAttacker),
+    attackerRank,
+    misattributed,
+    ipEvents,
+    focalCount: Math.max(...rows.filter((r) => r.owner === ENT_FOCAL).map((r) => r.count)),
+    focalTruth: entMachinesOf(ENT_FOCAL).length,
+    attackerTruth: entMachinesOf(ENT_ATTACKER).length,
+    totalEvents: events.length,
+  };
+}
+
+export function LabEntity() {
+  const [threshold, setThreshold] = useState(6);
+  const [ipMode, setIpMode] = useState(0);
+  const [leaseHours, setLeaseHours] = useState(4);
+  const [mergeAlias, setMergeAlias] = useState(false);
+  const [mergeHost, setMergeHost] = useState(false);
+
+  const r = useMemo(
+    () => entityRun(leaseHours, threshold, mergeAlias, mergeHost, ipMode as 0 | 1 | 2),
+    [leaseHours, threshold, mergeAlias, mergeHost, ipMode],
+  );
+
+  const pieces = r.rows.filter((x) => x.isAttacker).map((x) => x.count);
+  const clean = r.attackerCaught && r.falseAlerts === 0;
+  const top = r.rows.slice(0, 12);
+
+  return (
+    <LabShell
+      id="lab-entity"
+      title="Đếm trên dữ liệu bẩn: một ngày log, hai kết luận"
+      takeaway={
+        <>
+          Ở trạng thái mở đầu — chưa làm sạch gì — SIEM hôm nay phát đúng <b>một cảnh báo, và là cảnh báo
+          oan</b>: “minh” bị đếm 6 “máy” trong khi sự thật là 3. Còn “hai”, kẻ đã chạm 8 máy trong một đêm,
+          được chính dữ liệu bẩn che giấu: 8 máy tách qua ba bí danh thành 5 + 4 + 1, không mảnh nào chạm
+          ngưỡng. Dữ liệu bẩn không trung lập — nó <b>tố oan người vô can và tha bổng kẻ có tội trong cùng
+          một bảng</b>.
+          <br />
+          <br />
+          Bật đủ ba bước làm sạch, cũng nhật ký đó nói ngược lại: một cảnh báo, đúng người, đúng 8 máy.
+          Nhưng đường đi ở giữa không phẳng. Chỉ hợp nhất bí danh mà chưa chuẩn hoá máy thì ra <b>8 cảnh báo
+          với 7 oan</b> — gộp tài khoản dồn toàn bộ phần đếm trùng máy vào một chỗ và đẩy hàng loạt người
+          thường vượt ngưỡng. Còn bảng IP tĩnh nhìn tổng thể có vẻ ổn, nhưng gán <b>38/54 sự kiện IP vào sai
+          máy</b>: con số gần đúng, danh tính sai — kiểu lỗi làm hỏng một cuộc điều tra chứ không chỉ một chỉ
+          số. Mọi đặc trưng đếm (“số máy”, “số tài khoản”, “số IP”) của các chặng sau đều đứng trên bước hợp
+          nhất này: làm sai nó, mô hình học trên tiểu thuyết.
+        </>
+      }
+    >
+      <div className="grid grid-3">
+        <Slider
+          label="Ngưỡng cảnh báo"
+          value={threshold}
+          min={4}
+          max={8}
+          step={1}
+          onChange={setThreshold}
+          format={(v) => `≥ ${v} máy / 24h`}
+          hint="Luật phát hiện di chuyển ngang: một tài khoản đăng nhập vào quá nhiều máy trong một ngày."
+        />
+        <Slider
+          label="Ánh xạ IP sang máy"
+          value={ipMode}
+          min={0}
+          max={2}
+          step={1}
+          onChange={setIpMode}
+          format={(v) => (v === 0 ? 'không ánh xạ' : v === 1 ? 'bảng tĩnh cuối ngày' : 'theo khoảng thời gian')}
+          hint="Bảng tĩnh: chụp trạng thái DHCP một lần rồi dùng tra cho cả ngày log."
+        />
+        <Slider
+          label="DHCP cấp lại IP mỗi"
+          value={leaseHours}
+          min={2}
+          max={24}
+          step={2}
+          onChange={setLeaseHours}
+          format={(v) => `${v} giờ`}
+          hint="Kéo lên 24 giờ: IP đứng yên cả ngày và bảng tĩnh hết sai."
+        />
+      </div>
+      <div className="grid grid-2">
+        <Toggle label="Hợp nhất bí danh tài khoản về SID" checked={mergeAlias} onChange={setMergeAlias} />
+        <Toggle label="Chuẩn hoá hostname / FQDN về một tên máy" checked={mergeHost} onChange={setMergeHost} />
+      </div>
+
+      <Bars
+        data={top.map((row) => ({
+          label: row.key,
+          v: row.count,
+          color: row.isAttacker ? COLORS.bad : row.count >= threshold ? COLORS.warn : COLORS.ok,
+        }))}
+        color={COLORS.ok}
+        height={150}
+        fmt={(v) => String(v)}
+      />
+      <div className="faint center">
+        Mỗi cột là một CHUỖI tài khoản đúng như SIEM nhìn thấy ({top.length} dòng cao nhất trong{' '}
+        {r.rows.length}). Đỏ = bí danh của tài khoản bị chiếm “hai” · vàng = vượt ngưỡng, tức một cảnh báo.
+      </div>
+
+      <Readout
+        items={[
+          {
+            k: 'Cảnh báo hôm nay',
+            v: String(r.alerts),
+            sub: r.falseAlerts > 0 ? `trong đó ${r.falseAlerts} oan` : 'không có cảnh báo oan',
+            tone: r.falseAlerts > 0 ? 'bad' : r.alerts > 0 ? 'ok' : 'warn',
+          },
+          {
+            k: 'Kẻ tấn công (8 máy thật)',
+            v: r.attackerCaught ? 'bị bắt' : 'lọt lưới',
+            sub: `dòng cao nhất của hắn: hạng ${r.attackerRank}`,
+            tone: r.attackerCaught ? 'ok' : 'bad',
+          },
+          {
+            k: 'Số máy đếm cho “minh”',
+            v: String(r.focalCount),
+            sub: `sự thật: ${r.focalTruth} máy`,
+            tone: r.focalCount > r.focalTruth ? 'warn' : 'ok',
+          },
+          {
+            k: 'Sự kiện IP gán nhầm máy',
+            v: `${r.misattributed}/${r.ipEvents}`,
+            sub: ipMode === 1 ? 'cái giá của bảng không có thời gian' : 'chỉ xảy ra với bảng tĩnh',
+            tone: r.misattributed > 0 ? 'bad' : 'ok',
+          },
+        ]}
+      />
+
+      <div className={`callout ${clean ? 'co-pro' : 'co-warn'}`}>
+        <Icon className="callout-icon" name={clean ? 'check' : 'siren'} size={18} />
+        <div>
+          <div className="callout-title">
+            {clean
+              ? 'Một cảnh báo, đúng người, đúng con số'
+              : r.attackerCaught
+                ? 'Bắt được, nhưng chìm giữa cảnh báo oan'
+                : 'Kẻ tấn công vô hình'}
+          </div>
+          <div className="callout-body">
+            {clean
+              ? `“hai” hiện nguyên hình với đúng ${r.attackerTruth} máy trong một đêm, “minh” về đúng ${r.focalTruth} máy, không ai bị tố oan. Không thuật toán nào được nâng cấp — chỉ có dữ liệu được đếm đúng.`
+              : r.attackerCaught
+                ? `Dòng của “hai” đứng hạng ${r.attackerRank}, nhưng đi kèm ${r.falseAlerts} cảnh báo oan trên tổng ${r.alerts}. Analyst xử lý từ trên xuống sẽ tiêu thời gian cho người vô can trước khi chạm tới kẻ thật.`
+                : `${r.attackerTruth} máy thật của “hai” bị tách qua các bí danh thành ${pieces.join(' + ')}, không mảnh nào chạm ngưỡng ${threshold}.` +
+                  (r.falseAlerts > 0
+                    ? ` Trong khi đó ${r.falseAlerts} tài khoản vô can lại vượt ngưỡng nhờ máy bị đếm trùng — cảnh báo duy nhất hôm nay là cảnh báo oan.`
+                    : ' Hôm nay SOC im lặng — và đó là cái im lặng sai.')}
           </div>
         </div>
       </div>
