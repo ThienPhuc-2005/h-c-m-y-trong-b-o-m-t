@@ -272,7 +272,7 @@
     "p6": "Tôn trọng thời gian của bạn",
     "p6d": "Thời lượng ghi trên mỗi bài là thật, và tách riêng phần đọc với phần làm. Hai con số đó tính ra từ số từ, số phòng lab và số câu hỏi có thật trong bài, không phải ước chừng.",
     "wholeProgram": "Toàn bộ chương trình",
-    "programStats": "{tracks} chặng · {lessons} bài · {cards} thẻ ghi nhớ · {questions} câu hỏi · {time} nội dung",
+    "programStats": "{tracks} chặng · {lessons} bài · {cards} thẻ ghi nhớ · {questions} câu hỏi · {time} ({read} đọc + {practice} làm)",
     "seeMap": "Xem bản đồ",
     "estMinutes": "≈ {n} phút"
   },
@@ -447,7 +447,8 @@
     "statTracks": "Chặng học",
     "statLessons": "Bài học",
     "statLabs": "Phòng lab",
-    "statDuration": "Thời lượng"
+    "statDuration": "Thời lượng",
+    "statDurationSub": "{read} đọc + {practice} làm"
   },
   "lesson": {
     "notFound": "Không tìm thấy bài học",

@@ -257,6 +257,8 @@ export function HomePage() {
                   cards: COURSE_STATS.cards,
                   questions: COURSE_STATS.questions,
                   time: fmtDuration(COURSE_STATS.minutes),
+                  read: fmtDuration(COURSE_STATS.readingMinutes),
+                  practice: fmtDuration(COURSE_STATS.practiceMinutes),
                 })}
               </div>
             </div>

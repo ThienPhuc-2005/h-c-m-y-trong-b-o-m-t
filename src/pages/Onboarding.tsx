@@ -86,11 +86,22 @@ export function Onboarding() {
                 { k: t('onboarding.statTracks'), v: COURSE_STATS.tracks },
                 { k: t('onboarding.statLessons'), v: COURSE_STATS.lessons },
                 { k: t('onboarding.statLabs'), v: COURSE_STATS.labs },
-                { k: t('onboarding.statDuration'), v: fmtDuration(COURSE_STATS.minutes) },
+                {
+                  k: t('onboarding.statDuration'),
+                  v: fmtDuration(COURSE_STATS.minutes),
+                  // Con số tổng một mình dễ bị đọc thành "thời gian đọc", rồi
+                  // người học vỡ kế hoạch khi gặp phòng lab. Tách ra ngay tại
+                  // chỗ họ nhìn thấy nó lần đầu.
+                  sub: t('onboarding.statDurationSub', {
+                    read: fmtDuration(COURSE_STATS.readingMinutes),
+                    practice: fmtDuration(COURSE_STATS.practiceMinutes),
+                  }),
+                },
               ].map((s) => (
                 <div className="stat" key={s.k}>
                   <div className="stat-k">{s.k}</div>
                   <div className="stat-v" style={{ fontSize: 'var(--fs-lg)' }}>{s.v}</div>
+                  {s.sub && <div className="faint">{s.sub}</div>}
                 </div>
               ))}
             </div>

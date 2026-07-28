@@ -272,7 +272,7 @@
     "p6": "Respects your time",
     "p6d": "The stated duration of each lesson is honest, and reading time is listed separately from hands-on time. Both numbers are computed from the actual word count, lab count and question count — not guessed.",
     "wholeProgram": "The whole programme",
-    "programStats": "{tracks} tracks · {lessons} lessons · {cards} flashcards · {questions} questions · {time} of content",
+    "programStats": "{tracks} tracks · {lessons} lessons · {cards} flashcards · {questions} questions · {time} ({read} reading + {practice} doing)",
     "seeMap": "See the map",
     "estMinutes": "≈ {n} min"
   },
@@ -447,7 +447,8 @@
     "statTracks": "Tracks",
     "statLessons": "Lessons",
     "statLabs": "Labs",
-    "statDuration": "Duration"
+    "statDuration": "Duration",
+    "statDurationSub": "{read} reading + {practice} doing"
   },
   "lesson": {
     "notFound": "Lesson not found",
