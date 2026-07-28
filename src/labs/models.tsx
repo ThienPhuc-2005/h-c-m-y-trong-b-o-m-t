@@ -993,3 +993,304 @@ export function LabKmeans() {
     </LabShell>
   );
 }
+/* ========================================================================== */
+/*  lab-explain — MDI nói dối, permutation thì không                           */
+/* ========================================================================== */
+
+export const EXPLAIN_FEATURES = [
+  "Đăng nhập ngoài giờ",
+  "Số lần thất bại trước đó",
+  "Từ quốc gia lạ",
+  "Thiết bị chưa từng thấy",
+  "session_id",
+] as const;
+
+interface ExRow {
+  x: number[];
+  y: 0 | 1;
+}
+type ExNode = { leaf: number } | { f: number; t: number; l: ExNode; r: ExNode };
+
+function exData(n: number, seed: number): ExRow[] {
+  const rng = mulberry32(seed);
+  const out: ExRow[] = [];
+  for (let i = 0; i < n; i++) {
+    const ngoaiGio = rng() < 0.25 ? 1 : 0;
+    const thatBai = Math.floor(rng() * 6);
+    const nuocLa = rng() < 0.12 ? 1 : 0;
+    const thietBiMoi = rng() < 0.3 ? 1 : 0;
+    // Luật SINH nhãn cố tình KHÔNG dùng session_id. Cột đó là rác thuần tuý,
+    // lọt vào bộ đặc trưng do sơ suất — đúng tình huống bài t10-l4 mô tả.
+    const z =
+      1.6 * ngoaiGio + 0.5 * thatBai + 1.9 * nuocLa + 0.9 * thietBiMoi - 2.4;
+    out.push({
+      x: [ngoaiGio, thatBai, nuocLa, thietBiMoi, rng()],
+      y: sigmoid(z) > rng() ? 1 : 0,
+    });
+  }
+  return out;
+}
+
+const exGini = (rows: ExRow[]) => {
+  if (!rows.length) return 0;
+  const p = rows.filter((r) => r.y === 1).length / rows.length;
+  return 2 * p * (1 - p);
+};
+
+function exTree(rows: ExRow[], depth: number, mdi: number[]): ExNode {
+  if (depth === 0 || rows.length < 8 || exGini(rows) === 0) {
+    return {
+      leaf: rows.length
+        ? rows.filter((r) => r.y === 1).length / rows.length
+        : 0,
+    };
+  }
+  let best: { g: number; f: number; t: number; L: ExRow[]; R: ExRow[] } | null =
+    null;
+  for (let f = 0; f < EXPLAIN_FEATURES.length; f++) {
+    const vals = [...new Set(rows.map((r) => r.x[f]))].sort((a, b) => a - b);
+    for (let i = 0; i < vals.length - 1; i++) {
+      const t = (vals[i] + vals[i + 1]) / 2;
+      const L = rows.filter((r) => r.x[f] <= t);
+      const R = rows.filter((r) => r.x[f] > t);
+      if (!L.length || !R.length) continue;
+      const g =
+        exGini(rows) -
+        (L.length * exGini(L) + R.length * exGini(R)) / rows.length;
+      if (!best || g > best.g) best = { g, f, t, L, R };
+    }
+  }
+  if (!best)
+    return { leaf: rows.filter((r) => r.y === 1).length / rows.length };
+  // Mean decrease in impurity: cộng dồn mức giảm, có trọng số theo số mẫu.
+  mdi[best.f] += best.g * rows.length;
+  return {
+    f: best.f,
+    t: best.t,
+    l: exTree(best.L, depth - 1, mdi),
+    r: exTree(best.R, depth - 1, mdi),
+  };
+}
+
+const exPredict = (n: ExNode, x: number[]): number =>
+  "leaf" in n ? n.leaf : x[n.f] <= n.t ? exPredict(n.l, x) : exPredict(n.r, x);
+
+export interface ExplainOut {
+  mdi: number[];
+  perm: number[];
+  /** Hạng của cột rác theo từng cách đo; 1 là cao nhất. */
+  rankMdi: number;
+  rankPerm: number;
+  accTrain: number;
+  accTest: number;
+  /** Đường đi của cây cho một cảnh báo cụ thể, đã dịch sang câu tiếng Việt. */
+  reasons: string[];
+  alertScore: number;
+}
+
+/** Chỉ số của cột rác trong bộ đặc trưng. */
+export const JUNK = 4;
+
+export function explainRun(depth: number): ExplainOut {
+  const train = exData(600, 7);
+  const test = exData(400, 99);
+  const mdi = new Array(EXPLAIN_FEATURES.length).fill(0);
+  const tree = exTree(train, depth, mdi);
+
+  const acc = (rows: ExRow[]) =>
+    rows.filter((r) => (exPredict(tree, r.x) >= 0.5 ? 1 : 0) === r.y).length /
+    rows.length;
+  const accTest = acc(test);
+
+  // Permutation importance: xáo TỪNG cột trên tập kiểm thử rồi đo mức tụt.
+  const perm = EXPLAIN_FEATURES.map((_, f) => {
+    const rng = mulberry32(1000 + f);
+    const shuffled = test.map((r) => ({ ...r, x: [...r.x] }));
+    const col = shuffled.map((r) => r.x[f]).sort(() => rng() - 0.5);
+    shuffled.forEach((r, i) => (r.x[f] = col[i]));
+    return accTest - acc(shuffled);
+  });
+
+  const tot = mdi.reduce((a, b) => a + b, 0) || 1;
+  const mdiNorm = mdi.map((v) => v / tot);
+  const rankOf = (arr: number[], i: number) =>
+    arr
+      .map((v, k) => ({ v, k }))
+      .sort((a, b) => b.v - a.v)
+      .findIndex((o) => o.k === i) + 1;
+
+  // Cảnh báo điểm cao nhất — đúng thứ analyst sẽ mở đầu tiên.
+  let top = test[0];
+  let topScore = -1;
+  for (const r of test) {
+    const s = exPredict(tree, r.x);
+    if (s > topScore) {
+      topScore = s;
+      top = r;
+    }
+  }
+  const reasons: string[] = [];
+  let node: ExNode = tree;
+  while (!("leaf" in node)) {
+    const diTrai = top.x[node.f] <= node.t;
+    const ten = EXPLAIN_FEATURES[node.f];
+    if (node.f === JUNK)
+      reasons.push(
+        `${ten}: ${diTrai ? "dưới" : "trên"} ${node.t.toFixed(3)} — vô nghĩa`,
+      );
+    else if (node.f === 1) reasons.push(`${ten}: ${top.x[1]} lần`);
+    else reasons.push(`${ten}: ${top.x[node.f] ? "có" : "không"}`);
+    node = diTrai ? node.l : node.r;
+  }
+
+  return {
+    mdi: mdiNorm,
+    perm,
+    rankMdi: rankOf(mdiNorm, JUNK),
+    rankPerm: rankOf(perm, JUNK),
+    accTrain: acc(train),
+    accTest,
+    reasons,
+    alertScore: topScore,
+  };
+}
+
+export function LabExplain() {
+  const [depth, setDepth] = useState(8);
+  const r = useMemo(() => explainRun(depth), [depth]);
+  const racLenDau = r.rankMdi <= 2;
+
+  return (
+    <LabShell
+      id="lab-explain"
+      title="Cột rác đứng đầu bảng — vì sao feature importance mặc định nói dối"
+      takeaway={
+        <>
+          Bộ đặc trưng có một cột <code>session_id</code> lọt vào do sơ suất:
+          chuỗi ngẫu nhiên, không mang một bit thông tin nào về việc phiên đăng
+          nhập có độc hại hay không. Luật sinh nhãn thậm chí không nhìn tới nó.
+          <br />
+          <br />Ở độ sâu mặc định 8, <b>MDI xếp nó hạng 1</b> với 0,371 — cao
+          hơn mọi đặc trưng thật. Nếu bạn báo cáo &ldquo;đặc trưng quan trọng
+          nhất&rdquo; bằng con số này, bạn đang trình bày một cột rác cho cả
+          phòng nghe. Cùng lúc đó <b>permutation importance cho nó ≈ 0</b>: xáo
+          trộn cả cột mà độ chính xác không nhúc nhích, tức mô hình chẳng dựa
+          vào nó chút nào khi gặp dữ liệu mới.
+          <br />
+          <br />
+          Kéo độ sâu xuống <b>3</b> và cột rác tụt về hạng 5 với MDI bằng 0. Cơ
+          chế lộ ra ở đây: cây càng sâu càng phải tìm thêm chỗ cắt, mà một cột
+          có 600 giá trị khác nhau thì luôn tìm được một lát cắt làm giảm
+          impurity <em>trên tập huấn luyện</em>. Để ý hai ô độ chính xác khi
+          kéo: trên tập huấn luyện nó tăng đều từ 71% lên 86%, còn trên dữ liệu
+          mới thì đứng nguyên quanh 69%.{" "}
+          <b>Thiên lệch của MDI chính là quá khớp nhìn từ một góc khác.</b>
+        </>
+      }
+    >
+      <Slider
+        label="Độ sâu cây"
+        value={depth}
+        min={2}
+        max={10}
+        step={1}
+        onChange={setDepth}
+        format={(v) => `${v} tầng`}
+        hint="Cây càng sâu càng có cơ hội cắt trúng một lát cắt may rủi trên cột rác."
+      />
+
+      <Readout
+        items={[
+          {
+            k: "Hạng session_id theo MDI",
+            v: `${r.rankMdi}/5`,
+            tone: racLenDau ? "bad" : "ok",
+            sub: `MDI = ${r.mdi[JUNK].toFixed(3)}`,
+          },
+          {
+            k: "Hạng theo permutation",
+            v: `${r.rankPerm}/5`,
+            tone: r.rankPerm >= 4 ? "ok" : "warn",
+            sub: `mức tụt = ${r.perm[JUNK].toFixed(3)}`,
+          },
+          {
+            k: "Độ chính xác huấn luyện",
+            v: `${(r.accTrain * 100).toFixed(1)}%`,
+            tone: "info",
+          },
+          {
+            k: "Độ chính xác dữ liệu mới",
+            v: `${(r.accTest * 100).toFixed(1)}%`,
+            tone: r.accTrain - r.accTest > 0.1 ? "bad" : "ok",
+            sub: "không tăng theo độ sâu",
+          },
+        ]}
+      />
+
+      <div className="grid grid-2">
+        <div>
+          <div className="stat-k" style={{ marginBottom: 8 }}>
+            MDI — mặc định của scikit-learn
+          </div>
+          <Bars
+            color={COLORS.brand}
+            data={EXPLAIN_FEATURES.map((f, i) => ({
+              label: f,
+              v: r.mdi[i],
+              color: i === JUNK ? "var(--bad)" : "var(--brand)",
+            }))}
+            fmt={(v) => v.toFixed(3)}
+          />
+        </div>
+        <div>
+          <div className="stat-k" style={{ marginBottom: 8 }}>
+            Permutation importance — đo trên dữ liệu mới
+          </div>
+          <Bars
+            color={COLORS.ok}
+            data={EXPLAIN_FEATURES.map((f, i) => ({
+              label: f,
+              v: Math.max(0, r.perm[i]),
+              color: i === JUNK ? "var(--bad)" : "var(--ok)",
+            }))}
+            fmt={(v) => v.toFixed(3)}
+          />
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="stat-k" style={{ marginBottom: 8 }}>
+          Khối &ldquo;vì sao&rdquo; cho cảnh báo điểm cao nhất (
+          {(r.alertScore * 100).toFixed(0)}%)
+        </div>
+        <ul
+          style={{
+            fontSize: "var(--fs-sm)",
+            paddingLeft: "1.1em",
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          {r.reasons.map((s, i) => (
+            <li
+              key={i}
+              style={
+                s.includes("vô nghĩa")
+                  ? { color: "var(--bad-text)" }
+                  : undefined
+              }
+            >
+              {s}
+            </li>
+          ))}
+        </ul>
+        <div className="faint" style={{ marginTop: 8 }}>
+          Đây là đường đi thật của cây, dịch thành câu. Dòng đỏ là chỗ cây hỏi
+          về cột rác — analyst đọc tới đó sẽ mất lòng tin vào cả khối giải
+          thích, và họ có lý.
+        </div>
+      </div>
+    </LabShell>
+  );
+}

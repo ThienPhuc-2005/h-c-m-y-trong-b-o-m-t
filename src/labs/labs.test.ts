@@ -21,7 +21,7 @@ import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
 import { makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve } from './metrics';
 import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison } from './security';
-import { trainPerceptron, gradientPath, overfitErrors } from './models';
+import { trainPerceptron, gradientPath, overfitErrors, explainRun, JUNK } from './models';
 import { intervalForRetention } from '../lib/srs';
 
 describe('lab-poison — cửa hậu ẩn được nhờ dung lượng mô hình', () => {
@@ -80,6 +80,37 @@ describe('lab-confusion — accuracy chỉ nói dối khi lớp dương hiếm',
   it('ở tỉ lệ 20%, accuracy có phản ứng với thiệt hại', () => {
     // Cùng công thức, hành vi khác hẳn — đó là điều lab muốn cho thấy.
     expect(stats(0.2, 0.98).acc).toBeLessThan(0.85);
+  });
+});
+
+describe('lab-explain — cột rác leo lên đầu bảng MDI nhưng không lừa được permutation', () => {
+  const sau8 = explainRun(8);
+  const sau3 = explainRun(3);
+
+  it('ở độ sâu 8, MDI xếp cột rác HẠNG 1 — đúng con số in cho người học', () => {
+    expect(sau8.rankMdi).toBe(1);
+    expect(sau8.mdi[JUNK]).toBeCloseTo(0.371, 2);
+  });
+
+  it('permutation importance không bị lừa: cột rác gần bằng 0 và xếp gần chót', () => {
+    expect(Math.abs(sau8.perm[JUNK])).toBeLessThan(0.02);
+    expect(sau8.rankPerm).toBeGreaterThanOrEqual(4);
+  });
+
+  it('cây nông thì cột rác biến mất khỏi bảng — đúng lời mời kéo về 3', () => {
+    expect(sau3.mdi[JUNK]).toBe(0);
+    expect(sau3.rankMdi).toBe(5);
+  });
+
+  it('thiên lệch MDI đi kèm quá khớp: acc huấn luyện tăng còn acc dữ liệu mới thì không', () => {
+    // Đây là mấu chốt của lời kết luận — nếu quan hệ này mất thì cả đoạn giải
+    // thích cơ chế sụp theo.
+    expect(explainRun(10).accTrain).toBeGreaterThan(sau3.accTrain + 0.1);
+    expect(explainRun(10).accTest).toBeLessThan(sau3.accTest + 0.02);
+  });
+
+  it('khối "vì sao" có chứa dòng hỏi về cột rác, đúng thứ làm analyst mất tin', () => {
+    expect(sau8.reasons.some((s) => s.includes('vô nghĩa'))).toBe(true);
   });
 });
 

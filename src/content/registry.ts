@@ -72,6 +72,7 @@ export const LAB_IDS = [
   'lab-seasonality', // Phân rã mùa vụ và bẫy tự nâng mức nền
   'lab-auth-graph', // Đồ thị xác thực và di chuyển ngang
   'lab-split', // Chia tập ngẫu nhiên / theo thời gian / theo nhóm
+  'lab-explain', // MDI thiên vị cột nhiều giá trị, permutation thì không
   'lab-forgetting', // Mô phỏng đường cong quên & lịch ôn
   'lab-pe-features', // Đọc đặc trưng tệp PE giả lập
   'lab-cost-threshold', // Tối ưu ngưỡng theo ma trận chi phí

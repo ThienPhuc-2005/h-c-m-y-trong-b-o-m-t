@@ -1262,8 +1262,8 @@ bat_buoc_hop_rut_kinh_nghiem_trong: 3 ngay lam viec`,
       title: 'Khả năng giải thích cho analyst',
       subtitle:
         'Analyst có 30 giây cho mỗi cảnh báo. Một con số 0,93 không giúp gì cả — ba dòng lý do thì có.',
-      minutes: 22,
-      practiceMinutes: 3,
+      minutes: 23,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t10-l1'],
       why: {
@@ -1330,6 +1330,12 @@ bat_buoc_hop_rut_kinh_nghiem_trong: 3 ngay lam viec`,
           kind: 'pitfall',
           title: 'Cái bẫy lớn nhất của feature importance toàn cục',
           md: 'Nó **trung bình hoá** trên toàn bộ dữ liệu, nên nó nói về mô hình chứ không nói về cảnh báo. Câu "đặc trưng quan trọng nhất của mô hình là số byte gửi ra" hoàn toàn có thể đúng, trong khi cảnh báo mà analyst đang mở lại có điểm cao vì một lý do khác hẳn. Trình bày importance toàn cục như thể nó là lý do của cảnh báo là một sai lầm phổ biến và nó phá huỷ lòng tin ngay khi analyst kiểm chứng lần đầu và thấy không khớp.',
+        },
+        {
+          t: 'lab',
+          id: 'lab-explain',
+          intro:
+            'Bộ đặc trưng có một cột `session_id` lọt vào do sơ suất — chuỗi ngẫu nhiên, không mang thông tin gì. Ở độ sâu mặc định, MDI xếp nó **hạng 1**, cao hơn mọi đặc trưng thật; permutation importance thì cho nó gần bằng 0. Kéo độ sâu cây xuống 3 và cột rác biến mất khỏi bảng — đó là lúc cơ chế lộ ra: cây càng sâu càng tìm được lát cắt may rủi trên một cột có 600 giá trị khác nhau. Để ý luôn hai ô độ chính xác khi kéo.',
         },
         { t: 'h', text: 'SHAP — tiêu chuẩn thực tế cho giải thích cục bộ', level: 2 },
         {

@@ -8,7 +8,7 @@ import type { ComponentType } from 'react';
 import { Icon } from '../components/Icon';
 import type { IconName } from '../components/Icon';
 import { LabBaseRate, LabConfusion, LabRocPr, LabCostThreshold, LabCalibration, LabAlertLoad, LabConformal, LabMcnemar } from './metrics';
-import { LabLogistic, LabNaiveBayes, LabTree, LabKnn, LabOverfit, LabGradient, LabPerceptron, LabKmeans } from './models';
+import { LabLogistic, LabNaiveBayes, LabTree, LabKnn, LabOverfit, LabGradient, LabPerceptron, LabKmeans, LabExplain } from './models';
 import { LabEntropy, LabUrlFeatures, LabPeFeatures, LabTfidf, LabAnomaly, LabDrift, LabSeasonality, LabAuthGraph, LabSplit } from './security';
 import { LabAdversarial, LabPoison, LabPromptInjection, LabForgetting } from './adversarial';
 
@@ -52,6 +52,7 @@ export const LABS: LabMeta[] = [
   { id: 'lab-poison', title: 'Đầu độc dữ liệu', blurb: 'Mở cửa hậu trong mô hình mà mọi chỉ số vẫn xanh.', track: 'adversarial', icon: 'skull', Component: LabPoison },
   { id: 'lab-prompt-injection', title: 'Hộp cát prompt injection', blurb: 'Thử các lớp phòng thủ cho tác tử LLM và xem cái nào thật sự hiệu quả.', track: 'llm-genai', icon: 'message-alert', Component: LabPromptInjection },
   { id: 'lab-drift', title: 'Trôi khái niệm', blurb: 'Mô hình của bạn hỏng nhanh đến mức nào nếu không huấn luyện lại?', track: 'van-hanh', icon: 'chart', Component: LabDrift },
+  { id: 'lab-explain', title: 'Feature importance nói dối', blurb: 'Một cột rác leo lên hạng nhất — và cách đo nào không bị lừa.', track: 'van-hanh', icon: 'lightbulb', Component: LabExplain },
 ];
 
 const REGISTRY = new Map(LABS.map((l) => [l.id, l]));
