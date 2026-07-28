@@ -1856,8 +1856,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Rò rỉ dữ liệu và cách chia tập đúng',
       subtitle: 'Vì sao con số đẹp nhất của bạn thường là con số sai nhất',
-      minutes: 24,
-      practiceMinutes: 7,
+      minutes: 25,
+      practiceMinutes: 11,
       level: 'trung-cap',
       prereqs: ['t2-l5'],
       why: {
@@ -2042,6 +2042,12 @@ export const track2: Track = {
               why: 'SMOTE tạo mẫu tổng hợp bằng cách nội suy giữa các mẫu thiểu số gần nhau. Làm trước khi chia nghĩa là một mẫu tổng hợp trong tập kiểm tra có thể được nội suy từ chính các mẫu nằm trong tập huấn luyện — mô hình đang được kiểm tra trên bản sao pha loãng của thứ nó đã học. Quy tắc cứng: **mọi phép biến đổi học từ dữ liệu, kể cả lấy mẫu lại, đều phải nằm bên trong Pipeline và chỉ áp dụng lên phần huấn luyện.** Tập kiểm tra phải giữ nguyên tỉ lệ lớp thật.',
             },
           ],
+        },
+        {
+          t: 'lab',
+          id: 'lab-split',
+          intro:
+            'Cùng một mô hình, cùng một kho mẫu, ba cách chia tập — và ba con số khác hẳn nhau: 96%, 59%, 52%. Hãy để ý cách chia ngẫu nhiên: nó không sai về số học, nó chỉ đang trả lời một câu hỏi mà không ai hỏi. Rồi kéo "mức giống nhau trong cùng chiến dịch" xuống hết và xem ba con số hội tụ — đó là lý do rò rỉ gần như vô hình trên dữ liệu đồ chơi mà lại tàn phá trên dữ liệu bảo mật thật.',
         },
         { t: 'h', text: 'Ba phép kiểm tra rò rỉ nên chạy trước khi tin bất kỳ con số nào', level: 2 },
         {

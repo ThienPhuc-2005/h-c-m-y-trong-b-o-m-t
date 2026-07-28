@@ -20,7 +20,7 @@
 import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
 import { makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve } from './metrics';
-import { seasonalRun, authGraph, dgaScore, DGA_THR } from './security';
+import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison } from './security';
 import { trainPerceptron, gradientPath, overfitErrors } from './models';
 import { intervalForRetention } from '../lib/srs';
 
@@ -80,6 +80,37 @@ describe('lab-confusion — accuracy chỉ nói dối khi lớp dương hiếm',
   it('ở tỉ lệ 20%, accuracy có phản ứng với thiệt hại', () => {
     // Cùng công thức, hành vi khác hẳn — đó là điều lab muốn cho thấy.
     expect(stats(0.2, 0.98).acc).toBeLessThan(0.85);
+  });
+});
+
+describe('lab-split — cùng một mô hình, ba cách chia, ba sự thật', () => {
+  const md = splitComparison(0.03, 0.6);
+
+  it('mặc định cho đúng ba con số in trong lời kết luận: 96 / 59 / 52', () => {
+    expect(md.random).toBeCloseTo(0.959, 2);
+    expect(md.temporal).toBeCloseTo(0.587, 2);
+    expect(md.group).toBeCloseTo(0.518, 2);
+  });
+
+  it('chia ngẫu nhiên thổi phồng hơn 30 điểm phần trăm so với hai cách kia', () => {
+    expect(md.random - md.temporal).toBeGreaterThan(0.3);
+    expect(md.random - md.group).toBeGreaterThan(0.3);
+  });
+
+  it('bớt trùng lặp trong chiến dịch thì khoảng cách thu hẹp', () => {
+    // Lời kết luận mời người học tự kiểm chứng đúng điều này. Nếu quan hệ đảo
+    // chiều thì cả đoạn giải thích cơ chế rò rỉ sụp theo.
+    const it_ = (sp: number) => {
+      const r = splitComparison(sp, 0.6);
+      return r.random - Math.max(r.temporal, r.group);
+    };
+    expect(it_(0.14)).toBeLessThan(it_(0.03));
+  });
+
+  it('tín hiệu khái quát hoá mạnh thì cả ba cách chia cùng cao', () => {
+    const manh = splitComparison(0.03, 2);
+    expect(manh.temporal).toBeGreaterThan(0.8);
+    expect(manh.group).toBeGreaterThan(0.8);
   });
 });
 

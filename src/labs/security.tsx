@@ -647,6 +647,196 @@ export function LabDrift() {
 }
 
 /* ========================================================================== */
+/*  lab-split — Chia tập sai và con số ảo giác                                 */
+/* ========================================================================== */
+
+const SPLIT_DAYS = 180;
+const SPLIT_CAMPAIGNS = 30;
+
+export interface SplitPoint {
+  x: number;
+  y: number;
+  day: number;
+  campaign: number;
+  label: 0 | 1;
+}
+
+export interface SplitOut {
+  points: SplitPoint[];
+  /** Độ chính xác đo được theo từng cách chia tập. */
+  random: number;
+  temporal: number;
+  group: number;
+  dayCut: number;
+}
+
+/**
+ * Mô phỏng kho mẫu thu thập theo chiến dịch, rồi đo cùng một mô hình bằng ba
+ * cách chia tập.
+ *
+ * Điểm mấu chốt của thiết kế: nhãn KHÔNG suy được bằng một quy luật chung mạnh.
+ * Mỗi chiến dịch nằm một chỗ trong không gian đặc trưng và mang nhãn gần như
+ * ngẫu nhiên, nên cách duy nhất để đoán đúng là **nhớ chiến dịch đó**. Bản dựng
+ * đầu cho hai lớp tách được toàn cục và kết quả là cả ba cách chia đều đạt
+ * 100% — rò rỉ không lộ ra, vì mô hình không cần nhớ gì cả.
+ *
+ * `signal` là phần tín hiệu THẬT SỰ khái quát hoá được; kéo nó lên thì khoảng
+ * cách giữa ba cách chia thu hẹp lại, đúng như ngoài đời.
+ */
+export function splitComparison(spread: number, signal: number): SplitOut {
+  const rng = mulberry32(99);
+  const points: SplitPoint[] = [];
+  for (let c = 0; c < SPLIT_CAMPAIGNS; c++) {
+    const cx = 0.08 + rng() * 0.84;
+    const cy = 0.08 + rng() * 0.84;
+    const p = 0.5 + signal * (cx - 0.5);
+    const label: 0 | 1 = rng() < p ? 1 : 0;
+    const start = Math.floor(rng() * (SPLIT_DAYS - 20));
+    const n = 12 + Math.floor(rng() * 14);
+    for (let i = 0; i < n; i++) {
+      points.push({
+        x: cx + gaussian(rng, 0, spread),
+        y: cy + gaussian(rng, 0, spread),
+        day: start + Math.floor(rng() * 20),
+        campaign: c,
+        label,
+      });
+    }
+  }
+
+  /** Láng giềng gần nhất — mô hình ghi nhớ, nên nó phơi bày rò rỉ rõ nhất. */
+  const acc = (train: SplitPoint[], test: SplitPoint[]) => {
+    if (!test.length || !train.length) return 0;
+    let ok = 0;
+    for (const t of test) {
+      let best = Infinity;
+      let lab: 0 | 1 = 0;
+      for (const r of train) {
+        const d = (r.x - t.x) ** 2 + (r.y - t.y) ** 2;
+        if (d < best) {
+          best = d;
+          lab = r.label;
+        }
+      }
+      if (lab === t.label) ok++;
+    }
+    return ok / test.length;
+  };
+
+  const shuffleRng = mulberry32(5);
+  const shuffled = points
+    .map((v) => ({ v, k: shuffleRng() }))
+    .sort((a, b) => a.k - b.k)
+    .map((o) => o.v);
+  const cut = Math.floor(points.length * 0.7);
+  const dayCut = Math.floor(SPLIT_DAYS * 0.7);
+  const campCut = Math.floor(SPLIT_CAMPAIGNS * 0.7);
+
+  return {
+    points,
+    dayCut,
+    random: acc(shuffled.slice(0, cut), shuffled.slice(cut)),
+    temporal: acc(points.filter((r) => r.day < dayCut), points.filter((r) => r.day >= dayCut)),
+    group: acc(points.filter((r) => r.campaign < campCut), points.filter((r) => r.campaign >= campCut)),
+  };
+}
+
+export function LabSplit() {
+  const [spread, setSpread] = useState(0.03);
+  const [signal, setSignal] = useState(0.6);
+
+  const r = useMemo(() => splitComparison(spread, signal), [spread, signal]);
+  const aoGiac = r.random - Math.max(r.temporal, r.group);
+  const p = mkPlot(420, 300, [0, 1], [0, 1], { l: 40, r: 12, t: 12, b: 34 });
+
+  return (
+    <LabShell
+      id="lab-split"
+      title="Cùng một mô hình, ba cách chia tập, ba sự thật khác nhau"
+      takeaway={
+        <>
+          Ở mặc định, cùng một mô hình cho ba con số: <b>96% khi chia ngẫu nhiên</b>, <b>59% khi chia theo
+          thời gian</b>, <b>52% khi chia theo chiến dịch</b>. Không con số nào sai về mặt số học — chúng trả
+          lời ba câu hỏi khác nhau, và chỉ hai câu sau là câu bạn thật sự quan tâm.
+          <br />
+          <br />
+          Chia ngẫu nhiên thổi phồng vì mẫu của <b>cùng một chiến dịch</b> rơi vào cả hai bên. Mô hình không
+          học cách nhận ra mã độc; nó học thuộc vị trí của từng chiến dịch, rồi được chấm điểm trên chính
+          những chiến dịch nó đã thuộc. Kéo &ldquo;mức giống nhau trong chiến dịch&rdquo; xuống và khoảng cách
+          thu hẹp lại ngay — vì lúc đó chẳng còn gì để học thuộc.
+          <br />
+          <br />
+          Đây là cơ chế đằng sau vô số kết quả không tái lập được: <b>96% trong báo cáo, 59% khi chạy thật</b>.
+          Con số 52% của chia theo nhóm còn khắc nghiệt hơn cả chia theo thời gian, vì nó bắt mô hình đối mặt
+          với chiến dịch hoàn toàn mới — và đó chính là thứ sẽ tới vào tuần sau.
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <Slider
+          label="Mức giống nhau trong cùng chiến dịch"
+          value={spread}
+          min={0.02}
+          max={0.14}
+          step={0.005}
+          onChange={setSpread}
+          format={(v) => (v < 0.04 ? 'gần như trùng nhau' : v < 0.08 ? 'khá giống' : 'chỉ hơi giống')}
+          hint="Một chiến dịch thật thường tung ra hàng nghìn biến thể gần trùng."
+        />
+        <Slider
+          label="Tín hiệu khái quát hoá được"
+          value={signal}
+          min={0}
+          max={2}
+          step={0.1}
+          onChange={setSignal}
+          format={(v) => (v < 0.3 ? 'gần như không có' : v < 1 ? 'yếu, như thực tế' : 'mạnh')}
+          hint="Phần quy luật đúng cho cả chiến dịch chưa từng thấy."
+        />
+      </div>
+
+      <Chart p={p} label="Không gian đặc trưng: mỗi cụm là một chiến dịch">
+        <Axes p={p} xLabel="Đặc trưng 1" yLabel="Đặc trưng 2" xTicks={4} yTicks={4} />
+        {r.points.map((pt, i) => (
+          <circle
+            key={i}
+            cx={px(p, clamp(pt.x, 0, 1))}
+            cy={py(p, clamp(pt.y, 0, 1))}
+            r={3}
+            fill={pt.label ? COLORS.bad : COLORS.ok}
+            opacity={pt.day >= r.dayCut ? 0.95 : 0.32}
+          />
+        ))}
+      </Chart>
+      <div className="faint center">Đậm = mẫu thuộc 30% ngày cuối, tức tập kiểm thử của cách chia theo thời gian</div>
+
+      <Readout
+        items={[
+          { k: 'Chia ngẫu nhiên', v: `${(r.random * 100).toFixed(1)}%`, tone: 'bad', sub: 'con số ảo giác' },
+          { k: 'Chia theo thời gian', v: `${(r.temporal * 100).toFixed(1)}%`, tone: 'ok', sub: 'mô hình còn dùng được bao lâu' },
+          { k: 'Chia theo nhóm', v: `${(r.group * 100).toFixed(1)}%`, tone: 'ok', sub: 'gặp chiến dịch hoàn toàn mới' },
+          { k: 'Mức thổi phồng', v: `${(aoGiac * 100).toFixed(1)} đp`, tone: aoGiac > 0.15 ? 'bad' : aoGiac > 0.05 ? 'warn' : 'ok' },
+        ]}
+      />
+
+      <div className={`callout ${aoGiac > 0.15 ? 'co-warn' : 'co-pro'}`}>
+        <Icon className="callout-icon" name={aoGiac > 0.15 ? 'siren' : 'check'} size={18} />
+        <div>
+          <div className="callout-title">
+            {aoGiac > 0.15 ? 'Chia ngẫu nhiên đang nói dối bạn' : 'Ba cách chia đã gần nhau'}
+          </div>
+          <div className="callout-body">
+            {aoGiac > 0.15
+              ? `Chênh ${(aoGiac * 100).toFixed(1)} điểm phần trăm giữa con số bạn báo cáo và con số bạn sẽ gặp. Nguyên nhân không nằm ở mô hình mà ở chỗ mẫu cùng chiến dịch nằm ở cả hai bên ranh giới chia.`
+              : `Khi mẫu trong cùng chiến dịch không còn gần trùng nhau, chẳng còn gì để học thuộc, nên ba cách chia hội tụ. Đó cũng là lý do rò rỉ khó thấy trên dữ liệu đồ chơi mà lại tàn phá trên dữ liệu bảo mật thật.`}
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}
+
+/* ========================================================================== */
 /*  lab-auth-graph — Đồ thị xác thực và di chuyển ngang                        */
 /* ========================================================================== */
 
