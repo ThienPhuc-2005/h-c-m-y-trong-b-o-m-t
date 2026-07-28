@@ -115,7 +115,10 @@ export function BlockView({ block, lessonId, index }: { block: Block; lessonId: 
           <div className="compare">
             {[block.left, block.right].map((col, i) => (
               <div className="compare-col" key={i}>
-                <h5>{col.title}</h5>
+                <h5>
+                  {col.icon && <Icon name={col.icon} size={16} />}
+                  {col.title}
+                </h5>
                 <ul>
                   {col.items.map((it, j) => (
                     <li key={j}><Markdown>{it}</Markdown></li>

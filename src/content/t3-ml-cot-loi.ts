@@ -194,7 +194,8 @@ export const track3: Track = {
           t: 'compare',
           title: 'Hai đường đi, hai bộ điều kiện',
           left: {
-            title: '🎯 Phân loại có giám sát',
+            title: 'Phân loại có giám sát',
+            icon: 'target',
             items: [
               'Cần ít nhất vài trăm ca dương có nhãn tin được',
               'Đo được bằng precision/recall trên tập kiểm tra',
@@ -204,7 +205,8 @@ export const track3: Track = {
             ],
           },
           right: {
-            title: '🌫️ Phát hiện bất thường',
+            title: 'Phát hiện bất thường',
+            icon: 'scatter',
             items: [
               'Bắt đầu được với 0 nhãn dương',
               'Rất khó đo nếu không có quy trình xác nhận',
@@ -798,7 +800,8 @@ export const track3: Track = {
           t: 'compare',
           title: 'Vẫn dùng ở đâu, đã bị thay ở đâu',
           left: {
-            title: '✅ Vẫn là lựa chọn tốt',
+            title: 'Vẫn là lựa chọn tốt',
+            icon: 'check',
             items: [
               'Cần một bộ phân loại văn bản trong vòng vài phút, không GPU',
               'Dữ liệu huấn luyện rất ít (vài trăm mẫu) — NB chịu ít dữ liệu tốt hơn hầu hết mô hình',
@@ -808,7 +811,8 @@ export const track3: Track = {
             ],
           },
           right: {
-            title: '❌ Đã bị vượt qua',
+            title: 'Đã bị vượt qua',
+            icon: 'x',
             items: [
               'Cần xác suất hiệu chuẩn để nhân với chi phí',
               'Ngữ nghĩa quan trọng hơn từ khoá (mô hình transformer thắng rõ)',
@@ -1277,7 +1281,8 @@ export const track3: Track = {
           t: 'compare',
           title: 'Hai triết lý tổ hợp',
           left: {
-            title: '🌲 Bagging (Random Forest)',
+            title: 'Bagging (Random Forest)',
+            icon: 'git-fork',
             items: [
               'Các cây độc lập, huấn luyện song song được',
               'Cây sâu, thiên lệch thấp, phương sai cao',
@@ -1288,7 +1293,8 @@ export const track3: Track = {
             ],
           },
           right: {
-            title: '🚀 Boosting (XGBoost / LightGBM)',
+            title: 'Boosting (XGBoost / LightGBM)',
+            icon: 'rocket',
             items: [
               'Các cây tuần tự, cây sau phụ thuộc cây trước',
               'Cây nông, thiên lệch cao, phương sai thấp',
@@ -1703,7 +1709,8 @@ mo_hinh.fit(X_train, y_train)`,
           t: 'compare',
           title: 'Khi nào chọn cái nào',
           left: {
-            title: '👍 SVM còn hợp lý khi…',
+            title: 'SVM còn hợp lý khi…',
+            icon: 'check-circle',
             items: [
               'Số đặc trưng lớn hơn số mẫu (ví dụ TF-IDF của vài nghìn email)',
               'Dữ liệu sạch, ít nhãn sai gần biên',
@@ -1712,7 +1719,8 @@ mo_hinh.fit(X_train, y_train)`,
             ],
           },
           right: {
-            title: '👎 Chuyển sang cây tăng cường khi…',
+            title: 'Chuyển sang cây tăng cường khi…',
+            icon: 'x',
             items: [
               'Dữ liệu bảng có đặc trưng khác đơn vị, nhiều giá trị thiếu',
               'Trên 100.000 mẫu — thời gian huấn luyện SVM tăng gần bậc hai',
@@ -1903,7 +1911,8 @@ mo_hinh.fit(X_train, y_train)`,
           t: 'compare',
           title: 'Hai kiểu sai, hai cách chữa ngược nhau',
           left: {
-            title: '🎯 Thiên lệch cao (bias)',
+            title: 'Thiên lệch cao (bias)',
+            icon: 'target',
             items: [
               'Mô hình quá đơn giản để nắm được quy luật thật',
               'Sai một cách **nhất quán** — luôn lệch về cùng một phía',
@@ -1913,7 +1922,8 @@ mo_hinh.fit(X_train, y_train)`,
             ],
           },
           right: {
-            title: '🎲 Phương sai cao (variance)',
+            title: 'Phương sai cao (variance)',
+            icon: 'dices',
             items: [
               'Mô hình quá nhạy với từng mẫu cụ thể trong tập huấn luyện',
               'Sai một cách **thất thường** — đổi dữ liệu là đổi kết quả',
@@ -2161,7 +2171,8 @@ print("So vong lap toi uu:", mo_hinh.best_iteration_)`,
           t: 'compare',
           title: 'Chọn kiểu chia theo câu hỏi bạn đang trả lời',
           left: {
-            title: '⏱️ TimeSeriesSplit',
+            title: 'TimeSeriesSplit',
+            icon: 'hourglass',
             items: [
               'Huấn luyện trên quá khứ, kiểm tra trên tương lai',
               'Trả lời: "mô hình còn dùng được sau bao lâu?"',
@@ -2170,7 +2181,8 @@ print("So vong lap toi uu:", mo_hinh.best_iteration_)`,
             ],
           },
           right: {
-            title: '👥 GroupKFold theo họ / theo người dùng',
+            title: 'GroupKFold theo họ / theo người dùng',
+            icon: 'network',
             items: [
               'Mọi biến thể của một họ nằm trọn trong một phần',
               'Trả lời: "mô hình bắt được cái CHƯA từng thấy không?"',
@@ -2245,7 +2257,8 @@ print("Trung binh:", diem.mean().round(3), "| do lech:", diem.std().round(3))
           t: 'compare',
           title: 'Nested CV có xứng với cái giá của nó không?',
           left: {
-            title: '✅ Đáng dùng khi',
+            title: 'Đáng dùng khi',
+            icon: 'check',
             items: [
               'Dữ liệu nhỏ (dưới vài chục nghìn mẫu) nên một tập giữ riêng quá nhiễu',
               'Số ca dương ít, khiến PR-AUC dao động mạnh giữa các lần chia',
@@ -2254,7 +2267,8 @@ print("Trung binh:", diem.mean().round(3), "| do lech:", diem.std().round(3))
             ],
           },
           right: {
-            title: '❌ Không đáng khi',
+            title: 'Không đáng khi',
+            icon: 'x',
             items: [
               'Dữ liệu hàng triệu hàng — một tập giữ riêng theo thời gian đã đủ ổn định',
               'Dữ liệu có tính thời gian mạnh: nested CV ngẫu nhiên còn che mất chính vấn đề trôi',

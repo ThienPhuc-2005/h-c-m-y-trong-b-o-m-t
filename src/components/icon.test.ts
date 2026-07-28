@@ -34,19 +34,32 @@ const SRC = join(fileURLToPath(new URL('.', import.meta.url)), '..');
  */
 const PICTOGRAPH = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]|\u{FE0F}/u;
 
-/** Thư mục nội dung nằm ngoài phạm vi: đó là bài giảng, không phải giao diện. */
-const SKIP_DIRS = new Set(['content']);
+/**
+ * Chữ TRONG câu văn thì khác. Dấu tick, dấu nhân, mũi tên và hình khối hình học
+ * là ký tự sắp chữ thật: chúng có trong mọi phông, đổ đúng màu chữ, và dùng
+ * chúng giữa một bảng chân trị hay một công thức là chuyện bình thường. Chỉ
+ * loại trừ ở phần NỘI DUNG — trong mã giao diện thì vẫn cấm, vì ở đó chúng
+ * đóng vai icon chứ không đóng vai chữ.
+ */
+const KY_TU_SAP_CHU = /[✓✔✗✘–—×·]/u;
 
 function uiFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
-      if (!SKIP_DIRS.has(entry)) uiFiles(full, out);
+      if (entry !== 'content') uiFiles(full, out);
     } else if (/\.(tsx?|css)$/.test(entry) && !entry.endsWith('.test.ts')) {
       out.push(full);
     }
   }
   return out;
+}
+
+function contentFiles(): string[] {
+  const dir = join(SRC, 'content');
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+    .map((f) => join(dir, f));
 }
 
 describe('hệ biểu tượng', () => {
@@ -60,6 +73,62 @@ describe('hệ biểu tượng', () => {
       });
     }
     expect(offenders, `Dùng <Icon name="…" /> thay cho emoji:\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  /**
+   * Giáo trình từng dùng emoji làm icon phân biệt hai cột của khối `compare` —
+   * 100 cái, trải đều 11 tệp. Chúng hiển thị cho người học y như mọi icon khác,
+   * nên lập luận "đây là bài giảng chứ không phải giao diện" không cứu được:
+   * người dùng vẫn thấy một hình do hệ điều hành vẽ, đổi hình theo máy, mang màu
+   * cố định. Nay chúng đi qua trường `icon`, và bài kiểm thử này chặn đường về.
+   */
+  it('không còn emoji nào trong dữ liệu giáo trình', () => {
+    const offenders: string[] = [];
+    for (const file of contentFiles()) {
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .forEach((line, i) => {
+          const sach = line.replace(new RegExp(KY_TU_SAP_CHU, 'gu'), '');
+          const hit = PICTOGRAPH.exec(sach);
+          if (hit) offenders.push(`${file.slice(SRC.length + 1)}:${i + 1} → ${hit[0]}`);
+        });
+    }
+    expect(
+      offenders,
+      `Dùng trường icon của khối compare, hoặc bỏ hẳn:\n${offenders.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('hai cột của mọi khối so sánh đều có icon, và không trùng nhau', () => {
+    const thieu: string[] = [];
+    const trung: string[] = [];
+    for (const t of TRACKS) {
+      for (const l of t.lessons) {
+        for (const b of l.blocks) {
+          if (b.t !== 'compare') continue;
+          const { icon: L, title: tL } = b.left;
+          const { icon: R, title: tR } = b.right;
+          if (!L || !R) thieu.push(`${l.id}: «${tL}» / «${tR}»`);
+          // Hai cột cùng icon là mất luôn thứ đang phân biệt chúng.
+          else if (L === R) trung.push(`${l.id}: cùng '${L}' cho «${tL}» và «${tR}»`);
+        }
+      }
+    }
+    expect(thieu, `Khối so sánh thiếu icon:\n${thieu.join('\n')}`).toEqual([]);
+    expect(trung, `Khối so sánh có hai icon trùng nhau:\n${trung.join('\n')}`).toEqual([]);
+  });
+
+  it('mọi icon của khối so sánh trỏ tới một hình có thật', () => {
+    for (const t of TRACKS) {
+      for (const l of t.lessons) {
+        for (const b of l.blocks) {
+          if (b.t !== 'compare') continue;
+          for (const col of [b.left, b.right]) {
+            if (col.icon) expect(isIconName(col.icon), `${l.id}: ${col.icon}`).toBe(true);
+          }
+        }
+      }
+    }
   });
 
   it('mọi chặng học trỏ tới một icon có thật', () => {

@@ -171,7 +171,8 @@ export const track2: Track = {
           t: 'compare',
           title: 'Chọn giữa gói tin thô và bản ghi tóm tắt',
           left: {
-            title: '📦 PCAP toàn phần',
+            title: 'PCAP toàn phần',
+            icon: 'package',
             items: [
               'Có đủ payload để phân tích sâu và làm bằng chứng pháp lý',
               'Cho phép trích xuất tệp truyền qua mạng',
@@ -181,7 +182,8 @@ export const track2: Track = {
             ],
           },
           right: {
-            title: '🧾 Zeek / NetFlow',
+            title: 'Zeek / NetFlow',
+            icon: 'file-text',
             items: [
               'Một dòng cho mỗi kết nối: thời gian, IP, cổng, byte, gói, trạng thái',
               'Zeek có thêm ngữ cảnh tầng ứng dụng: SNI, JA3/JA4, truy vấn DNS, User-Agent',
@@ -1043,7 +1045,8 @@ export const track2: Track = {
           t: 'compare',
           title: 'Chuẩn hoá ngây thơ và chuẩn hoá đúng',
           left: {
-            title: '❌ Cách làm ngây thơ',
+            title: 'Cách làm ngây thơ',
+            icon: 'x',
             items: [
               'lower() tên tài khoản và coi như xong',
               'Dùng địa chỉ IP làm định danh máy',
@@ -1053,7 +1056,8 @@ export const track2: Track = {
             ],
           },
           right: {
-            title: '✅ Cách làm dùng được',
+            title: 'Cách làm dùng được',
+            icon: 'check',
             items: [
               'Dùng SID hoặc objectGUID làm khoá chính; tên chỉ là thuộc tính hiển thị',
               'Ánh xạ IP sang máy theo KHOẢNG THỜI GIAN, dựa trên log DHCP',
@@ -1289,7 +1293,8 @@ export const track2: Track = {
           t: 'compare',
           title: 'Hai nguồn nhãn hay bị đặt lên bàn cân',
           left: {
-            title: '🧑‍💻 Kết luận của analyst',
+            title: 'Kết luận của analyst',
+            icon: 'notebook-pen',
             items: [
               'Phản ánh đúng định nghĩa “đáng quan tâm” của chính tổ chức bạn',
               'Có ngữ cảnh: tài sản nào, người nào, có leo thang không',
@@ -1299,7 +1304,8 @@ export const track2: Track = {
             ],
           },
           right: {
-            title: '🧪 VirusTotal / đa engine',
+            title: 'VirusTotal / đa engine',
+            icon: 'flask',
             items: [
               'Khối lượng lớn, lấy được ngay, chi phí rõ ràng',
               'Có ngày mẫu xuất hiện lần đầu — dùng được để chia tập theo thời gian',
@@ -1678,7 +1684,8 @@ export const track2: Track = {
           t: 'compare',
           title: 'Hai mục đích rất khác nhau',
           left: {
-            title: '✅ Dùng được',
+            title: 'Dùng được',
+            icon: 'check',
             items: [
               'Kiểm tra pipeline của bạn chạy đúng về mặt kỹ thuật',
               'So sánh hai thuật toán trên cùng một nền, khi cả hai chịu chung khiếm khuyết',
@@ -1687,7 +1694,8 @@ export const track2: Track = {
             ],
           },
           right: {
-            title: '❌ Không dùng được',
+            title: 'Không dùng được',
+            icon: 'x',
             items: [
               'Ước lượng hiệu năng mà mô hình sẽ đạt trong mạng của bạn',
               'Chọn ngưỡng vận hành — tỉ lệ lớp hoàn toàn khác thực tế',
@@ -2381,7 +2389,8 @@ export const track2: Track = {
           t: 'compare',
           title: 'Hai loại sai lầm, hai loại thiệt hại',
           left: {
-            title: '🔔 Báo động giả (FP) — chi phí vận hành',
+            title: 'Báo động giả (FP) — chi phí vận hành',
+            icon: 'siren',
             items: [
               'Đo được, thấy được, xuất hiện ngay trên bảng điều khiển',
               'Cộng dồn tuyến tính theo giờ analyst: 12 phút × số cảnh báo',
@@ -2391,7 +2400,8 @@ export const track2: Track = {
             ],
           },
           right: {
-            title: '🕳️ Bỏ sót (FN) — rủi ro tồn dư',
+            title: 'Bỏ sót (FN) — rủi ro tồn dư',
+            icon: 'search-x',
             items: [
               'Không đo được từ dữ liệu vận hành: bạn không biết cái mình không thấy',
               'Chỉ lộ ra khi có sự cố, khi bị bên thứ ba báo, hoặc khi làm threat hunting',
@@ -2615,7 +2625,8 @@ export const track2: Track = {
           t: 'compare',
           title: 'Ưu tiên cái nào? Hỏi: đầu ra đi đâu?',
           left: {
-            title: '🎯 Ưu tiên PRECISION khi…',
+            title: 'Ưu tiên PRECISION khi…',
+            icon: 'target',
             items: [
               'Đầu ra hành động tự động: chặn, cách ly, khoá tài khoản',
               'Sai một lần là ảnh hưởng trực tiếp tới người dùng hoặc doanh thu',
@@ -2625,7 +2636,8 @@ export const track2: Track = {
             ],
           },
           right: {
-            title: '🕸️ Ưu tiên RECALL khi…',
+            title: 'Ưu tiên RECALL khi…',
+            icon: 'network',
             items: [
               'Đầu ra chỉ là hàng đợi để con người xem lại',
               'Bỏ sót một vụ là thảm hoạ không đảo ngược được',

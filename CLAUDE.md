@@ -62,11 +62,16 @@ scripts/calibrate-minutes.mjs  Hiệu chỉnh minutes/practiceMinutes từ nội
 
 ## Ba quy ước dễ vi phạm
 
-**Icon.** Không dùng emoji trong mã giao diện. Mọi biểu tượng đi qua
+**Icon.** Không dùng emoji, kể cả trong `src/content/`. Mọi biểu tượng đi qua
 `<Icon name="…" />`; thêm hình mới thì thêm vào `SHAPES` trong
 `components/Icon.tsx` (hình học Lucide, viewBox 24×24, nét 2px). Trường `icon`
-trong dữ liệu (chặng học, huy hiệu, phòng lab) chứa **tên icon**, không phải ký
-tự. `src/components/icon.test.ts` chặn emoji quay lại.
+trong dữ liệu (chặng học, huy hiệu, phòng lab, và hai cột của khối `compare`)
+chứa **tên icon**, không phải ký tự.
+
+`src/components/icon.test.ts` chặn emoji ở cả mã giao diện lẫn giáo trình, đòi
+mọi khối `compare` có icon cho cả hai cột, và bắt lỗi hai cột trùng icon — trùng
+là mất luôn thứ đang phân biệt chúng. Dấu sắp chữ (`✓ ✗ × – —`) vẫn được phép
+**trong câu văn** của giáo trình: chúng là ký tự chữ thật, không phải hình.
 
 **Song ngữ.** Không hardcode chữ hiển thị trong component. Thêm khoá vào **cả
 hai** `vi.json` và `en.json` rồi gọi `t('muc.khoa')`; trong component dùng

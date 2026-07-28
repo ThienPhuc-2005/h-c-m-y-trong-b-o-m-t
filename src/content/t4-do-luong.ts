@@ -195,7 +195,8 @@ export const track4: Track = {
           t: 'compare',
           title: 'Chọn lăng kính theo câu hỏi bạn đang hỏi',
           left: {
-            title: '📈 Dùng ROC-AUC khi…',
+            title: 'Dùng ROC-AUC khi…',
+            icon: 'trending-up',
             items: [
               'So sánh khả năng xếp hạng của nhiều mô hình trên cùng bài toán',
               'Muốn một con số không phụ thuộc tỉ lệ lớp của tập đánh giá',
@@ -205,7 +206,8 @@ export const track4: Track = {
             ],
           },
           right: {
-            title: '📉 Dùng PR-AUC / average precision khi…',
+            title: 'Dùng PR-AUC / average precision khi…',
+            icon: 'trending-down',
             items: [
               'Lớp dương hiếm và bạn quan tâm chất lượng của những cảnh báo thực sự phát ra',
               'Cần chọn giữa hai mô hình cho một hệ thống sắp triển khai thật',
@@ -765,7 +767,8 @@ export const track4: Track = {
           t: 'compare',
           title: 'Hai triết lý xử lý mất cân bằng',
           left: {
-            title: '🎚️ Sửa QUYẾT ĐỊNH (nên làm trước)',
+            title: 'Sửa QUYẾT ĐỊNH (nên làm trước)',
+            icon: 'sliders',
             items: [
               'Giữ nguyên dữ liệu thật, giữ nguyên tỉ lệ nền thật',
               'Đổi chỉ số: PR-AUC, precision@k thay cho accuracy',
@@ -775,7 +778,8 @@ export const track4: Track = {
             ],
           },
           right: {
-            title: '🧪 Sửa DỮ LIỆU (chỉ khi cần)',
+            title: 'Sửa DỮ LIỆU (chỉ khi cần)',
+            icon: 'flask',
             items: [
               'Thay đổi phân phối mà mô hình nhìn thấy',
               'class_weight, hạ mẫu, oversampling, SMOTE',
@@ -1088,7 +1092,8 @@ export const track4: Track = {
           t: 'compare',
           title: 'Chọn phương pháp theo lượng dữ liệu và hình dạng sai lệch',
           left: {
-            title: '📐 Platt scaling (sigmoid)',
+            title: 'Platt scaling (sigmoid)',
+            icon: 'compass',
             items: [
               'Khớp một hàm logistic hai tham số lên điểm số của mô hình',
               'Cần ít dữ liệu: vài trăm mẫu, trong đó vài chục mẫu dương là chạy được',
@@ -1098,7 +1103,8 @@ export const track4: Track = {
             ],
           },
           right: {
-            title: '📶 Isotonic regression',
+            title: 'Isotonic regression',
+            icon: 'activity',
             items: [
               'Khớp một hàm bậc thang không giảm, không giả định hình dạng',
               'Cần nhiều dữ liệu: nên có từ vài nghìn mẫu và ít nhất vài trăm mẫu dương',
@@ -1484,6 +1490,7 @@ print(f'Hiệu số PR-AUC: {tb:+.4f}, khoảng tin cậy 95%: [{thap:+.4f}, {ca
           title: 'Chọn công cụ theo câu hỏi bạn đang hỏi',
           left: {
             title: 'Kiểm định McNemar',
+            icon: 'scale',
             items: [
               'Câu hỏi: ở ngưỡng đang chạy, mô hình nào sai ít hơn?',
               'Đầu vào là nhãn cứng, nên bắt buộc chốt ngưỡng trước',
@@ -1494,6 +1501,7 @@ print(f'Hiệu số PR-AUC: {tb:+.4f}, khoảng tin cậy 95%: [{thap:+.4f}, {ca
           },
           right: {
             title: 'Bootstrap theo cặp',
+            icon: 'repeat',
             items: [
               'Câu hỏi: chỉ số tổng hợp hơn kém nhau bao nhiêu, và chắc tới đâu?',
               'Chạy được với mọi chỉ số: PR-AUC, precision@k, tải cảnh báo, chi phí',
@@ -1837,6 +1845,7 @@ print(f'Tỉ lệ tập một nhãn — phần tự động hoá được: {co_d
           title: 'Hiệu chuẩn và conformal trả lời hai câu hỏi khác nhau',
           left: {
             title: 'Hiệu chuẩn (bài t4-l6)',
+            icon: 'sliders',
             items: [
               'Câu hỏi: con số 0,87 có đúng nghĩa 87% không?',
               'Cho một số duy nhất cho mỗi mẫu',
@@ -1847,6 +1856,7 @@ print(f'Tỉ lệ tập một nhãn — phần tự động hoá được: {co_d
           },
           right: {
             title: 'Conformal prediction',
+            icon: 'shield',
             items: [
               'Câu hỏi: cho tôi tập nhãn chứa nhãn đúng ít nhất 90% số lần',
               'Cho một tập nhãn, có thể rỗng hoặc chứa cả hai',

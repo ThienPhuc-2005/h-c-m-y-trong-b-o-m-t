@@ -277,7 +277,8 @@ export const track6: Track = {
           t: 'compare',
           title: 'Hai chiến lược, chọn theo mối đe doạ của bạn',
           left: {
-            title: '🎣 Chống phishing hàng loạt',
+            title: 'Chống phishing hàng loạt',
+            icon: 'mail',
             items: [
               'Khối lượng lớn, kỹ thuật thấp, dùng lại hạ tầng',
               'Đặc trưng từ vựng URL và danh tiếng hạ tầng đủ mạnh',
@@ -287,7 +288,8 @@ export const track6: Track = {
             ],
           },
           right: {
-            title: '🎯 Chống phishing nhắm mục tiêu',
+            title: 'Chống phishing nhắm mục tiêu',
+            icon: 'target',
             items: [
               'Vài thư, viết riêng, hạ tầng sạch dùng một lần',
               'Đặc trưng quan hệ: người gửi này đã bao giờ liên hệ với tổ chức chưa',
@@ -872,7 +874,8 @@ export const track6: Track = {
           t: 'compare',
           title: 'Tĩnh và động: không phải chọn một',
           left: {
-            title: '📄 Phân tích tĩnh',
+            title: 'Phân tích tĩnh',
+            icon: 'file-text',
             items: [
               'Vài mili-giây mỗi tệp — quét được toàn bộ ổ đĩa',
               'An toàn tuyệt đối, mã không bao giờ chạy',
@@ -882,7 +885,8 @@ export const track6: Track = {
             ],
           },
           right: {
-            title: '▶️ Phân tích động',
+            title: 'Phân tích động',
+            icon: 'play',
             items: [
               'Vài phút mỗi mẫu — chỉ đủ cho phần xám',
               'Cần cách ly nghiêm ngặt, có rủi ro thoát máy ảo',
@@ -1574,7 +1578,8 @@ export const track6: Track = {
           t: 'compare',
           title: 'Ba lớp, ba vai trò — đừng để lớp sau làm việc của lớp trước',
           left: {
-            title: '📜 Suricata: chữ ký',
+            title: 'Suricata: chữ ký',
+            icon: 'book',
             items: [
               'Bắt cái ĐÃ BIẾT: khai thác CVE cụ thể, chuỗi byte của công cụ, địa chỉ C2 đã công bố',
               'Chi phí gần bằng 0 cho mỗi luật, giải thích được tuyệt đối',
@@ -1583,7 +1588,8 @@ export const track6: Track = {
             ],
           },
           right: {
-            title: '📊 Zeek + ML: hành vi và metadata',
+            title: 'Zeek + ML: hành vi và metadata',
+            icon: 'chart',
             items: [
               'Bắt cái CHƯA BIẾT nhưng có hình dạng quen: nhịp đều, khối lượng lệch, quan hệ mới',
               'Chi phí cao hơn: cần dữ liệu lịch sử, cần chỉnh ngưỡng, cần giải thích cho analyst',
@@ -2362,6 +2368,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           title: 'Phần dư dùng làm gì: cảnh báo trực tiếp hay làm đặc trưng',
           left: {
             title: 'Cảnh báo thẳng trên phần dư',
+            icon: 'siren',
             items: [
               'Đơn giản, giải thích được trong một câu cho analyst',
               'Không cần nhãn, chạy được ngay từ tuần đầu',
@@ -2372,6 +2379,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           },
           right: {
             title: 'Đưa phần dư vào mô hình như một đặc trưng',
+            icon: 'puzzle',
             items: [
               'Kết hợp được với đặc trưng thực thể, danh tiếng, đồ thị',
               'Bắt được các trường hợp khối lượng bình thường nhưng cấu trúc lạ',
@@ -2609,7 +2617,8 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           t: 'compare',
           title: 'Hai cách nhìn cùng một dữ liệu',
           left: {
-            title: '📌 Chấm điểm sự kiện rời rạc',
+            title: 'Chấm điểm sự kiện rời rạc',
+            icon: 'flag',
             items: [
               'Đăng nhập 23:40 → hơi lạ, hàng trăm người làm mỗi ngày',
               'Truy cập thư mục nhân sự → hơi lạ, có thể do dự án',
@@ -2619,7 +2628,8 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
             ],
           },
           right: {
-            title: '🔗 Chấm điểm chuỗi hành vi',
+            title: 'Chấm điểm chuỗi hành vi',
+            icon: 'link',
             items: [
               'Cùng một tài khoản, trong 40 phút, theo đúng thứ tự trên',
               'Chuỗi này xuất hiện 0 lần trong 90 ngày qua của người đó',
@@ -2987,6 +2997,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           title: 'Ba mức tiếp cận, xếp theo thứ tự nên thử',
           left: {
             title: 'Chỉ số cấu trúc và nhúng',
+            icon: 'calculator',
             items: [
               'Bậc, thay đổi bậc, cạnh mới, PageRank, k-core',
               'Tính bằng networkx hoặc một truy vấn SQL, chạy trên máy để bàn',
@@ -2997,6 +3008,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           },
           right: {
             title: 'Mạng nơ-ron đồ thị',
+            icon: 'network',
             items: [
               'Học biểu diễn nhiều bước, kết hợp đặc trưng nút và cấu trúc',
               'Cần hạ tầng huấn luyện, lấy mẫu lân cận, và người vận hành nó',

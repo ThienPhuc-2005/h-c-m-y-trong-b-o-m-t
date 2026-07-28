@@ -138,7 +138,8 @@ export const track10: Track = {
           t: 'compare',
           title: 'Hai nửa của một feature store',
           left: {
-            title: '⚡ Kho trực tuyến (online)',
+            title: 'Kho trực tuyến (online)',
+            icon: 'zap',
             items: [
               'Redis, DynamoDB, Cassandra — đọc dưới 10 ms',
               'Chỉ giữ giá trị MỚI NHẤT cho mỗi thực thể (user, host, IP)',
@@ -148,7 +149,8 @@ export const track10: Track = {
             ],
           },
           right: {
-            title: '🗄️ Kho ngoại tuyến (offline)',
+            title: 'Kho ngoại tuyến (offline)',
+            icon: 'database',
             items: [
               'Parquet trên S3, Delta Lake, Iceberg, BigQuery',
               'Giữ TOÀN BỘ lịch sử có dấu thời gian',
@@ -470,7 +472,8 @@ def dau_van_tay(dt: DacTrungKetNoi) -> str:
           t: 'compare',
           title: 'Hai loại trôi, hai cách xử lý khác nhau',
           left: {
-            title: '📦 Trôi dữ liệu — P(X) đổi',
+            title: 'Trôi dữ liệu — P(X) đổi',
+            icon: 'package',
             items: [
               'Phân phối đầu vào đổi, quan hệ đầu vào → nhãn giữ nguyên',
               'Ví dụ: công ty chuyển 70% máy sang làm việc từ xa, phân phối IP nguồn và giờ truy cập đổi hoàn toàn',
@@ -481,7 +484,8 @@ def dau_van_tay(dt: DacTrungKetNoi) -> str:
             ],
           },
           right: {
-            title: '🎭 Trôi khái niệm — P(y|X) đổi',
+            title: 'Trôi khái niệm — P(y|X) đổi',
+            icon: 'git-compare',
             items: [
               'Cùng một đầu vào, nhưng nhãn đúng đã khác',
               'Ví dụ: PowerShell mã hoá base64 từng hiếm và đáng ngờ, nay là chuẩn của công cụ triển khai hợp lệ',
@@ -1226,7 +1230,8 @@ bat_buoc_hop_rut_kinh_nghiem_trong: 3 ngay lam viec`,
           t: 'compare',
           title: 'Giải thích toàn cục và giải thích cục bộ trả lời hai câu khác nhau',
           left: {
-            title: '🌍 Toàn cục',
+            title: 'Toàn cục',
+            icon: 'map',
             items: [
               'Câu hỏi: mô hình NÓI CHUNG dựa vào cái gì',
               'Công cụ: permutation importance, SHAP tổng hợp, partial dependence',
@@ -1236,7 +1241,8 @@ bat_buoc_hop_rut_kinh_nghiem_trong: 3 ngay lam viec`,
             ],
           },
           right: {
-            title: '🔍 Cục bộ',
+            title: 'Cục bộ',
+            icon: 'search',
             items: [
               'Câu hỏi: VÌ SAO cảnh báo NÀY có điểm cao',
               'Công cụ: SHAP cho một mẫu, LIME, counterfactual',
@@ -2092,7 +2098,8 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
           t: 'compare',
           title: 'Cùng một kết quả, hai cách kể',
           left: {
-            title: '❌ Cách làm hại chính bạn',
+            title: 'Cách làm hại chính bạn',
+            icon: 'x',
             items: [
               '"Mô hình đạt độ chính xác 99,8%"',
               'Giấu việc đã thử 40 tổ hợp siêu tham số và báo cáo cái tốt nhất trên tập kiểm tra',
@@ -2102,7 +2109,8 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
             ],
           },
           right: {
-            title: '✅ Cách khiến người ta muốn tuyển bạn',
+            title: 'Cách khiến người ta muốn tuyển bạn',
+            icon: 'check',
             items: [
               '"TPR 0,84 tại FPR 0,01%, tức khoảng 200 báo động giả/ngày trên 2 triệu truy vấn"',
               '"Chọn siêu tham số trên tập validation tách riêng theo thời gian; tập kiểm tra chỉ chạm một lần"',
@@ -2329,7 +2337,8 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
           t: 'compare',
           title: 'Detection Engineer và Security Data Scientist chồng lấn nhiều hơn bạn nghĩ',
           left: {
-            title: '🎯 Phần chung (khoảng 60%)',
+            title: 'Phần chung (khoảng 60%)',
+            icon: 'target',
             items: [
               'Đều phải hiểu kỹ thuật tấn công thật, không chỉ hiểu thuật toán',
               'Đều sống với đánh đổi giữa báo động giả và bỏ sót',
@@ -2339,7 +2348,8 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
             ],
           },
           right: {
-            title: '🔀 Phần khác biệt cốt lõi',
+            title: 'Phần khác biệt cốt lõi',
+            icon: 'shuffle',
             items: [
               'Detection Engineer: logic tường minh, viết được ra thành luật, giải thích được từng dòng',
               'Security Data Scientist: logic học từ dữ liệu, đánh đổi khả năng giải thích lấy khả năng bao phủ',

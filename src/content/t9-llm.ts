@@ -167,7 +167,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
           t: 'compare',
           title: 'Vì sao SQL injection đã được giải quyết còn prompt injection thì chưa',
           left: {
-            title: '💉 SQL injection',
+            title: 'SQL injection',
+            icon: 'bandage',
             items: [
               'Ngôn ngữ SQL có ngữ pháp hình thức, phân tích cú pháp được',
               'Prepared statement tách hẳn câu lệnh khỏi tham số — hai kênh thật sự',
@@ -177,7 +178,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
             ],
           },
           right: {
-            title: '🗣️ Prompt injection',
+            title: 'Prompt injection',
+            icon: 'message-alert',
             items: [
               'Đầu vào là ngôn ngữ tự nhiên — vô hạn cách diễn đạt, không có ngữ pháp để phân tích',
               'Chưa có cơ chế tương đương prepared statement được triển khai rộng rãi',
@@ -444,7 +446,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
           t: 'compare',
           title: 'Hai biến thể, hai mô hình mối đe doạ hoàn toàn khác nhau',
           left: {
-            title: '🎯 Trực tiếp (direct)',
+            title: 'Trực tiếp (direct)',
+            icon: 'target',
             items: [
               'Kẻ tấn công CHÍNH LÀ người đang gõ vào ô chat',
               'Mục tiêu: làm ứng dụng vượt ra ngoài chức năng đã định',
@@ -455,7 +458,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
             ],
           },
           right: {
-            title: '📄 Gián tiếp (indirect)',
+            title: 'Gián tiếp (indirect)',
+            icon: 'file-text',
             items: [
               'Kẻ tấn công là BÊN THỨ BA, không hề tương tác với ứng dụng',
               'Chỉ dẫn được giấu trong dữ liệu mà hệ thống sẽ đọc: email, trang web, PDF, ticket, mã nguồn',
@@ -801,7 +805,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
           t: 'compare',
           title: 'Jailbreak và prompt injection: đừng bao giờ trộn',
           left: {
-            title: '🔓 Jailbreak',
+            title: 'Jailbreak',
+            icon: 'key-round',
             items: [
               'Kẻ tấn công: chính người dùng đang ngồi trước ứng dụng',
               'Ranh giới bị vượt: chính sách an toàn của MÔ HÌNH',
@@ -812,7 +817,8 @@ chỉ dẫn hệ thống ở đầu mỗi bản tóm tắt để kiểm toán. H
             ],
           },
           right: {
-            title: '💉 Prompt injection',
+            title: 'Prompt injection',
+            icon: 'bandage',
             items: [
               'Kẻ tấn công: bên thứ ba, thường không hề chạm vào ứng dụng',
               'Ranh giới bị vượt: ranh giới TIN CẬY của ỨNG DỤNG',
@@ -1660,7 +1666,8 @@ cursor.execute('SELECT * FROM nguoi_dung WHERE ma = %s', (ket_qua['ma_nguoi_dung
           t: 'compare',
           title: 'Hai cách dùng OWASP Top 10, một cách hỏng',
           left: {
-            title: '❌ Dùng như danh sách tuân thủ',
+            title: 'Dùng như danh sách tuân thủ',
+            icon: 'x',
             items: [
               'Mở bảng tính 10 dòng, mỗi dòng ghi một đoạn văn, tô xanh, nộp',
               'Xử lý dàn đều cả mười mục bất kể kiến trúc thật',
@@ -1670,7 +1677,8 @@ cursor.execute('SELECT * FROM nguoi_dung WHERE ma = %s', (ket_qua['ma_nguoi_dung
             ],
           },
           right: {
-            title: '✅ Dùng như danh sách gợi nhắc mô hình mối đe doạ',
+            title: 'Dùng như danh sách gợi nhắc mô hình mối đe doạ',
+            icon: 'check',
             items: [
               'Vẽ kiến trúc thật trước, rồi hỏi từng mục có áp dụng vào hộp nào không',
               'Xếp hạng theo khả năng khai thác nhân với thiệt hại, không dàn đều',

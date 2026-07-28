@@ -169,7 +169,18 @@ export type Block =
   /** Ví dụ mẫu có lời giải từng bước (worked example → giảm tải nhận thức). */
   | { t: 'steps'; title?: string; steps: { title: string; md: string }[] }
   /** So sánh hai khái niệm dễ nhầm — chống "illusion of knowing". */
-  | { t: 'compare'; title?: string; left: { title: string; items: string[] }; right: { title: string; items: string[] } }
+  /**
+   * So sánh hai khái niệm dễ nhầm. `icon` là TÊN icon trong `components/Icon.tsx`,
+   * không phải ký tự — trước đây hai cột được phân biệt bằng emoji đặt thẳng vào
+   * `title`, khiến biểu tượng đổi hình theo hệ điều hành, mang màu cố định phá
+   * bảng màu, và bị trình đọc màn hình đọc tên đầy đủ giữa tiêu đề cột.
+   */
+  | {
+      t: 'compare';
+      title?: string;
+      left: { title: string; icon?: IconName; items: string[] };
+      right: { title: string; icon?: IconName; items: string[] };
+    }
   | { t: 'lab'; id: LabId; intro?: string }
   | { t: 'terms'; ids: TermId[] }
   | { t: 'quote'; md: string; source?: string }

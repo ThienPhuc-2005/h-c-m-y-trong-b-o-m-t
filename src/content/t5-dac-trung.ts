@@ -91,7 +91,8 @@ export const track5: Track = {
           t: 'compare',
           title: 'Hai họ đặc trưng bạn phải phân biệt được trong 3 giây',
           left: {
-            title: '🎈 Đặc trưng bề mặt',
+            title: 'Đặc trưng bề mặt',
+            icon: 'sun',
             items: [
               'Mô tả cách cuộc tấn công được đóng gói lần này',
               'Kẻ tấn công đổi được mà không mất gì',
@@ -101,7 +102,8 @@ export const track5: Track = {
             ],
           },
           right: {
-            title: '🪨 Đặc trưng hành vi lõi',
+            title: 'Đặc trưng hành vi lõi',
+            icon: 'mountain',
             items: [
               'Mô tả việc cuộc tấn công BẮT BUỘC phải làm',
               'Né được, nhưng phải hy sinh tốc độ, độ tin cậy hoặc tiền',
@@ -1198,7 +1200,8 @@ export const track5: Track = {
           t: 'compare',
           title: 'Vì sao JA4 ra đời',
           left: {
-            title: '🔑 JA3 (2017)',
+            title: 'JA3 (2017)',
+            icon: 'key-round',
             items: [
               'MD5 của chuỗi nối theo THỨ TỰ XUẤT HIỆN',
               'Không đọc được: chỉ là 32 ký tự hex',
@@ -1208,7 +1211,8 @@ export const track5: Track = {
             ],
           },
           right: {
-            title: '🔐 JA4 / JA4+ (FoxIO, 2023)',
+            title: 'JA4 / JA4+ (FoxIO, 2023)',
+            icon: 'lock',
             items: [
               'SẮP XẾP cipher và extension trước khi băm — miễn nhiễm với xáo trộn thứ tự',
               'Đọc được: phần đầu cho biết giao thức, phiên bản TLS, có SNI không, số cipher, số extension, ALPN',
@@ -1495,7 +1499,8 @@ export const track5: Track = {
           t: 'compare',
           title: 'Hai loại đường cơ sở, hai vùng mù khác nhau',
           left: {
-            title: '👤 Đường cơ sở theo từng người',
+            title: 'Đường cơ sở theo từng người',
+            icon: 'target',
             items: [
               'So hành vi hôm nay với 90 ngày trước của CHÍNH người đó',
               'Rất nhạy: bắt được thay đổi nhỏ trong thói quen',
@@ -1505,7 +1510,8 @@ export const track5: Track = {
             ],
           },
           right: {
-            title: '👥 Đường cơ sở theo nhóm ngang hàng',
+            title: 'Đường cơ sở theo nhóm ngang hàng',
+            icon: 'network',
             items: [
               'So hành vi với 40 người cùng phòng ban, cùng vai trò, cùng cấp',
               'Hoạt động ngay từ ngày đầu của nhân viên mới',
@@ -1780,7 +1786,8 @@ export const track5: Track = {
           t: 'compare',
           title: 'Hai cách cắt cùng một dòng lệnh',
           left: {
-            title: '📝 Token theo từ',
+            title: 'Token theo từ',
+            icon: 'pen-line',
             items: [
               'Mỗi khoảng trắng là ranh giới',
               'Từ điển phình vô hạn theo thời gian: GUID, tên tệp tạm, base64',
@@ -1790,7 +1797,8 @@ export const track5: Track = {
             ],
           },
           right: {
-            title: '🔤 N-gram ký tự (3–5)',
+            title: 'N-gram ký tự (3–5)',
+            icon: 'languages',
             items: [
               'Cắt mọi chuỗi con 3, 4, 5 ký tự liên tiếp',
               'Từ điển bị chặn tự nhiên vì số tổ hợp ký tự có hạn trong thực tế',

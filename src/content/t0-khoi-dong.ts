@@ -97,7 +97,8 @@ export const track0: Track = {
           t: 'compare',
           title: 'Chọn công cụ theo bài toán',
           left: {
-            title: '⚙️ Dùng LUẬT khi…',
+            title: 'Dùng LUẬT khi…',
+            icon: 'settings',
             items: [
               'Dấu hiệu là xác định và bất biến (hash, CVE, chữ ký YARA)',
               'Cần giải thích pháp lý hoặc tuân thủ',
@@ -107,7 +108,8 @@ export const track0: Track = {
             ],
           },
           right: {
-            title: '🧠 Dùng MÔ HÌNH khi…',
+            title: 'Dùng MÔ HÌNH khi…',
+            icon: 'brain',
             items: [
               'Có nhiều tín hiệu yếu, không cái nào đủ mạnh một mình',
               'Đối thủ liên tục biến đổi bề mặt nhưng giữ hành vi lõi',

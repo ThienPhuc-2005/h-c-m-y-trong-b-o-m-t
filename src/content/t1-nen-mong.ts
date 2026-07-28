@@ -170,7 +170,8 @@ orig_pkts=42  resp_pkts=68`,
           t: 'compare',
           title: 'Mô hình nào cần chuẩn hoá?',
           left: {
-            title: '📏 CẦN chuẩn hoá',
+            title: 'CẦN chuẩn hoá',
+            icon: 'ruler',
             items: [
               'Hồi quy logistic và tuyến tính (nhất là khi có regularization L1/L2)',
               'k-NN, k-means, DBSCAN — mọi thứ tính khoảng cách',
@@ -180,7 +181,8 @@ orig_pkts=42  resp_pkts=68`,
             ],
           },
           right: {
-            title: '🌳 KHÔNG cần chuẩn hoá',
+            title: 'KHÔNG cần chuẩn hoá',
+            icon: 'git-fork',
             items: [
               'Cây quyết định đơn lẻ',
               'Random Forest',
@@ -557,7 +559,8 @@ diem = mo_hinh.predict_proba(X_te)[:, 1]`,
           t: 'compare',
           title: 'Hai câu hỏi trông giống nhau, đừng bao giờ lẫn',
           left: {
-            title: '📈 P(cảnh báo | độc) — độ nhạy',
+            title: 'P(cảnh báo | độc) — độ nhạy',
+            icon: 'trending-up',
             items: [
               'Mẫu số: số sự kiện ĐỘC HẠI',
               'Tên khác: recall, TPR, detection rate',
@@ -567,7 +570,8 @@ diem = mo_hinh.predict_proba(X_te)[:, 1]`,
             ],
           },
           right: {
-            title: '🎯 P(độc | cảnh báo) — PPV',
+            title: 'P(độc | cảnh báo) — PPV',
+            icon: 'target',
             items: [
               'Mẫu số: số CẢNH BÁO đã đưa ra',
               'Tên khác: precision, giá trị dự đoán dương',
@@ -908,7 +912,8 @@ diem = mo_hinh.predict_proba(X_te)[:, 1]`,
           t: 'compare',
           title: 'Hai cách đọc cùng một bộ phát hiện',
           left: {
-            title: '📊 Cách nhà cung cấp trình bày',
+            title: 'Cách nhà cung cấp trình bày',
+            icon: 'chart',
             items: [
               'Độ nhạy 99,2% trên bộ dữ liệu chuẩn',
               'FPR chỉ 0,1%',
@@ -918,7 +923,8 @@ diem = mo_hinh.predict_proba(X_te)[:, 1]`,
             ],
           },
           right: {
-            title: '🧾 Cách bạn phải quy đổi',
+            title: 'Cách bạn phải quy đổi',
+            icon: 'file-text',
             items: [
               'Lưu lượng của tôi: 10 triệu sự kiện/ngày',
               'FPR 0,1% → 10.000 cảnh báo giả/ngày',
@@ -1216,7 +1222,8 @@ print(round(z_ben(tai_xuong_mb)[-1]))  # 3944  -> khong the bo qua`,
           t: 'compare',
           title: 'Chọn bộ thước đo',
           left: {
-            title: '📉 Trung bình + độ lệch chuẩn',
+            title: 'Trung bình + độ lệch chuẩn',
+            icon: 'trending-down',
             items: [
               'Dùng khi dữ liệu gần đối xứng, không có ngoại lai',
               'Rẻ, tính được theo luồng (streaming), ai cũng hiểu',
@@ -1226,7 +1233,8 @@ print(round(z_ben(tai_xuong_mb)[-1]))  # 3944  -> khong the bo qua`,
             ],
           },
           right: {
-            title: '🛡️ Trung vị + MAD + phân vị',
+            title: 'Trung vị + MAD + phân vị',
+            icon: 'shield',
             items: [
               'Điểm gãy 50%: cần quá nửa dữ liệu bị nhiễm mới lệch',
               'Không giả định hình dạng phân phối nào',
@@ -1594,7 +1602,8 @@ with open('mau.exe', 'rb') as f:
           t: 'compare',
           title: 'Hai loại entropy hay bị lẫn',
           left: {
-            title: '🔢 Entropy của một chuỗi cụ thể',
+            title: 'Entropy của một chuỗi cụ thể',
+            icon: 'calculator',
             items: [
               'Tính từ tần suất ký tự trong chính chuỗi đó',
               'Dùng cho: tên miền, tham số URL, byte của tệp',
@@ -1604,7 +1613,8 @@ with open('mau.exe', 'rb') as f:
             ],
           },
           right: {
-            title: '🎲 Entropy của một bộ sinh',
+            title: 'Entropy của một bộ sinh',
+            icon: 'dices',
             items: [
               'Tính từ không gian lựa chọn: L × log2(N)',
               'Dùng cho: mật khẩu, khoá, token, số ngẫu nhiên',
@@ -1847,7 +1857,8 @@ with open('mau.exe', 'rb') as f:
           t: 'compare',
           title: 'Chọn thước đo tương tự',
           left: {
-            title: '📐 Khoảng cách cosine',
+            title: 'Khoảng cách cosine',
+            icon: 'compass',
             items: [
               'Bỏ qua độ lớn, chỉ so mẫu hình',
               'Chuẩn cho TF-IDF, bag-of-words, n-gram của dòng lệnh và URL',
@@ -1857,7 +1868,8 @@ with open('mau.exe', 'rb') as f:
             ],
           },
           right: {
-            title: '📏 Khoảng cách Euclid',
+            title: 'Khoảng cách Euclid',
+            icon: 'ruler',
             items: [
               'Nhạy với độ lớn tuyệt đối',
               'Chuẩn cho đặc trưng số đã chuẩn hoá: byte, thời lượng, số lần thử',

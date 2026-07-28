@@ -77,7 +77,8 @@ export const track8: Track = {
           t: 'compare',
           title: 'Hai giai đoạn, hai thế giới khác nhau',
           left: {
-            title: '🏗️ Tấn công lúc HUẤN LUYỆN',
+            title: 'Tấn công lúc HUẤN LUYỆN',
+            icon: 'wrench',
             items: [
               'Kẻ tấn công tác động vào dữ liệu, nhãn, hoặc chính artefact mô hình',
               'Gồm: đầu độc dữ liệu, cửa hậu (backdoor), đầu độc vòng phản hồi, tấn công chuỗi cung ứng mô hình',
@@ -87,7 +88,8 @@ export const track8: Track = {
             ],
           },
           right: {
-            title: '🎯 Tấn công lúc SUY LUẬN',
+            title: 'Tấn công lúc SUY LUẬN',
+            icon: 'target',
             items: [
               'Mô hình không bị sửa gì; kẻ tấn công chỉ chỉnh ĐẦU VÀO hoặc đọc ĐẦU RA',
               'Gồm: né tránh (evasion), trộm mô hình, suy luận thành viên, đảo ngược mô hình',
@@ -534,7 +536,8 @@ export const track8: Track = {
           t: 'compare',
           title: 'Hai kiểu tấn công blackbox — số truy vấn quyết định biện pháp phòng thủ',
           left: {
-            title: '🔁 Dựa trên truy vấn (query-based)',
+            title: 'Dựa trên truy vấn (query-based)',
+            icon: 'repeat',
             items: [
               'Dò trực tiếp hệ thống của bạn, dùng điểm số hoặc chỉ nhãn để leo dốc',
               'Kiểu dựa trên điểm số: cần hàng nghìn tới hàng chục nghìn truy vấn',
@@ -544,7 +547,8 @@ export const track8: Track = {
             ],
           },
           right: {
-            title: '📤 Dựa trên chuyển giao (transfer-based)',
+            title: 'Dựa trên chuyển giao (transfer-based)',
+            icon: 'upload',
             items: [
               'Toàn bộ công việc nặng làm ngoại tuyến trên mô hình thay thế',
               'Chỉ vài truy vấn tới hệ thống của bạn, có khi chỉ một',
@@ -890,7 +894,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
           t: 'compare',
           title: 'Hai chiến lược đầu độc, hai bài toán phòng thủ khác nhau',
           left: {
-            title: '💥 Lật nhãn ngẫu nhiên trên toàn tập',
+            title: 'Lật nhãn ngẫu nhiên trên toàn tập',
+            icon: 'flame',
             items: [
               'Cần tỉ lệ cao, thường vài phần trăm trở lên mới có tác dụng rõ',
               'Accuracy và AUC tổng thể tụt thấy rõ',
@@ -900,7 +905,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
             ],
           },
           right: {
-            title: '🎯 Đầu độc tập trung vào một vùng hẹp',
+            title: 'Đầu độc tập trung vào một vùng hẹp',
+            icon: 'target',
             items: [
               'Cần rất ít mẫu, miễn là đủ áp đảo vùng đó',
               'Chỉ số tổng thể gần như không đổi — đây là điểm mấu chốt',
@@ -1140,7 +1146,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
           t: 'compare',
           title: 'Thiết kế đầu ra API — mỗi mức chi tiết là một mức rò rỉ',
           left: {
-            title: '🔒 Ít rò rỉ',
+            title: 'Ít rò rỉ',
+            icon: 'lock',
             items: [
               'Chỉ trả nhãn: chặn / cho qua',
               'Hoặc trả nhóm rủi ro thô: thấp / trung bình / cao',
@@ -1150,7 +1157,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
             ],
           },
           right: {
-            title: '🔓 Rò rỉ nhiều',
+            title: 'Rò rỉ nhiều',
+            icon: 'key-round',
             items: [
               'Điểm số dạng số thực nhiều chữ số thập phân',
               'Vector xác suất đầy đủ cho mọi lớp',
@@ -1535,7 +1543,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
           t: 'compare',
           title: 'Hai cách đo độ bền — chỉ một cách nói lên điều gì đó',
           left: {
-            title: '❌ Đo sai (nhưng phổ biến)',
+            title: 'Đo sai (nhưng phổ biến)',
+            icon: 'x',
             items: [
               'Chạy một thư viện tấn công có sẵn với tham số mặc định',
               'Kẻ tấn công giả định không biết gì về cơ chế phòng thủ',
@@ -1546,7 +1555,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
             ],
           },
           right: {
-            title: '✅ Đo đúng',
+            title: 'Đo đúng',
+            icon: 'check',
             items: [
               'Thiết kế tấn công thích ứng riêng cho cơ chế phòng thủ đang có',
               'Giả định kẻ tấn công biết đầy đủ về phòng thủ (nguyên tắc Kerckhoffs)',
@@ -1747,7 +1757,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
           t: 'compare',
           title: 'Pentest ứng dụng và red team ML — đừng mang nguyên quy trình cũ sang',
           left: {
-            title: '🔧 Pentest ứng dụng truyền thống',
+            title: 'Pentest ứng dụng truyền thống',
+            icon: 'wrench',
             items: [
               'Phát hiện là nhị phân: có lỗ hổng hoặc không',
               'Tái lập được 100% lần nào cũng như lần nào',
@@ -1758,7 +1769,8 @@ print(xep_hang[:5])   # 5 đặc trưng mong manh nhất`,
             ],
           },
           right: {
-            title: '🤖 Red team hệ thống ML',
+            title: 'Red team hệ thống ML',
+            icon: 'bot',
             items: [
               'Phát hiện là xác suất: tỉ lệ thành công theo ngân sách tấn công',
               'Tái lập được theo phân phối, không theo từng lần — cần báo cáo khoảng tin cậy hoặc số lần thử',

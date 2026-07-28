@@ -1147,6 +1147,16 @@ textarea {
   margin-bottom: var(--s-3);
   padding-bottom: var(--s-2);
   border-bottom: 1px solid var(--border-subtle);
+  /* Icon phân biệt hai cột. Căn theo đầu dòng chứ không căn giữa, vì tiêu đề
+     dài sẽ xuống hai dòng và icon phải ở cạnh dòng đầu. */
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+.compare-col h5 svg {
+  flex: none;
+  margin-top: 0.1em;
+  color: var(--text-muted);
 }
 .compare-col ul {
   padding-left: 1.1em;

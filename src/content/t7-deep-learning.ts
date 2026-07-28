@@ -241,7 +241,8 @@ export const track7: Track = {
           t: 'compare',
           title: 'Khi nào độ sâu thực sự trả tiền cho bạn',
           left: {
-            title: '🧱 Một lớp là đủ',
+            title: 'Một lớp là đủ',
+            icon: 'package',
             items: [
               'Đặc trưng đã được người có tri thức miền thiết kế sẵn (imports của PE, thống kê NetFlow)',
               'Tương tác giữa các đặc trưng ít và bạn biết trước chúng là gì',
@@ -251,7 +252,8 @@ export const track7: Track = {
             ],
           },
           right: {
-            title: '🕸️ Cần nhiều lớp',
+            title: 'Cần nhiều lớp',
+            icon: 'network',
             items: [
               'Đầu vào là dữ liệu thô: chuỗi byte, chuỗi API, văn bản, đồ thị',
               'Tương tác bậc cao nhiều tới mức không liệt kê nổi bằng tay',
@@ -908,7 +910,8 @@ export const track7: Track = {
           t: 'compare',
           title: 'Hai đường đi từ tệp PE tới điểm số',
           left: {
-            title: '🔧 Đặc trưng thủ công (chặng 5)',
+            title: 'Đặc trưng thủ công (chặng 5)',
+            icon: 'wrench',
             items: [
               'Cần người hiểu định dạng PE và cập nhật khi định dạng biến động',
               'Gãy khi trình phân tích không đọc được tệp bị làm rối nặng',
@@ -918,7 +921,8 @@ export const track7: Track = {
             ],
           },
           right: {
-            title: '🧬 Byte thô (bài này)',
+            title: 'Byte thô (bài này)',
+            icon: 'dna',
             items: [
               'Không cần tri thức miền để bắt đầu, chỉ cần dữ liệu và GPU',
               'Vẫn chạy trên tệp mà trình phân tích bó tay',
@@ -1581,7 +1585,8 @@ export const track7: Track = {
           t: 'compare',
           title: 'Hai cách khai thác dữ liệu không nhãn',
           left: {
-            title: '🗜️ Autoencoder',
+            title: 'Autoencoder',
+            icon: 'package',
             items: [
               'Không cần định nghĩa gì ngoài dữ liệu — chạy được ngay',
               'Cho ra cả embedding lẫn một điểm bất thường dùng được',
@@ -1591,7 +1596,8 @@ export const track7: Track = {
             ],
           },
           right: {
-            title: '🧲 Học tương phản',
+            title: 'Học tương phản',
+            icon: 'git-compare',
             items: [
               'Bắt buộc phải định nghĩa cặp dương — tốn công suy nghĩ',
               'Chỉ cho embedding, không tự sinh điểm bất thường',
@@ -1913,7 +1919,8 @@ export const track7: Track = {
           t: 'compare',
           title: 'Quyết định trong 60 giây',
           left: {
-            title: '🌳 Chọn GBDT khi…',
+            title: 'Chọn GBDT khi…',
+            icon: 'git-fork',
             items: [
               'Dữ liệu là bảng với đặc trưng đã thiết kế',
               'Dưới vài triệu dòng và hàng trăm tới vài nghìn cột',
@@ -1924,7 +1931,8 @@ export const track7: Track = {
             ],
           },
           right: {
-            title: '🕸️ Chọn deep learning khi…',
+            title: 'Chọn deep learning khi…',
+            icon: 'network',
             items: [
               'Đầu vào là chuỗi, byte thô, văn bản hoặc đồ thị',
               'Có hàng triệu mẫu, phần lớn không nhãn',
