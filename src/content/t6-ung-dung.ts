@@ -18,7 +18,7 @@ export const track6: Track = {
   icon: 'target',
   hue: 't6',
   blurb:
-    'Mười một bài toán, mỗi bài một hệ thống hoàn chỉnh: dữ liệu lấy ở đâu, đặc trưng nào đáng tiền, mô hình nào đủ dùng, đo bằng con số nào, chạy ở chỗ nào trong hạ tầng, và kẻ tấn công sẽ né ra sao. Kèm hai công cụ mà phần lớn giáo trình bỏ qua: khử mùa vụ trước khi hỏi “hôm nay có bất thường không”, và nhìn log như một đồ thị để thấy di chuyển ngang. Đây là chặng biến kiến thức rời rạc thành thứ chạy được trong sản xuất.',
+    'Mười một bài toán, mỗi bài một hệ thống hoàn chỉnh: dữ liệu lấy ở đâu, đặc trưng nào đáng tiền, mô hình nào đủ dùng, đo bằng con số nào, chạy ở chỗ nào trong hạ tầng, và kẻ tấn công sẽ né ra sao. Kèm hai công cụ mà phần lớn giáo trình bỏ qua: khử thành phần mùa trước khi hỏi “hôm nay có bất thường không”, và nhìn log như một đồ thị để thấy di chuyển ngang. Đây là chặng biến kiến thức rời rạc thành thứ chạy được trong sản xuất.',
   outcomes: [
     'Thiết kế được bộ đặc trưng cho phishing, mã độc PE, tên miền DGA, luồng mạng, log hệ thống và giao dịch — và giải thích được vì sao chọn từng đặc trưng',
     'Chọn đúng họ mô hình cho từng dạng dữ liệu: bảng số, chuỗi ký tự, chuỗi sự kiện, đồ thị quan hệ',
@@ -65,7 +65,7 @@ export const track6: Track = {
         },
         {
           t: 'p',
-          md: 'Bắt đầu bằng con số của tình huống. 120.000 thư/ngày, giả sử tỉ lệ phishing lọt qua lớp lọc thương mại là 1 trên 20.000 — tức khoảng **6 thư độc mỗi ngày**. Ngân sách của bạn là 50 cảnh báo/ngày. Sáu thư độc chia cho 50 cảnh báo cho bạn **trần precision là 12%** — và đó là con số chỉ đạt được nếu bộ dò bắt được cả 6 thư, tức recall 100%. Thực tế recall 70% thì precision trần chỉ còn 8,4%. Đây là điều ngược với trực giác của phần lớn người mới: trong bài toán hiếm, **precision bị chặn trên bởi chính tỉ lệ nền và ngân sách cảnh báo**, chứ không phải bởi chất lượng mô hình. Tỉ lệ báo động giả tương ứng phải dưới **0,04%**. Mọi quyết định kỹ thuật phía sau đều bị hai con số này ràng buộc.',
+          md: 'Bắt đầu bằng con số của tình huống. 120.000 thư/ngày, giả sử tỉ lệ phishing lọt qua lớp lọc thương mại là 1 trên 20.000 — tức khoảng **6 thư độc mỗi ngày**. Ngân sách của bạn là 50 cảnh báo/ngày. Sáu thư độc chia cho 50 cảnh báo cho bạn **trần precision là 12%** — và đó là con số chỉ đạt được nếu bộ phát hiện bắt được cả 6 thư, tức recall 100%. Thực tế recall 70% thì precision trần chỉ còn 8,4%. Đây là điều ngược với trực giác của phần lớn người mới: trong bài toán hiếm, **precision bị chặn trên bởi chính tỉ lệ nền và ngân sách cảnh báo**, chứ không phải bởi chất lượng mô hình. Tỉ lệ báo động giả tương ứng phải dưới **0,04%**. Mọi quyết định kỹ thuật phía sau đều bị hai con số này ràng buộc.',
         },
         { t: 'h', text: 'Bước 1 — Dữ liệu: nơi mọi thứ hỏng trước tiên', level: 2 },
         {
@@ -223,7 +223,7 @@ export const track6: Track = {
           t: 'callout',
           kind: 'insight',
           title: 'Vì sao không nhảy thẳng vào deep learning',
-          md: 'Với 200.000 mẫu và 40 đặc trưng dạng bảng, cây tăng cường gần như luôn ngang bằng hoặc hơn mạng nơ-ron, huấn luyện trong 30 giây thay vì 3 giờ, và cho bạn `feature_importance` để soi ngay xem mô hình đang bám vào cái gì. Bước soi đó là thứ phát hiện ra rằng bạn vô tình đưa `etld1` vào làm đặc trưng, hoặc mô hình đang sống nhờ đúng một đặc trưng rò rỉ. Với một mạng nơ-ron thì bạn sẽ mất nhiều tuần mới nhận ra.',
+          md: 'Với 200.000 mẫu và 40 đặc trưng dạng bảng, gradient boosting gần như luôn ngang bằng hoặc hơn mạng nơ-ron, huấn luyện trong 30 giây thay vì 3 giờ, và cho bạn `feature_importance` để soi ngay xem mô hình đang bám vào cái gì. Bước soi đó là thứ phát hiện ra rằng bạn vô tình đưa `etld1` vào làm đặc trưng, hoặc mô hình đang sống nhờ đúng một đặc trưng rò rỉ. Với một mạng nơ-ron thì bạn sẽ mất nhiều tuần mới nhận ra.',
         },
         { t: 'h', text: 'Bước 4 — Đánh giá bằng con số analyst quan tâm', level: 2 },
         {
@@ -917,7 +917,7 @@ export const track6: Track = {
             },
             {
               title: 'Mô hình chuỗi: LSTM, GRU, Transformer (đắt, cần dữ liệu)',
-              md: 'Ánh xạ mỗi API thành một vector nhúng rồi đưa cả chuỗi vào mạng hồi quy hoặc Transformer. Chỉ đáng làm khi bạn có hàng trăm nghìn chuỗi có nhãn và khi phụ thuộc xa thực sự quan trọng.\n\n**Vấn đề độ dài:** chuỗi thật dài hàng chục nghìn lời gọi, vượt xa cửa sổ ngữ cảnh thoải mái của phần lớn kiến trúc. Bạn phải cắt, nén lặp, hoặc gộp lời gọi thành **hành vi cấp cao** trước (ví dụ gộp mọi thao tác tệp trong 100 ms thành một sự kiện "duyệt thư mục").',
+              md: 'Ánh xạ mỗi API thành một vector embedding rồi đưa cả chuỗi vào mạng hồi quy hoặc Transformer. Chỉ đáng làm khi bạn có hàng trăm nghìn chuỗi có nhãn và khi phụ thuộc xa thực sự quan trọng.\n\n**Vấn đề độ dài:** chuỗi thật dài hàng chục nghìn lời gọi, vượt xa cửa sổ ngữ cảnh thoải mái của phần lớn kiến trúc. Bạn phải cắt, nén lặp, hoặc gộp lời gọi thành **hành vi cấp cao** trước (ví dụ gộp mọi thao tác tệp trong 100 ms thành một sự kiện "duyệt thư mục").',
             },
             {
               title: 'Ánh xạ lên MITRE ATT&CK (dễ đọc nhất cho con người)',
@@ -1148,7 +1148,7 @@ export const track6: Track = {
           id: 't6l3-q4',
           kind: 'truefalse',
           tags: ['sandbox', 'mo-hinh-chuoi'],
-          q: 'Với dữ liệu chuỗi API, mô hình LSTM luôn vượt trội hơn n-gram kết hợp cây tăng cường.',
+          q: 'Với dữ liệu chuỗi API, mô hình LSTM luôn vượt trội hơn n-gram kết hợp gradient boosting.',
           answer: false,
           why: 'Trong nhiều so sánh thực tế, n-gram cộng LightGBM ngang ngửa hoặc thắng LSTM, đặc biệt khi dữ liệu có nhãn dưới trăm nghìn mẫu. Lý do: các mẫu hành vi quyết định — tiêm mã, đặt khoá tự khởi động, mã hoá hàng loạt — đều là **cụm cục bộ ngắn**, đúng thứ mà n-gram bắt hoàn hảo. Phụ thuộc xa hàng nghìn bước, thứ mà LSTM sinh ra để xử lý, hiếm khi mang thông tin quyết định ở đây. Thêm vào đó, n-gram huấn luyện trong vài phút, chạy trên CPU, và bạn đọc được đặc trưng nào đang đóng góp — ba lợi thế vận hành rất lớn.',
         },
@@ -1536,7 +1536,7 @@ export const track6: Track = {
       prereqs: ['t6-l4'],
       why: {
         short:
-          'Mạng là nơi duy nhất bạn thấy được toàn bộ máy trong tổ chức, kể cả những máy không cài được tác tử — nhưng cũng là nơi phát hiện bất thường thất bại nhiều nhất, và bạn cần biết vì sao trước khi đầu tư.',
+          'Mạng là nơi duy nhất bạn thấy được toàn bộ máy trong tổ chức, kể cả những máy không cài được agent — nhưng cũng là nơi phát hiện bất thường thất bại nhiều nhất, và bạn cần biết vì sao trước khi đầu tư.',
         scenario:
           'Một máy trạm kế toán mở kết nối HTTPS ra một địa chỉ trên đám mây, cứ 60 giây một lần, mỗi lần gửi khoảng 1,2 KB và nhận về 800 byte, suốt 11 ngày. Không cảnh báo nào nổ. Bạn phải giải thích vì sao chữ ký không bắt được, xây đặc trưng gì để bắt, và ước tính bao nhiêu báo động giả nó sẽ tạo ra trên 12.000 máy.',
         roles: ['Threat Hunter', 'Detection Engineer', 'SOC Analyst', 'Security Architect'],
@@ -1629,7 +1629,7 @@ export const track6: Track = {
           t: 'callout',
           kind: 'pitfall',
           title: 'Thứ gì cũng beacon',
-          md: 'Trước khi mừng vì bắt được C2, hãy nhìn danh sách những thứ beacon hoàn hảo trong mọi mạng doanh nghiệp: tác tử quản lý máy trạm gọi về máy chủ mỗi 5 phút, phần mềm chống virus kiểm tra cập nhật, hệ thống giám sát gửi nhịp tim, ứng dụng chat giữ kết nối, máy in kiểm tra hàng đợi, camera IP gửi trạng thái, đồng hồ NTP, và mọi thứ dùng cơ chế hỏi vòng.\n\nTrong một mạng 12.000 máy, một bộ phát hiện beaconing thô sẽ sinh ra **hàng nghìn** cặp mỗi ngày. Thứ cứu bạn không phải thuật toán mà là **danh sách cho phép theo đích đến đã được kiểm chứng** cộng với đặc trưng độ hiếm: nếu 11.400 máy cùng nói chuyện với đích đó theo cùng nhịp thì đó là phần mềm doanh nghiệp, không phải C2.',
+          md: 'Trước khi mừng vì bắt được C2, hãy nhìn danh sách những thứ beacon hoàn hảo trong mọi mạng doanh nghiệp: agent quản lý máy trạm gọi về máy chủ mỗi 5 phút, phần mềm chống virus kiểm tra cập nhật, hệ thống giám sát gửi nhịp tim, ứng dụng chat giữ kết nối, máy in kiểm tra hàng đợi, camera IP gửi trạng thái, đồng hồ NTP, và mọi thứ dùng cơ chế hỏi vòng.\n\nTrong một mạng 12.000 máy, một bộ phát hiện beaconing thô sẽ sinh ra **hàng nghìn** cặp mỗi ngày. Thứ cứu bạn không phải thuật toán mà là **danh sách cho phép theo đích đến đã được kiểm chứng** cộng với đặc trưng độ hiếm: nếu 11.400 máy cùng nói chuyện với đích đó theo cùng nhịp thì đó là phần mềm doanh nghiệp, không phải C2.',
         },
         {
           t: 'checkpoint',
@@ -1660,7 +1660,7 @@ export const track6: Track = {
               tags: ['nids', 'bao-dong-gia'],
               q: 'Trong mạng doanh nghiệp, phần lớn các mối quan hệ có nhịp đều đặn là hoạt động độc hại.',
               answer: false,
-              why: 'Hoàn toàn ngược lại. Nhịp đều là chân dung của **phần mềm**, và mạng doanh nghiệp đầy phần mềm hỏi vòng: tác tử quản lý, chống virus, giám sát, đồng bộ thời gian, camera, máy in. Tỉ lệ nền của C2 trong tập các mối quan hệ đều nhịp là cực kỳ thấp. Đây chính là nghịch lý tỉ lệ nền áp vào NIDS: đặc trưng có sức phân biệt thật, nhưng nếu bạn không thêm lớp lọc theo độ hiếm và danh sách đích đã kiểm chứng, precision vẫn ở mức không dùng được.',
+              why: 'Hoàn toàn ngược lại. Nhịp đều là chân dung của **phần mềm**, và mạng doanh nghiệp đầy phần mềm hỏi vòng: agent quản lý, chống virus, giám sát, đồng bộ thời gian, camera, máy in. Tỉ lệ nền của C2 trong tập các mối quan hệ đều nhịp là cực kỳ thấp. Đây chính là nghịch lý tỉ lệ nền áp vào NIDS: đặc trưng có sức phân biệt thật, nhưng nếu bạn không thêm lớp lọc theo độ hiếm và danh sách đích đã kiểm chứng, precision vẫn ở mức không dùng được.',
             },
           ],
         },
@@ -1789,7 +1789,7 @@ export const track6: Track = {
         {
           id: 't6l5-c2',
           front: 'Vì sao bộ phát hiện beaconing thô tạo ra hàng nghìn báo động giả mỗi ngày?',
-          back: 'Vì mạng doanh nghiệp đầy phần mềm hỏi vòng đều nhịp: tác tử quản lý, chống virus, giám sát, NTP, camera, máy in. Cần thêm đặc trưng độ hiếm và danh sách đích đã kiểm chứng.',
+          back: 'Vì mạng doanh nghiệp đầy phần mềm hỏi vòng đều nhịp: agent quản lý, chống virus, giám sát, NTP, camera, máy in. Cần thêm đặc trưng độ hiếm và danh sách đích đã kiểm chứng.',
           tags: ['nids', 'bao-dong-gia'],
         },
         {
@@ -1824,7 +1824,7 @@ export const track6: Track = {
             'Chỉ xét các kết nối ngoài giờ hành chính',
           ],
           answer: 1,
-          why: 'Siết ngưỡng sẽ loại bỏ chính các beacon có jitter — tức là loại đúng những kẻ tấn công có kỹ năng, giữ lại phần mềm doanh nghiệp có nhịp hoàn hảo. Đó là siết nhầm chiều. Đặc trưng độ hiếm thì cắt theo đúng trục phân biệt: tác tử quản lý nói chuyện với máy chủ của nó từ 11.400 máy, còn C2 thì thường chỉ có một hoặc vài máy. Lọc theo ngoài giờ cũng có ích nhưng yếu hơn nhiều và bỏ sót tấn công diễn ra ban ngày. Mô hình phức tạp hơn không giải quyết được vấn đề vì vấn đề nằm ở tỉ lệ nền, không ở sức mạnh mô hình.',
+          why: 'Siết ngưỡng sẽ loại bỏ chính các beacon có jitter — tức là loại đúng những kẻ tấn công có kỹ năng, giữ lại phần mềm doanh nghiệp có nhịp hoàn hảo. Đó là siết nhầm chiều. Đặc trưng độ hiếm thì cắt theo đúng trục phân biệt: agent quản lý nói chuyện với máy chủ của nó từ 11.400 máy, còn C2 thì thường chỉ có một hoặc vài máy. Lọc theo ngoài giờ cũng có ích nhưng yếu hơn nhiều và bỏ sót tấn công diễn ra ban ngày. Mô hình phức tạp hơn không giải quyết được vấn đề vì vấn đề nằm ở tỉ lệ nền, không ở sức mạnh mô hình.',
           distractorWhy: [
             'Siết ngưỡng loại bỏ beacon có jitter trước, tức là loại đúng kẻ tấn công có kỹ năng.',
             '',
@@ -2229,7 +2229,7 @@ export const track6: Track = {
     {
       id: 't6-l10',
       trackId: 'ung-dung',
-      title: 'Mùa vụ và phân rã chuỗi thời gian',
+      title: 'Thành phần mùa và phân rã chuỗi thời gian',
       subtitle: 'Trước khi hỏi “hôm nay có bất thường không”, phải trả lời “hôm nay đáng lẽ phải như thế nào”',
       minutes: 22,
       practiceMinutes: 7,
@@ -2242,10 +2242,10 @@ export const track6: Track = {
           'Bạn dựng cảnh báo “số lần đăng nhập thất bại vượt 1.000 mỗi giờ”. Sáng thứ Hai nào nó cũng kêu vì cả công ty vào làm cùng lúc, nên analyst đã tắt tiếng nó từ lâu. Đêm thứ Bảy, một đợt dò mật khẩu tạo 400 lần thất bại trong một giờ — gấp mười lần mức nền của khung giờ đó — và không ai biết.',
         roles: ['Detection Engineer', 'Threat Hunter', 'Security Data Scientist', 'SOC Analyst'],
         costOfNotKnowing:
-          'Bạn xây UEBA và phát hiện bất thường trên dữ liệu chưa khử mùa vụ, rồi kết luận rằng “phát hiện bất thường tạo quá nhiều báo động giả nên không dùng được” — trong khi thứ tạo ra báo động giả không phải thuật toán mà là việc so sáng thứ Hai với đêm Chủ nhật.',
+          'Bạn xây UEBA và phát hiện bất thường trên dữ liệu chưa khử thành phần mùa, rồi kết luận rằng “phát hiện bất thường tạo quá nhiều báo động giả nên không dùng được” — trong khi thứ tạo ra báo động giả không phải thuật toán mà là việc so sánh thứ Hai với đêm Chủ nhật.',
       },
       objectives: [
-        'Tách một chuỗi khối lượng thành ba thành phần xu hướng, mùa vụ và phần dư, rồi nói rõ thành phần nào mới dùng để phát hiện',
+        'Tách một chuỗi khối lượng thành ba thành phần xu hướng, thành phần mùa và phần dư, rồi nói rõ thành phần nào mới dùng để phát hiện',
         'Giải thích vì sao phải dùng STL ở chế độ bền vững khi dữ liệu có tấn công, và điều gì hỏng nếu không',
         'Chọn thang đo độ lệch bền vững thay cho độ lệch chuẩn khi chấm điểm phần dư',
         'Nêu được đường cơ sở ngây thơ “cùng giờ tuần trước” mạnh tới đâu và khi nào nó đủ dùng',
@@ -2262,18 +2262,18 @@ export const track6: Track = {
           t: 'callout',
           kind: 'insight',
           title: 'Phân rã: ba thành phần, và chỉ một cái dùng để phát hiện',
-          md: 'Mô hình cộng tính viết một chuỗi thành:\n\n> y(t) = **xu hướng**(t) + **mùa vụ**(t) + **phần dư**(t)\n\n**Xu hướng** là chuyển động chậm: công ty tuyển thêm người, hạ tầng mở rộng, một dịch vụ bị khai tử.\n\n**Mùa vụ** là nhịp lặp lại: chu kỳ 24 giờ theo giờ làm việc, chu kỳ 168 giờ theo ngày trong tuần. Dữ liệu bảo mật thường có **cả hai** cùng lúc.\n\n**Phần dư** là phần còn lại sau khi trừ đi hai cái trên — và đây mới là thứ bạn chấm điểm.\n\nKhi khối lượng thay đổi theo tỉ lệ chứ không theo lượng tuyệt đối (công ty tăng gấp đôi thì đỉnh sáng thứ Hai cũng tăng gấp đôi), hãy dùng mô hình **nhân tính**, hoặc đơn giản hơn: lấy log chuỗi rồi dùng mô hình cộng tính. Với dữ liệu đếm có số 0, dùng log(y + 1).',
+          md: 'Mô hình cộng tính viết một chuỗi thành:\n\n> y(t) = **xu hướng**(t) + **thành phần mùa**(t) + **phần dư**(t)\n\n**Xu hướng** là chuyển động chậm: công ty tuyển thêm người, hạ tầng mở rộng, một dịch vụ bị khai tử.\n\n**Thành phần mùa** là nhịp lặp lại: chu kỳ 24 giờ theo giờ làm việc, chu kỳ 168 giờ theo ngày trong tuần. Dữ liệu bảo mật thường có **cả hai** cùng lúc.\n\n**Phần dư** là phần còn lại sau khi trừ đi hai cái trên — và đây mới là thứ bạn chấm điểm.\n\nKhi khối lượng thay đổi theo tỉ lệ chứ không theo lượng tuyệt đối (công ty tăng gấp đôi thì đỉnh sáng thứ Hai cũng tăng gấp đôi), hãy dùng mô hình **nhân tính**, hoặc đơn giản hơn: lấy log chuỗi rồi dùng mô hình cộng tính. Với dữ liệu đếm có số 0, dùng log(y + 1).',
         },
         { t: 'h', text: 'Vì sao phải là STL bền vững, không phải phân rã cổ điển', level: 2 },
         {
           t: 'p',
-          md: 'STL viết tắt của *Seasonal-Trend decomposition using Loess*: nó ước lượng mùa vụ bằng cách làm trơn cục bộ, nên mùa vụ được phép **thay đổi dần theo thời gian** — đúng với thực tế, vì thói quen làm việc của tổ chức có đổi. Nhưng lý do quan trọng hơn nhiều để chọn STL nằm ở tham số `robust`.',
+          md: 'STL viết tắt của *Seasonal-Trend decomposition using Loess*: nó ước lượng thành phần mùa bằng cách làm trơn cục bộ, nên thành phần mùa được phép **thay đổi dần theo thời gian** — đúng với thực tế, vì thói quen làm việc của tổ chức có đổi. Nhưng lý do quan trọng hơn nhiều để chọn STL nằm ở tham số `robust`.',
         },
         {
           t: 'callout',
           kind: 'pitfall',
           title: 'Cuộc tấn công tự giấu mình vào đường cơ sở',
-          md: 'Đây là cái bẫy đặc trưng của bảo mật, và nó không xuất hiện trong tài liệu dự báo doanh số.\n\nPhân rã cổ điển ước lượng mùa vụ bằng **trung bình cộng** các chu kỳ. Giả sử thứ Ba tuần trước có một đợt dò mật khẩu tạo 5.000 lần thất bại lúc 3h sáng. Trung bình cộng sẽ kéo ước lượng mùa vụ của khung “3h sáng thứ Ba” lên cao. Hệ quả: cuộc tấn công **tự nâng mức nền của chính khung giờ nó xảy ra**, nên phần dư của nó nhỏ đi, và một đợt tương tự tuần sau càng khó bị bắt hơn.\n\nCòn tệ hơn: nếu bạn huấn luyện lại đường cơ sở định kỳ trên dữ liệu gần nhất mà không lọc, kẻ tấn công chỉ cần tăng dần khối lượng qua nhiều tuần là dạy được hệ thống coi mức mới là bình thường. Đó chính là đầu độc đường cơ sở, và nó không cần chạm vào tập huấn luyện nào cả.\n\n`STL(..., robust=True)` giảm trọng số các điểm có phần dư lớn khi ước lượng lại xu hướng và mùa vụ. Cuộc tấn công vẫn nằm trong dữ liệu, nhưng nó không còn được tính vào định nghĩa “bình thường”. Trong bảo mật, đây không phải tuỳ chọn cho đẹp — nó là mặc định đúng.',
+          md: 'Đây là cái bẫy đặc trưng của bảo mật, và nó không xuất hiện trong tài liệu dự báo doanh số.\n\nPhân rã cổ điển ước lượng thành phần mùa bằng **trung bình cộng** các chu kỳ. Giả sử thứ Ba tuần trước có một đợt dò mật khẩu tạo 5.000 lần thất bại lúc 3h sáng. Trung bình cộng sẽ kéo ước lượng thành phần mùa của khung “3h sáng thứ Ba” lên cao. Hệ quả: cuộc tấn công **tự nâng mức nền của chính khung giờ nó xảy ra**, nên phần dư của nó nhỏ đi, và một đợt tương tự tuần sau càng khó bị bắt hơn.\n\nCòn tệ hơn: nếu bạn huấn luyện lại đường cơ sở định kỳ trên dữ liệu gần nhất mà không lọc, kẻ tấn công chỉ cần tăng dần khối lượng qua nhiều tuần là dạy được hệ thống coi mức mới là bình thường. Đó chính là đầu độc đường cơ sở, và nó không cần chạm vào tập huấn luyện nào cả.\n\n`STL(..., robust=True)` giảm trọng số các điểm có phần dư lớn khi ước lượng lại xu hướng và thành phần mùa. Cuộc tấn công vẫn nằm trong dữ liệu, nhưng nó không còn được tính vào định nghĩa “bình thường”. Trong bảo mật, đây không phải tuỳ chọn cho đẹp — nó là mặc định đúng.',
         },
         {
           t: 'code',
@@ -2343,7 +2343,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
               tags: ['chuoi-thoi-gian'],
               q: 'Có thể phân rã tin cậy một chuỗi có nhịp tuần khi chỉ có 10 ngày dữ liệu.',
               answer: false,
-              why: 'Muốn ước lượng một thành phần mùa vụ, bạn phải quan sát nó lặp lại vài lần. Mười ngày chưa đầy hai chu kỳ tuần, nên thuật toán không tách nổi “thứ Bảy thấp” khỏi “tuần này tình cờ thấp”. Tối thiểu là hai chu kỳ đầy đủ, và trong thực tế nên có **ba tới bốn tuần** trở lên. Khi chưa đủ dữ liệu, hãy dùng đường cơ sở ngây thơ cùng giờ tuần trước hoặc gộp theo nhóm giờ, và nói rõ với người dùng rằng đường cơ sở còn non.',
+              why: 'Muốn ước lượng một thành phần mùa, bạn phải quan sát nó lặp lại vài lần. Mười ngày chưa đầy hai chu kỳ tuần, nên thuật toán không tách nổi “thứ Bảy thấp” khỏi “tuần này tình cờ thấp”. Tối thiểu là hai chu kỳ đầy đủ, và trong thực tế nên có **ba tới bốn tuần** trở lên. Khi chưa đủ dữ liệu, hãy dùng đường cơ sở ngây thơ cùng giờ tuần trước hoặc gộp theo nhóm giờ, và nói rõ với người dùng rằng đường cơ sở còn non.',
             },
           ],
         },
@@ -2360,14 +2360,14 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
             ['Ngưỡng cố định', 'Không gì cả', 'Kêu suốt giờ cao điểm, mù lúc thấp điểm', 'Chỉ khi chuỗi thật sự phẳng, hiếm gặp'],
             ['Cùng giờ tuần trước', 'Nhịp ngày và nhịp tuần', 'Nhiễu vì chỉ dựa vào một quan sát duy nhất; hỏng khi tuần trước có sự cố', 'Đường cơ sở đầu tiên nên đo, thường đã đủ tốt'],
             ['Trung vị của cùng khung giờ trong 4–8 tuần', 'Nhịp ngày và tuần, ổn định hơn nhiều', 'Không theo kịp xu hướng thay đổi nhanh', 'Lựa chọn mặc định tốt cho hầu hết bảng điều khiển SOC'],
-            ['STL bền vững trên log', 'Cả xu hướng, mùa vụ thay đổi dần, và chống nhiễm bẩn', 'Cần đủ lịch sử, cần chọn chu kỳ, khó giải thích hơn', 'Khi xu hướng thật sự dịch chuyển hoặc cần phần dư sạch làm đặc trưng'],
+            ['STL bền vững trên log', 'Cả xu hướng, thành phần mùa thay đổi dần, và chống nhiễm bẩn', 'Cần đủ lịch sử, cần chọn chu kỳ, khó giải thích hơn', 'Khi xu hướng thật sự dịch chuyển hoặc cần phần dư sạch làm đặc trưng'],
           ],
         },
         {
           t: 'callout',
           kind: 'pro',
-          title: 'Bốn chuyện làm hỏng mùa vụ mà mô hình không tự biết',
-          md: '**Nhiều múi giờ.** Một công ty toàn cầu không có “3h sáng”. Hãy phân rã theo từng vùng hoặc từng múi giờ của người dùng, đừng gộp rồi lấy trung bình — gộp lại sẽ làm nhịp ngày phẳng đi và bạn mất chính tín hiệu đang cần.\n\n**Ngày lễ và sự kiện đã biết.** Tết, nghỉ lễ, ngày phát hành sản phẩm, đợt cập nhật hàng loạt. Chúng là ngoại lai có thể dự đoán trước, nên hãy đưa vào dưới dạng biến ngoại sinh hoặc lập lịch tạm ngưng cảnh báo, thay vì để chúng thành báo động giả rồi bào mòn lòng tin.\n\n**Thay đổi tổ chức.** Đổi lịch làm việc, sáp nhập, chuyển sang làm từ xa. Mùa vụ đứt gãy chứ không trôi dần, và STL cần vài chu kỳ mới bắt kịp. Hãy ghi các mốc này vào một tệp và đối chiếu khi cảnh báo tăng bất thường.\n\n**Đếm sự kiện thay vì đếm thực thể.** Một máy hỏng có thể tạo 50.000 dòng log; số dòng tăng vọt trong khi số **máy** liên quan vẫn là một. Với hầu hết bài toán bảo mật, chuỗi đáng theo dõi là số thực thể riêng biệt, không phải số sự kiện thô.',
+          title: 'Bốn chuyện làm hỏng thành phần mùa mà mô hình không tự biết',
+          md: '**Nhiều múi giờ.** Một công ty toàn cầu không có “3h sáng”. Hãy phân rã theo từng vùng hoặc từng múi giờ của người dùng, đừng gộp rồi lấy trung bình — gộp lại sẽ làm nhịp ngày phẳng đi và bạn mất chính tín hiệu đang cần.\n\n**Ngày lễ và sự kiện đã biết.** Tết, nghỉ lễ, ngày phát hành sản phẩm, đợt cập nhật hàng loạt. Chúng là ngoại lai có thể dự đoán trước, nên hãy đưa vào dưới dạng biến ngoại sinh hoặc lập lịch tạm ngưng cảnh báo, thay vì để chúng thành báo động giả rồi bào mòn lòng tin.\n\n**Thay đổi tổ chức.** Đổi lịch làm việc, sáp nhập, chuyển sang làm từ xa. Thành phần mùa đứt gãy chứ không trôi dần, và STL cần vài chu kỳ mới bắt kịp. Hãy ghi các mốc này vào một tệp và đối chiếu khi cảnh báo tăng bất thường.\n\n**Đếm sự kiện thay vì đếm thực thể.** Một máy hỏng có thể tạo 50.000 dòng log; số dòng tăng vọt trong khi số **máy** liên quan vẫn là một. Với hầu hết bài toán bảo mật, chuỗi đáng theo dõi là số thực thể riêng biệt, không phải số sự kiện thô.',
         },
         {
           t: 'compare',
@@ -2412,7 +2412,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
       ],
       keyTakeaways: [
         'Một ngưỡng cố định không thể vừa đúng cho khung giờ cao điểm vừa đúng cho lúc nửa đêm khi hai mức nền chênh nhau hàng chục lần',
-        'Phân rã tách chuỗi thành xu hướng, mùa vụ và phần dư; chỉ phần dư mới dùng để phát hiện',
+        'Phân rã tách chuỗi thành xu hướng, thành phần mùa và phần dư; chỉ phần dư mới dùng để phát hiện',
         'Trong bảo mật bắt buộc dùng STL bền vững: phân rã cổ điển để tấn công cũ tự nâng mức nền của chính khung giờ nó xảy ra',
         'Chấm điểm phần dư bằng MAD chứ không bằng độ lệch chuẩn, vì độ lệch chuẩn bị chính các đỉnh cần tìm thổi phồng',
         'Luôn đo đường cơ sở ngây thơ cùng giờ tuần trước trước khi dựng mô hình phức tạp — nó thường đã rất mạnh',
@@ -2421,13 +2421,13 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
         {
           id: 't6l10-c1',
           front: 'Phân rã chuỗi thời gian cho ba thành phần nào, và thành phần nào dùng để phát hiện?',
-          back: 'Xu hướng, mùa vụ và phần dư. Chỉ chấm điểm trên phần dư — phần còn lại sau khi trừ nhịp có thể dự đoán được.',
+          back: 'Xu hướng, thành phần mùa và phần dư. Chỉ chấm điểm trên phần dư — phần còn lại sau khi trừ nhịp có thể dự đoán được.',
           tags: ['chuoi-thoi-gian', 'duong-co-so'],
         },
         {
           id: 't6l10-c2',
           front: 'Vì sao phân rã cổ điển nguy hiểm khi dữ liệu có chứa tấn công?',
-          back: 'Nó ước lượng mùa vụ bằng trung bình cộng, nên một đợt tấn công kéo mức nền của chính khung giờ đó lên và tự làm phần dư của mình nhỏ đi. STL với robust=True giảm trọng số các điểm ngoại lai.',
+          back: 'Nó ước lượng thành phần mùa bằng trung bình cộng, nên một đợt tấn công kéo mức nền của chính khung giờ đó lên và tự làm phần dư của mình nhỏ đi. STL với robust=True giảm trọng số các điểm ngoại lai.',
           tags: ['chuoi-thoi-gian', 'dau-doc'],
         },
         {
@@ -2439,7 +2439,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
         {
           id: 't6l10-c4',
           front: 'Cần tối thiểu bao nhiêu dữ liệu để phân rã một chuỗi có nhịp tuần?',
-          back: 'Ít nhất hai chu kỳ đầy đủ, trong thực tế nên có ba tới bốn tuần trở lên. Ít hơn thì không tách được mùa vụ khỏi dao động ngẫu nhiên.',
+          back: 'Ít nhất hai chu kỳ đầy đủ, trong thực tế nên có ba tới bốn tuần trở lên. Ít hơn thì không tách được thành phần mùa khỏi dao động ngẫu nhiên.',
           tags: ['chuoi-thoi-gian'],
         },
         {
@@ -2457,16 +2457,16 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           q: 'Chuỗi số byte tải lên của một nhân viên có nhịp tuần rõ rệt. Bạn nên chấm điểm bất thường trên đại lượng nào?',
           options: [
             'Giá trị thô của chuỗi',
-            'Phần dư sau khi trừ xu hướng và mùa vụ',
-            'Thành phần mùa vụ',
+            'Phần dư sau khi trừ xu hướng và thành phần mùa',
+            'Thành phần mùa',
             'Thành phần xu hướng',
           ],
           answer: 1,
-          why: 'Xu hướng và mùa vụ là phần **dự đoán được** — chúng mô tả điều đáng lẽ phải xảy ra. Bất thường theo định nghĩa là phần không giải thích được, tức phần dư. Chấm trên giá trị thô là quay lại đúng bài toán ngưỡng cố định ở đầu bài; chấm trên mùa vụ hay xu hướng thì đang chấm chính cái nhịp bình thường của tổ chức.',
+          why: 'Xu hướng và thành phần mùa là phần **dự đoán được** — chúng mô tả điều đáng lẽ phải xảy ra. Bất thường theo định nghĩa là phần không giải thích được, tức phần dư. Chấm trên giá trị thô là quay lại đúng bài toán ngưỡng cố định ở đầu bài; chấm trên thành phần mùa hay xu hướng thì đang chấm chính cái nhịp bình thường của tổ chức.',
           distractorWhy: [
             'Giá trị thô bị nhịp ngày và tuần chi phối, nên mọi ngưỡng đặt trên nó đều sai ở ít nhất một khung giờ.',
             '',
-            'Mùa vụ chính là phần bình thường lặp lại; nó không mang thông tin bất thường.',
+            'Thành phần mùa chính là phần bình thường lặp lại; nó không mang thông tin bất thường.',
             'Xu hướng là chuyển động chậm nhiều tháng, quá chậm để phản ánh một sự kiện bảo mật.',
           ],
         },
@@ -2478,7 +2478,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           options: [
             'Cảnh báo kêu ngay tuần đầu vì xu hướng tăng bị phát hiện',
             'Đường cơ sở dần coi mức mới là bình thường, nên phần dư luôn nhỏ và không bao giờ kêu',
-            'Thành phần mùa vụ hấp thụ toàn bộ nên xu hướng không đổi',
+            'Thành phần mùa hấp thụ toàn bộ nên xu hướng không đổi',
             'Không có gì xảy ra vì STL luôn bền vững với thay đổi chậm',
           ],
           answer: 1,
@@ -2486,7 +2486,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           distractorWhy: [
             'Mức tăng mỗi tuần được thiết kế để nằm dưới ngưỡng, nên tuần đầu không có gì kêu.',
             '',
-            'Mùa vụ chỉ hấp thụ thành phần lặp theo chu kỳ; một mức tăng đơn điệu sẽ đi vào xu hướng.',
+            'Thành phần mùa chỉ hấp thụ thành phần lặp theo chu kỳ; một mức tăng đơn điệu sẽ đi vào xu hướng.',
             'Chế độ bền vững giảm trọng số điểm ngoại lai đơn lẻ, không nhận ra một dịch chuyển từ từ.',
           ],
         },
@@ -2510,7 +2510,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
             'Chuyển sang đếm sự kiện thay vì đếm thực thể',
           ],
           answer: 1,
-          why: 'Khi biên độ mùa vụ tỉ lệ với mức nền, mô hình cộng tính sẽ ước lượng một biên độ trung bình — quá lớn cho giai đoạn đầu và quá nhỏ cho giai đoạn sau. Lấy log biến quan hệ nhân thành quan hệ cộng, nên mô hình cộng tính lại đúng. Với dữ liệu đếm có giá trị 0, dùng log(y + 1). Đây cũng là lý do đoạn mã trong bài gọi `np.log1p` trước khi phân rã.',
+          why: 'Khi biên độ thành phần mùa tỉ lệ với mức nền, mô hình cộng tính sẽ ước lượng một biên độ trung bình — quá lớn cho giai đoạn đầu và quá nhỏ cho giai đoạn sau. Lấy log biến quan hệ nhân thành quan hệ cộng, nên mô hình cộng tính lại đúng. Với dữ liệu đếm có giá trị 0, dùng log(y + 1). Đây cũng là lý do đoạn mã trong bài gọi `np.log1p` trước khi phân rã.',
           distractorWhy: [
             'Tăng ngưỡng thủ công chỉ đúng tại một thời điểm rồi lại sai ngay khi quy mô đổi tiếp.',
             '',
@@ -2530,13 +2530,13 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
             'Có hai chu kỳ dữ liệu là đủ để đường cơ sở ổn định trong thực tế',
           ],
           answers: [0, 1, 2],
-          why: 'Ba phát biểu đầu đều là thực hành chuẩn: mốc ngây thơ để biết mô hình phức tạp có đáng không, sự kiện đã biết để không bào mòn lòng tin của analyst, và đếm thực thể để một máy hỏng không giả dạng thành một đợt tấn công. Phát biểu 4 **sai**: hai chu kỳ là mức tối thiểu về mặt toán học để tách được mùa vụ, nhưng trong thực tế cần ba tới bốn chu kỳ trở lên thì ước lượng mới đủ ổn định để đặt ngưỡng.',
+          why: 'Ba phát biểu đầu đều là thực hành chuẩn: mốc ngây thơ để biết mô hình phức tạp có đáng không, sự kiện đã biết để không bào mòn lòng tin của analyst, và đếm thực thể để một máy hỏng không giả dạng thành một đợt tấn công. Phát biểu 4 **sai**: hai chu kỳ là mức tối thiểu về mặt toán học để tách được thành phần mùa, nhưng trong thực tế cần ba tới bốn chu kỳ trở lên thì ước lượng mới đủ ổn định để đặt ngưỡng.',
         },
       ],
       further: [
         {
           title: 'Forecasting: Principles and Practice — Hyndman và Athanasopoulos, chương phân rã chuỗi',
-          note: 'Đọc miễn phí trên mạng. Phần STL và phần nhiều mùa vụ là đủ cho mọi việc trong bài này; bỏ qua phần dự báo nếu bạn chỉ cần phát hiện.',
+          note: 'Đọc miễn phí trên mạng. Phần STL và phần nhiều mùa (multiple seasonality) là đủ cho mọi việc trong bài này; bỏ qua phần dự báo nếu bạn chỉ cần phát hiện.',
         },
         {
           title: 'statsmodels — STL và MSTL',
@@ -2904,7 +2904,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
       },
       objectives: [
         'Mô hình hoá log xác thực thành đồ thị và chỉ ra di chuyển ngang trông như thế nào trên đó',
-        'Phân biệt ba mức tiếp cận: chỉ số cấu trúc, nhúng nút, và mạng nơ-ron đồ thị — cùng chi phí của từng mức',
+        'Phân biệt ba mức tiếp cận: chỉ số cấu trúc, embedding của nút, và mạng nơ-ron đồ thị — cùng chi phí của từng mức',
         'Giải thích vì sao bảo mật gần như luôn cần phương pháp quy nạp thay vì chuyển dẫn',
         'Nhận ra rò rỉ thời gian trong đồ thị, dạng rò rỉ mà cách chia tập thông thường không chặn được',
       ],
@@ -2943,7 +2943,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           title: 'Bắt đầu từ chỉ số cấu trúc, đừng bắt đầu từ mạng nơ-ron',
           md: 'Ba đại lượng dưới đây tính được bằng vài dòng, giải thích được cho analyst trong một câu, và trong nhiều triển khai thật đã chiếm phần lớn giá trị:\n\n**Bậc của nút và mức thay đổi bậc.** Máy trạm này hôm nay nối tới bao nhiêu đích, so với trung vị 30 ngày của chính nó? Đây là đặc trưng đồ thị mạnh nhất tính theo tỉ lệ công sức.\n\n**Cạnh mới.** Cặp (nguồn, đích) này đã từng xuất hiện trong 90 ngày qua chưa? Trong mạng doanh nghiệp, phần lớn cặp là lặp lại; một cạnh hoàn toàn mới tới tài sản nhạy cảm là tín hiệu đáng đọc.\n\n**PageRank và các độ đo trung tâm.** Ai là nút quan trọng trong đồ thị xác thực? Điều đáng chú ý không phải bản thân thứ hạng — máy chủ tệp luôn đứng đầu — mà là **thay đổi thứ hạng**: một máy trạm bình thường đột nhiên có độ trung tâm cao nghĩa là nó đang trở thành điểm trung chuyển.\n\nBa đặc trưng này đưa thẳng vào mô hình gradient boosting bạn đã có ở chặng 3. Không cần một hệ thống mới, và bạn giữ được toàn bộ khả năng giải thích.',
         },
-        { t: 'h', text: 'Mức hai: nhúng nút bằng node2vec', level: 2 },
+        { t: 'h', text: 'Mức hai: embedding của nút bằng node2vec', level: 2 },
         {
           t: 'p',
           md: 'Nhúng nút biến mỗi nút thành một vector, sao cho các nút “giống nhau” trên đồ thị thì gần nhau trong không gian vector. **node2vec** làm việc đó bằng cách đi bộ ngẫu nhiên từ mỗi nút để sinh ra các “câu” gồm chuỗi nút, rồi huấn luyện một mô hình skip-gram y hệt như với văn bản. Vector thu được dùng làm đặc trưng cho bất kỳ mô hình nào.',
@@ -2952,7 +2952,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
           t: 'callout',
           kind: 'math',
           title: 'Hai tham số quyết định node2vec học ra cái gì',
-          md: 'node2vec điều khiển bước đi bằng hai tham số, và chọn sai chúng là lý do phổ biến nhất khiến nhúng đồ thị “không hoạt động”:\n\n**Tham số quay lại p** điều chỉnh khả năng đi ngược về nút vừa rời.\n\n**Tham số ra vào q** mới là cái quan trọng. Với **q nhỏ (dưới 1)**, bước đi có xu hướng đi xa dần, giống duyệt theo chiều sâu, nên nhúng học ra **cộng đồng**: hai nút gần nhau vì chúng ở cùng một cụm. Với **q lớn (trên 1)**, bước đi quanh quẩn gần nút gốc, giống duyệt theo chiều rộng, nên nhúng học ra **vai trò cấu trúc**: hai nút gần nhau vì chúng có hình dạng lân cận giống nhau, kể cả khi nằm ở hai đầu mạng.\n\nTrong bảo mật, thứ ta thường cần là **vai trò**: “máy này hành xử như một bộ điều khiển miền” là câu hỏi hữu ích hơn “máy này thuộc cụm nào”. Vậy nên với bài toán vai trò, hãy bắt đầu từ q lớn hơn 1. Với bài toán phân vùng mạng hay tìm cụm bị chiếm, dùng q nhỏ.',
+          md: 'node2vec điều khiển bước đi bằng hai tham số, và chọn sai chúng là lý do phổ biến nhất khiến embedding đồ thị “không hoạt động”:\n\n**Tham số quay lại p** điều chỉnh khả năng đi ngược về nút vừa rời.\n\n**Tham số ra vào q** mới là cái quan trọng. Với **q nhỏ (dưới 1)**, bước đi có xu hướng đi xa dần, giống duyệt theo chiều sâu, nên embedding học ra **cộng đồng**: hai nút gần nhau vì chúng ở cùng một cụm. Với **q lớn (trên 1)**, bước đi quanh quẩn gần nút gốc, giống duyệt theo chiều rộng, nên embedding học ra **vai trò cấu trúc**: hai nút gần nhau vì chúng có hình dạng lân cận giống nhau, kể cả khi nằm ở hai đầu mạng.\n\nTrong bảo mật, thứ ta thường cần là **vai trò**: “máy này hành xử như một bộ điều khiển miền” là câu hỏi hữu ích hơn “máy này thuộc cụm nào”. Vậy nên với bài toán vai trò, hãy bắt đầu từ q lớn hơn 1. Với bài toán phân vùng mạng hay tìm cụm bị chiếm, dùng q nhỏ.',
         },
         {
           t: 'lab',
@@ -2989,7 +2989,7 @@ print(f'{len(canh_bao)} giờ vượt ngưỡng trên tổng {len(s)} giờ '
               tags: ['do-thi', 'ro-ri-du-lieu'],
               q: 'Dựng đồ thị từ toàn bộ 90 ngày dữ liệu rồi chia nút ngẫu nhiên thành tập huấn luyện và tập kiểm thử là cách chia hợp lệ.',
               answer: false,
-              why: 'Đây là rò rỉ thời gian ở dạng đặc biệt khó thấy. Cạnh của **ngày 90** đã tham gia vào việc tính bậc, độ trung tâm và nhúng của một nút nằm trong tập huấn luyện — nên mô hình đã nhìn thấy tương lai, dù không dòng dữ liệu nào bị sao chép qua ranh giới. Cách chia đúng: cắt theo thời gian, dựng lại đồ thị **chỉ từ các cạnh trước mốc cắt**, rồi mới tính đặc trưng. Con số đo được sẽ thấp hơn đáng kể — và đó là con số thật.',
+              why: 'Đây là rò rỉ thời gian ở dạng đặc biệt khó thấy. Cạnh của **ngày 90** đã tham gia vào việc tính bậc, độ trung tâm và embedding của một nút nằm trong tập huấn luyện — nên mô hình đã nhìn thấy tương lai, dù không dòng dữ liệu nào bị sao chép qua ranh giới. Cách chia đúng: cắt theo thời gian, dựng lại đồ thị **chỉ từ các cạnh trước mốc cắt**, rồi mới tính đặc trưng. Con số đo được sẽ thấp hơn đáng kể — và đó là con số thật.',
             },
           ],
         },
@@ -3162,7 +3162,7 @@ def dac_trung_do_thi(log, moc, cua_so_ngay=30):
             'Mô hình báo lỗi và dừng toàn bộ pipeline',
           ],
           answer: 1,
-          why: 'Phương pháp chuyển dẫn học một vector riêng cho từng nút **có mặt lúc huấn luyện**. Nút mới đơn giản là không tồn tại trong bảng nhúng. Khoảng mù này đặc biệt tai hại vì tài sản mới xuất hiện — máy lạ cắm vào mạng, container bất thường — chính là nhóm đáng theo dõi nhất. Đó là lý do GraphSAGE và các phương pháp quy nạp học **hàm tổng hợp** thay vì bảng tra, nên áp dụng được ngay cho lân cận chưa từng thấy.',
+          why: 'Phương pháp chuyển dẫn học một vector riêng cho từng nút **có mặt lúc huấn luyện**. Nút mới đơn giản là không tồn tại trong bảng embedding. Khoảng mù này đặc biệt tai hại vì tài sản mới xuất hiện — máy lạ cắm vào mạng, container bất thường — chính là nhóm đáng theo dõi nhất. Đó là lý do GraphSAGE và các phương pháp quy nạp học **hàm tổng hợp** thay vì bảng tra, nên áp dụng được ngay cho lân cận chưa từng thấy.',
           distractorWhy: [
             'Đặc trưng nút chỉ giúp được nếu mô hình học hàm trên đặc trưng, tức là phương pháp quy nạp.',
             '',
@@ -3438,7 +3438,7 @@ def dac_trung_do_thi(log, moc, cua_so_ngay=30):
           ordered: true,
           items: [
             '**Chuỗi bị trộn lẫn.** Nhiều luồng ghi vào cùng một tệp log, nên chuỗi bạn đọc được là hợp của nhiều chuỗi độc lập. Mô hình chuỗi học trên đó sẽ học nhiễu. Bắt buộc phải tách theo mã phiên, mã yêu cầu, mã tiến trình, hoặc mã theo dõi phân tán trước khi mô hình hoá.',
-            '**Log mất và log đến trễ.** Bộ đệm đầy, mạng nghẽn, tác tử chết. Một chuỗi thiếu vài sự kiện trông giống hệt một chuỗi bất thường. Đối sách: theo dõi tỉ lệ mất log như một chỉ số vận hành riêng, và không cảnh báo trong cửa sổ có tỉ lệ mất cao.',
+            '**Log mất và log đến trễ.** Bộ đệm đầy, mạng nghẽn, agent chết. Một chuỗi thiếu vài sự kiện trông giống hệt một chuỗi bất thường. Đối sách: theo dõi tỉ lệ mất log như một chỉ số vận hành riêng, và không cảnh báo trong cửa sổ có tỉ lệ mất cao.',
             '**Thời gian không đồng bộ.** Máy chủ lệch giờ vài phút làm hỏng mọi phân tích thứ tự. Kiểm tra đồng bộ NTP trước khi kiểm tra mô hình.',
             '**Kẻ tấn công xoá log.** Sự kiện Windows 1102 (nhật ký bảo mật bị xoá), `wevtutil cl`, `journalctl --vacuum`, xoá `.bash_history`. Điểm quan trọng: **chính việc log biến mất là một trong những tín hiệu mạnh nhất bạn có** — hãy giám sát khoảng trống trong dòng log của mỗi máy, không chỉ giám sát nội dung của nó.',
           ],
@@ -3512,7 +3512,7 @@ def dac_trung_do_thi(log, moc, cua_so_ngay=30):
             'Chỉ cảnh báo nếu có thêm template lỗi xuất hiện',
           ],
           answer: 1,
-          why: 'Rất nhiều hệ thống chỉ tìm cái **xuất hiện thêm** và hoàn toàn mù với cái **biến mất**. Nhưng sự vắng mặt là tín hiệu mạnh trong cả vận hành lẫn bảo mật: dịch vụ sao lưu bị tắt, tác tử ghi log bị dừng, một tiến trình bị kẻ tấn công vô hiệu hoá để giấu dấu vết. Cách hiện thực: xây một hồ sơ nhịp cho từng template thường lệ theo từng máy (khoảng cách trung bình giữa hai lần xuất hiện), và cảnh báo khi khoảng lặng vượt vài lần độ lệch chuẩn. Đây cũng là cách phát hiện tác tử EDR bị tắt — một trong những cảnh báo có precision cao nhất mà bạn có thể xây.',
+          why: 'Rất nhiều hệ thống chỉ tìm cái **xuất hiện thêm** và hoàn toàn mù với cái **biến mất**. Nhưng sự vắng mặt là tín hiệu mạnh trong cả vận hành lẫn bảo mật: dịch vụ sao lưu bị tắt, agent ghi log bị dừng, một tiến trình bị kẻ tấn công vô hiệu hoá để giấu dấu vết. Cách hiện thực: xây một hồ sơ nhịp cho từng template thường lệ theo từng máy (khoảng cách trung bình giữa hai lần xuất hiện), và cảnh báo khi khoảng lặng vượt vài lần độ lệch chuẩn. Đây cũng là cách phát hiện agent EDR bị tắt — một trong những cảnh báo có precision cao nhất mà bạn có thể xây.',
           distractorWhy: [
             'Sự vắng mặt là một trong những tín hiệu có giá trị nhất và cũng bị bỏ qua nhiều nhất.',
             '',
@@ -3774,7 +3774,7 @@ def dac_trung_do_thi(log, moc, cua_so_ngay=30):
           items: [
             'Kho đặc trưng trực tuyến trong bộ nhớ (thường là Redis) chứa các bộ đếm vận tốc, cập nhật theo luồng — không truy vấn cơ sở dữ liệu giao dịch trong đường xử lý chính.',
             'Cùng một đoạn mã định nghĩa đặc trưng dùng cho cả huấn luyện và phục vụ; mọi bản sao chép định nghĩa là một nguồn lệch huấn luyện–phục vụ.',
-            'Mô hình cây tăng cường đủ nhỏ để suy luận dưới 10 ms; phần lớn ngân sách trễ nằm ở khâu lấy đặc trưng, không ở mô hình.',
+            'Mô hình gradient boosting đủ nhỏ để suy luận dưới 10 ms; phần lớn ngân sách trễ nằm ở khâu lấy đặc trưng, không ở mô hình.',
             'Đường dự phòng: nếu kho đặc trưng không phản hồi trong 30 ms, dùng bộ luật đơn giản thay vì để giao dịch treo.',
             'Ghi lại toàn bộ vector đặc trưng đã dùng cho mỗi quyết định — nếu không, bạn sẽ không bao giờ tái hiện được vì sao một giao dịch bị chặn.',
             'Luật cứng chạy song song mô hình cho các trường hợp rõ ràng, để không phụ thuộc hoàn toàn vào một mô hình có thể xuống cấp.',
@@ -3929,7 +3929,7 @@ def dac_trung_do_thi(log, moc, cua_so_ngay=30):
           tags: ['gian-lan', 'trien-khai'],
           q: 'Trong hệ thống chấm điểm gian lận thời gian thực, phần lớn ngân sách trễ bị tiêu bởi việc chạy mô hình.',
           answer: false,
-          why: 'Một mô hình cây tăng cường với vài trăm cây chạy trong khoảng 1–10 mili-giây trên CPU. Thứ tiêu hết ngân sách là khâu **lấy đặc trưng**: đọc bộ đếm vận tốc, tra dấu vân tay thiết bị, truy vấn đồ thị quan hệ, gọi dịch vụ tra cứu ASN. Đó là lý do kiến trúc gian lận thời gian thực xoay quanh kho đặc trưng trực tuyến trong bộ nhớ chứ không xoay quanh việc tối ưu mô hình. Hệ quả thực dụng: nếu bạn cần giảm trễ, hãy cắt số lần gọi ra ngoài và gộp truy vấn, đừng cắt số cây trong mô hình — cắt cây làm giảm chất lượng mà gần như không cải thiện trễ.',
+          why: 'Một mô hình gradient boosting với vài trăm cây chạy trong khoảng 1–10 mili-giây trên CPU. Thứ tiêu hết ngân sách là khâu **lấy đặc trưng**: đọc bộ đếm vận tốc, tra dấu vân tay thiết bị, truy vấn đồ thị quan hệ, gọi dịch vụ tra cứu ASN. Đó là lý do kiến trúc gian lận thời gian thực xoay quanh kho đặc trưng trực tuyến trong bộ nhớ chứ không xoay quanh việc tối ưu mô hình. Hệ quả thực dụng: nếu bạn cần giảm trễ, hãy cắt số lần gọi ra ngoài và gộp truy vấn, đừng cắt số cây trong mô hình — cắt cây làm giảm chất lượng mà gần như không cải thiện trễ.',
         },
         {
           id: 't6l9-q5',

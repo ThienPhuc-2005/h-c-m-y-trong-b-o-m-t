@@ -127,7 +127,7 @@ const ThreeLearning = () => (
     <T x={510} y={54} strong>Tăng cường</T>
     <T x={510} y={74} size={10}>Hành động → phần thưởng</T>
     <circle cx={462} cy={118} r={16} fill="none" stroke={C.lab} strokeWidth="2" />
-    <T x={462} y={122} size={10}>tác tử</T>
+    <T x={462} y={122} size={10}>agent</T>
     <Arrow x1={482} y1={110} x2={540} y2={110} color={C.lab} />
     <Arrow x1={540} y1={130} x2={482} y2={130} color={C.lab} />
     <T x={562} y={122} size={10}>môi trường</T>
@@ -155,7 +155,7 @@ const BaseRateFig = () => {
   }
   return (
     <Svg vb="0 0 620 330">
-      <T x={310} y={18} strong>1.000 sự kiện · 10 là tấn công thật (1%) · bộ dò có FPR 5%</T>
+      <T x={310} y={18} strong>1.000 sự kiện · 10 là tấn công thật (1%) · bộ phát hiện có FPR 5%</T>
       {cells}
       <g transform="translate(12,318)">
         <rect x={0} y={-9} width={11} height={8} rx={1.5} fill={C.bad} />
@@ -671,7 +671,7 @@ const GradientDescentFig = () => (
     <T x={393} y={222} size={10}>cực tiểu toàn cục</T>
     <T x={70} y={92} size={10}>khởi tạo</T>
     <g transform="rotate(-90 22 130)"><T x={22} y={130} size={11}>Hàm mất mát</T></g>
-    <T x={280} y={22} strong>Hạ gradient: mỗi bước đi ngược hướng dốc</T>
+    <T x={280} y={22} strong>Gradient descent: mỗi bước đi ngược hướng dốc</T>
   </Svg>
 );
 

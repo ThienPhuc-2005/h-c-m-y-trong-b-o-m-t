@@ -20,7 +20,7 @@ import { Icon } from '../components/Icon';
  * Bản trước dùng `micros0ft-secure-login.com` và `paypa1-verify.net` rồi khẳng
  * định chúng "qua mặt cả ba đặc trưng". Chạy thật thì cả hai đều bị cảnh báo
  * (0,584 và 0,529): dấu gạch ngang cùng chuỗi dài làm entropy ký tự TĂNG chứ
- * không giảm, nên chính bộ dò lại bắt được chúng vì lý do sai. Hai tên dưới đây
+ * không giảm, nên chính bộ phát hiện lại bắt được chúng vì lý do sai. Hai tên dưới đây
  * đọc trôi như tiếng Anh nên entropy thấp và bigram đẹp, và chúng lọt thật.
  */
 const SAMPLE_DOMAINS = [
@@ -94,14 +94,14 @@ export function LabEntropy() {
         <>
           Entropy một mình <b>không đủ</b>: <code>aaaaaaaa.com</code> có entropy rất thấp nhưng vẫn là tên miền
           rác, còn <code>vietcombank</code> lại có entropy khá cao. Kết hợp với <b>xác suất bigram</b> (chuỗi
-          ký tự có giống ngôn ngữ người không) và <b>tỉ lệ nguyên âm</b> thì mới ra một bộ dò dùng được. Đây
+          ký tự có giống ngôn ngữ người không) và <b>tỉ lệ nguyên âm</b> thì mới ra một bộ phát hiện dùng được. Đây
           là bài học tổng quát của cả kỹ thuật đặc trưng: nhiều tín hiệu yếu ghép lại mạnh hơn một tín hiệu
           mạnh. Và chú ý hai dòng cuối bảng: <code>paypal-login.com</code> và{' '}
           <code>vietcombank-online.com</code> đều <b>lọt qua</b> với điểm 0,45–0,47. Chúng không phải DGA mà
           là <b>giả mạo thương hiệu</b> — đọc trôi như tiếng Anh nên entropy thấp, bigram đẹp, nguyên âm đủ.
           Cả ba đặc trưng ở đây đều mù trước loại tấn công đó, và không thanh trượt nào cứu được: cần một bộ
           đặc trưng hoàn toàn khác (khoảng cách chỉnh sửa tới tên miền thương hiệu, tuổi tên miền, chứng chỉ,
-          nội dung trang). <b>Biết bộ dò của mình mù ở đâu quan trọng hơn biết nó bắt được gì.</b>
+          nội dung trang). <b>Biết bộ phát hiện của mình mù ở đâu quan trọng hơn biết nó bắt được gì.</b>
         </>
       }
     >
@@ -958,7 +958,7 @@ export function LabAuthGraph() {
           <br />
           <b>Ba:</b> ô &ldquo;bậc của W3&rdquo; đi lên đều đặn ở cả hai chế độ, không cần thuật toán nào. Với
           phần lớn tổ chức, đếm số đích riêng biệt so với trung vị 30 ngày của chính máy đó đã chiếm gần hết
-          giá trị — hãy làm nó trước khi nghĩ tới nhúng nút hay mạng nơ-ron đồ thị.
+          giá trị — hãy làm nó trước khi nghĩ tới embedding của nút hay mạng nơ-ron đồ thị.
         </>
       }
     >
@@ -1054,10 +1054,10 @@ export function LabAuthGraph() {
 }
 
 /* ========================================================================== */
-/*  lab-seasonality — Phân rã mùa vụ và cái bẫy tự nâng mức nền                */
+/*  lab-seasonality — Phân rã thành phần mùa và cái bẫy tự nâng mức nền                */
 /* ========================================================================== */
 
-/** 6 tuần dữ liệu theo giờ. Chu kỳ mùa vụ là TUẦN (24 × 7 = 168 giờ). */
+/** 6 tuần dữ liệu theo giờ. Chu kỳ mùa là TUẦN (24 × 7 = 168 giờ). */
 const SEA_WEEKS = 6;
 const SEA_H = 168;
 /** 3h sáng Chủ nhật — khung giờ vắng nhất tuần, nên là chỗ kẻ tấn công thích. */
@@ -1168,7 +1168,7 @@ export function LabSeasonality() {
   return (
     <LabShell
       id="lab-seasonality"
-      title="Phân rã mùa vụ — và cuộc tấn công tự nâng mức nền của chính nó"
+      title="Phân rã thành phần mùa — và cuộc tấn công tự nâng mức nền của chính nó"
       takeaway={
         <>
           Ở mặc định (tấn công +150 sự kiện, lặp lại 2 trong 6 tuần), chế độ <b>cổ điển</b> ước lượng mức nền
@@ -1212,7 +1212,7 @@ export function LabSeasonality() {
       </div>
 
       <Toggle
-        label="Chế độ bền vững (trung vị cho mùa vụ + MAD cho thang đo)"
+        label="Chế độ bền vững (trung vị cho thành phần mùa + MAD cho thang đo)"
         checked={robust}
         onChange={setRobust}
       />

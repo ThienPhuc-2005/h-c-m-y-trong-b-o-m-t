@@ -1046,10 +1046,10 @@ export const track4: Track = {
           t: 'table',
           head: ['Họ mô hình', 'Sai lệch điển hình', 'Nguyên nhân', 'Cách vá thường dùng'],
           rows: [
-            ['Cây tăng cường (LightGBM, XGBoost)', 'Đẩy điểm ra hai cực, thường tự tin thái quá ở đuôi', 'Tối ưu log-loss trên dữ liệu lệch, cộng thêm regularization và early stopping', 'Isotonic nếu đủ dữ liệu, Platt nếu ít'],
+            ['Gradient boosting (LightGBM, XGBoost)', 'Đẩy điểm ra hai cực, thường tự tin thái quá ở đuôi', 'Tối ưu log-loss trên dữ liệu lệch, cộng thêm regularization và early stopping', 'Isotonic nếu đủ dữ liệu, Platt nếu ít'],
             ['SVM', 'Đầu ra không phải xác suất; hình chữ S rõ rệt', 'Hàm mất mát hinge không phải quy tắc chấm điểm đúng', 'Platt scaling (đây chính là bối cảnh nó ra đời)'],
             ['Naive Bayes', 'Cực kỳ tự tin thái quá, điểm dồn về 0 và 1', 'Giả định độc lập bị vi phạm nên bằng chứng bị đếm nhiều lần', 'Isotonic'],
-            ['Rừng ngẫu nhiên', 'Quá dè dặt ở hai đầu (hiếm khi ra 0 hoặc 1)', 'Trung bình cộng của nhiều cây kéo điểm về giữa', 'Isotonic'],
+            ['Random Forest', 'Quá dè dặt ở hai đầu (hiếm khi ra 0 hoặc 1)', 'Trung bình cộng của nhiều cây kéo điểm về giữa', 'Isotonic'],
             ['Mạng nơ-ron sâu hiện đại', 'Tự tin thái quá rõ rệt, tăng theo độ lớn mô hình', 'Guo và cộng sự (2017) mô tả hiện tượng này chi tiết', 'Temperature scaling (một tham số duy nhất)'],
             ['Hồi quy logistic', 'Thường đã khá tốt sẵn', 'Tối ưu trực tiếp log-loss, vốn là quy tắc chấm điểm đúng', 'Thường không cần'],
           ],
@@ -1177,7 +1177,7 @@ export const track4: Track = {
       keyTakeaways: [
         'Hiệu chuẩn nghĩa là: trong nhóm sự kiện được chấm 0,9 thì khoảng 90% thực sự là dương — kiểm tra được trực tiếp trên dữ liệu.',
         'Khả năng phân biệt và hiệu chuẩn là hai phẩm chất tách rời; chia mọi điểm cho 10 không đổi AUC nhưng phá huỷ hiệu chuẩn.',
-        'Cây tăng cường và mạng nơ-ron sâu thường tự tin thái quá; rừng ngẫu nhiên thường quá dè dặt; hồi quy logistic thường đã ổn sẵn.',
+        'Gradient boosting và mạng nơ-ron sâu thường tự tin thái quá; Random Forest thường quá dè dặt; hồi quy logistic thường đã ổn sẵn.',
         'Platt scaling cho tập hiệu chuẩn nhỏ và sai lệch dạng chữ S; isotonic cho dữ liệu nhiều và sai lệch hình dạng bất kỳ.',
         'Hiệu chuẩn phải thực hiện trên tập riêng, giữ nguyên tỉ lệ lớp thật, và nên ở giai đoạn sau về thời gian.',
         'Brier score và ECE bị khối mẫu âm chi phối trong bài toán mất cân bằng — hãy đo hiệu chuẩn riêng trong vùng hoạt động.',
@@ -1228,7 +1228,7 @@ export const track4: Track = {
             'Tập kiểm tra quá nhỏ nên biểu đồ không đọc được',
           ],
           answer: 1,
-          why: 'Trục ngang là điểm mô hình dự đoán, trục dọc là tần suất dương thật. Nằm dưới đường chéo nghĩa là **tần suất thật thấp hơn điểm dự đoán** — mô hình hứa nhiều hơn nó làm được, tức tự tin thái quá. Đây là dạng sai lệch phổ biến nhất với cây tăng cường và mạng nơ-ron sâu. Cách vá đúng là hiệu chuẩn trên tập riêng; đổi thuật toán không cần thiết vì khả năng xếp hạng có thể vẫn rất tốt và hiệu chuẩn không đụng gì tới nó.',
+          why: 'Trục ngang là điểm mô hình dự đoán, trục dọc là tần suất dương thật. Nằm dưới đường chéo nghĩa là **tần suất thật thấp hơn điểm dự đoán** — mô hình hứa nhiều hơn nó làm được, tức tự tin thái quá. Đây là dạng sai lệch phổ biến nhất với gradient boosting và mạng nơ-ron sâu. Cách vá đúng là hiệu chuẩn trên tập riêng; đổi thuật toán không cần thiết vì khả năng xếp hạng có thể vẫn rất tốt và hiệu chuẩn không đụng gì tới nó.',
           distractorWhy: [
             'Quá dè dặt là trường hợp nằm TRÊN đường chéo.',
             '',
@@ -1265,11 +1265,11 @@ export const track4: Track = {
           q: 'Nối mỗi họ mô hình với dạng sai lệch hiệu chuẩn điển hình của nó.',
           pairs: [
             ['Naive Bayes', 'Tự tin thái quá cực độ, điểm dồn về 0 và 1'],
-            ['Rừng ngẫu nhiên', 'Quá dè dặt, hiếm khi cho điểm gần 0 hoặc 1'],
+            ['Random Forest', 'Quá dè dặt, hiếm khi cho điểm gần 0 hoặc 1'],
             ['Mạng nơ-ron sâu hiện đại', 'Tự tin thái quá, vá bằng temperature scaling'],
             ['Hồi quy logistic', 'Thường đã hiệu chuẩn khá tốt sẵn'],
           ],
-          why: 'Mỗi dạng sai lệch truy được về cơ chế của thuật toán. Naive Bayes đếm bằng chứng nhiều lần vì giả định độc lập bị vi phạm nên nó bị đẩy về hai cực. Rừng ngẫu nhiên lấy trung bình nhiều cây nên đầu ra bị kéo về giữa. Mạng nơ-ron sâu tối ưu tới mức gần như không còn lỗi trên tập huấn luyện nên độ tự tin trôi lên. Hồi quy logistic tối ưu trực tiếp log-loss — một quy tắc chấm điểm đúng — nên nó thường đã ở gần đường chéo. Biết cơ chế thì đoán được dạng sai lệch trước cả khi vẽ biểu đồ.',
+          why: 'Mỗi dạng sai lệch truy được về cơ chế của thuật toán. Naive Bayes đếm bằng chứng nhiều lần vì giả định độc lập bị vi phạm nên nó bị đẩy về hai cực. Random Forest lấy trung bình nhiều cây nên đầu ra bị kéo về giữa. Mạng nơ-ron sâu tối ưu tới mức gần như không còn lỗi trên tập huấn luyện nên độ tự tin trôi lên. Hồi quy logistic tối ưu trực tiếp log-loss — một quy tắc chấm điểm đúng — nên nó thường đã ở gần đường chéo. Biết cơ chế thì đoán được dạng sai lệch trước cả khi vẽ biểu đồ.',
         },
         {
           id: 't4-l6-q5',
@@ -1725,7 +1725,7 @@ print(f'Hiệu số PR-AUC: {tb:+.4f}, khoảng tin cậy 95%: [{thap:+.4f}, {ca
           t: 'callout',
           kind: 'insight',
           title: 'Bảo đảm mạnh tới mức nghe như không thật — và ba chữ nhỏ đi kèm',
-          md: 'Với mức lỗi α bạn chọn, bộ dự đoán conformal bảo đảm:\n\n> P(nhãn đúng ∈ tập dự đoán) ≥ 1 − α\n\nBảo đảm này **không cần giả định gì về mô hình**. Mô hình có thể là rừng ngẫu nhiên, mạng nơ-ron, hay một hàm trả số ngẫu nhiên — bảo đảm vẫn đúng. Nó cũng không cần cỡ mẫu lớn tới vô hạn: đúng với cỡ mẫu hữu hạn.\n\nĐổi lại, có ba chữ nhỏ mà bỏ qua là hiểu sai hoàn toàn:\n\n**1. Dữ liệu phải hoán vị được (exchangeable).** Đây là giả định duy nhất, và nó là giả định lớn trong bảo mật.\n\n**2. Bảo đảm ở mức BIÊN, không theo điều kiện.** Phủ 90% tính trung bình trên toàn bộ phân phối, không phải 90% cho mỗi lớp hay mỗi nhóm mẫu.\n\n**3. Mô hình tồi vẫn giữ đúng bảo đảm — bằng cách trả về tập vô dụng.** Nếu mô hình không phân biệt được gì, conformal sẽ trung thực trả về {lành, độc} cho 90% số mẫu. Bảo đảm không bị vi phạm; nó chỉ cho bạn thấy mô hình chẳng biết gì. **Kích thước tập** mới là thước đo chất lượng mô hình.',
+          md: 'Với mức lỗi α bạn chọn, bộ dự đoán conformal bảo đảm:\n\n> P(nhãn đúng ∈ tập dự đoán) ≥ 1 − α\n\nBảo đảm này **không cần giả định gì về mô hình**. Mô hình có thể là Random Forest, mạng nơ-ron, hay một hàm trả số ngẫu nhiên — bảo đảm vẫn đúng. Nó cũng không cần cỡ mẫu lớn tới vô hạn: đúng với cỡ mẫu hữu hạn.\n\nĐổi lại, có ba chữ nhỏ mà bỏ qua là hiểu sai hoàn toàn:\n\n**1. Dữ liệu phải hoán vị được (exchangeable).** Đây là giả định duy nhất, và nó là giả định lớn trong bảo mật.\n\n**2. Bảo đảm ở mức BIÊN, không theo điều kiện.** Phủ 90% tính trung bình trên toàn bộ phân phối, không phải 90% cho mỗi lớp hay mỗi nhóm mẫu.\n\n**3. Mô hình tồi vẫn giữ đúng bảo đảm — bằng cách trả về tập vô dụng.** Nếu mô hình không phân biệt được gì, conformal sẽ trung thực trả về {lành, độc} cho 90% số mẫu. Bảo đảm không bị vi phạm; nó chỉ cho bạn thấy mô hình chẳng biết gì. **Kích thước tập** mới là thước đo chất lượng mô hình.',
         },
         { t: 'h', text: 'Split conformal: ba bước, không cần huấn luyện lại', level: 2 },
         {

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- *  Bộ lập lịch lặp lại ngắt quãng — FSRS (Free Spaced Repetition Scheduler)
+ *  Bộ lập lịch lặp lại giãn cách — FSRS (Free Spaced Repetition Scheduler)
  * ============================================================================
  *
  *  VÌ SAO CẦN THỨ NÀY?

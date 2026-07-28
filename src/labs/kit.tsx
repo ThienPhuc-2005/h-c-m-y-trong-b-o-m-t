@@ -25,7 +25,7 @@ export function LabShell({
 }) {
   const t = useT();
 
-  // Ghi nhận lab đã được mở — dùng cho huy hiệu "chuột bạch phòng lab".
+  // Ghi nhận lab đã được mở — dùng cho huy hiệu "thực hành phòng lab".
   // Dùng setCheck (đặt giá trị) chứ không phải toggleCheck (đảo): effect có thể
   // chạy hai lần và hai lần đảo sẽ triệt tiêu nhau.
   useEffect(() => {

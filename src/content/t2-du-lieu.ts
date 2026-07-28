@@ -31,7 +31,7 @@ export const track2: Track = {
   outcomes: [
     'Chọn được nguồn dữ liệu phù hợp cho một bài toán phát hiện cụ thể, kèm ước lượng khối lượng và độ trễ',
     'Đọc, gộp và tổng hợp log bảo mật bằng pandas ở mức làm việc thật, không phải mức nhập môn',
-    'Chuẩn hoá timestamp, thực thể và trường có lực lượng cao mà không phá vỡ ngữ nghĩa bảo mật',
+    'Chuẩn hoá timestamp, thực thể và trường có nhiều giá trị phân biệt mà không phá vỡ ngữ nghĩa bảo mật',
     'Thiết kế được quy trình lấy nhãn khả thi cho tổ chức đang có 0 nhãn',
     'Nêu đúng cạm bẫy của sáu bộ dữ liệu chuẩn hay bị dùng, và biết khi nào KHÔNG nên dùng',
     'Phát hiện rò rỉ dữ liệu và chia tập theo thời gian / theo nhóm đúng cách',
@@ -832,7 +832,7 @@ export const track2: Track = {
       objectives: [
         'Tách trường từ log không cấu trúc và đo được tỉ lệ parse hỏng',
         'Xử lý đúng ba loại timestamp và phát hiện lệch đồng hồ giữa các nguồn',
-        'Chọn được kỹ thuật phù hợp cho trường có lực lượng cao thay vì one-hot mù quáng',
+        'Chọn được kỹ thuật phù hợp cho trường có nhiều giá trị phân biệt thay vì one-hot mù quáng',
         'Hợp nhất thực thể người dùng, máy và địa chỉ IP có tính tới yếu tố thời gian',
       ],
       blocks: [
@@ -999,7 +999,7 @@ export const track2: Track = {
             "for col in ['cmdline', 'user_agent', 'parent']:\n" +
             "    df[col + '_missing'] = df[col].isna().astype('int8')\n",
         },
-        { t: 'h', text: 'Phần 4 — Trường có lực lượng cao', level: 2 },
+        { t: 'h', text: 'Phần 4 — Trường có nhiều giá trị phân biệt', level: 2 },
         {
           t: 'p',
           md: 'Dữ liệu bảo mật đầy những cột có hàng triệu giá trị khác nhau: địa chỉ IP, URL, hash tệp, tên tiến trình, chuỗi User-Agent. One-hot encoding cho một cột 2 triệu giá trị sẽ tạo 2 triệu cột — vô dụng và thường vỡ bộ nhớ. Đây là bốn cách thay thế, kèm điều kiện dùng.',
@@ -1103,7 +1103,7 @@ export const track2: Track = {
         'Luôn đo tỉ lệ parse hỏng và giám sát nó như một chỉ số hạ tầng — parser hỏng im lặng là sự cố dữ liệu phổ biến nhất.',
         'Event time, ingest time và index time là ba mốc khác nhau; lưu UTC nhưng sinh đặc trưng theo giờ địa phương của người dùng.',
         'Trùng lặp là hệ quả tất yếu của ngữ nghĩa giao ít nhất một lần, không phải lỗi hiếm gặp.',
-        'Trường có lực lượng cao: chọn giữa top-K, tần suất, hashing và target encoding — nhưng tách thành đặc trưng có ý nghĩa thường thắng tất cả.',
+        'Trường có nhiều giá trị phân biệt: chọn giữa top-K, tần suất, hashing và target encoding — nhưng tách thành đặc trưng có ý nghĩa thường thắng tất cả.',
         'Định danh ổn định (SID, objectGUID) làm khoá chính; ánh xạ IP-sang-máy bắt buộc phải có chiều thời gian.',
       ],
       cards: [
@@ -1148,10 +1148,10 @@ export const track2: Track = {
             'One-hot encoding toàn bộ 3,4 triệu giá trị',
             'Tách thành đặc trưng có ý nghĩa: độ dài, entropy, số nhãn, tuổi tên miền, có nằm trong danh sách phổ biến không',
             'Target encoding trực tiếp trên tên miền',
-            'Bỏ hẳn cột này vì lực lượng quá cao',
+            'Bỏ hẳn cột này vì quá nhiều giá trị phân biệt',
           ],
           answer: 1,
-          why: 'Tên miền C2 mới xuất hiện mỗi ngày, nên bất kỳ mã hoá nào dựa trên **danh tính** của tên miền đều vô dụng với giá trị chưa từng thấy. Tách thành thuộc tính có ý nghĩa cho phép mô hình tổng quát hoá sang tên miền hoàn toàn mới — đúng bài toán bạn cần. One-hot vỡ bộ nhớ; target encoding trên cột lực lượng cực cao vừa rò rỉ nặng vừa vô nghĩa với giá trị mới; bỏ cột là vứt đi nguồn tín hiệu mạnh nhất.',
+          why: 'Tên miền C2 mới xuất hiện mỗi ngày, nên bất kỳ mã hoá nào dựa trên **danh tính** của tên miền đều vô dụng với giá trị chưa từng thấy. Tách thành thuộc tính có ý nghĩa cho phép mô hình tổng quát hoá sang tên miền hoàn toàn mới — đúng bài toán bạn cần. One-hot vỡ bộ nhớ; target encoding trên cột cực nhiều giá trị phân biệt vừa rò rỉ nặng vừa vô nghĩa với giá trị mới; bỏ cột là vứt đi nguồn tín hiệu mạnh nhất.',
           distractorWhy: [
             'Tạo 3,4 triệu cột là bất khả thi về bộ nhớ và vô dụng với tên miền chưa từng thấy.',
             '',
@@ -1183,7 +1183,7 @@ export const track2: Track = {
             'Ép mọi dấu thời gian về UTC và kiểm tra tỉ lệ NaT',
             'Khử trùng lặp bằng khoá tổng hợp',
             'Hợp nhất thực thể user, host và IP',
-            'Sinh đặc trưng và mã hoá trường lực lượng cao',
+            'Sinh đặc trưng và mã hoá trường nhiều giá trị phân biệt',
           ],
           why: 'Thứ tự có tính bắc cầu. Không khử trùng lặp được nếu chưa có trường và chưa có thời gian để sắp xếp. Không hợp nhất thực thể được nếu bản ghi còn trùng. Và mã hoá theo tần suất chỉ đúng khi thực thể đã hợp nhất, vì nếu không, cùng một máy bị đếm thành nhiều giá trị hiếm.',
         },

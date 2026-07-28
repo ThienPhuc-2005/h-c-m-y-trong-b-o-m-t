@@ -207,7 +207,7 @@ export const TERMS: Term[] = [
     en: 'Base rate fallacy',
     def: 'Sai lầm bỏ qua độ hiếm của sự kiện khi diễn giải kết quả kiểm tra, dẫn tới đánh giá quá cao độ tin cậy của cảnh báo.',
     example:
-      'Bộ dò chính xác 99% với base rate 0,01% cho precision chỉ ~1%: 99 trong 100 cảnh báo là giả.',
+      'Bộ phát hiện chính xác 99% với base rate 0,01% cho precision chỉ ~1%: 99 trong 100 cảnh báo là giả.',
     tags: ['do-luong', 'base-rate'],
   },
   {
@@ -307,14 +307,14 @@ export const TERMS: Term[] = [
   },
   {
     id: 'random-forest',
-    vi: 'Rừng ngẫu nhiên',
+    vi: 'Random Forest',
     en: 'Random Forest',
     def: 'Tập hợp nhiều cây huấn luyện trên mẫu và đặc trưng ngẫu nhiên, lấy trung bình để giảm phương sai.',
     tags: ['thuat-toan'],
   },
   {
     id: 'gbdt',
-    vi: 'Cây tăng cường gradient',
+    vi: 'Gradient boosting',
     en: 'Gradient Boosted Trees (XGBoost, LightGBM)',
     def: 'Chuỗi cây trong đó mỗi cây học phần sai sót còn lại của các cây trước.',
     example: 'Lựa chọn mặc định cho dữ liệu dạng bảng trong bảo mật — thường thắng deep learning.',
@@ -322,7 +322,7 @@ export const TERMS: Term[] = [
   },
   {
     id: 'isolation-forest',
-    vi: 'Rừng cô lập',
+    vi: 'Isolation Forest',
     en: 'Isolation Forest',
     def: 'Thuật toán phát hiện bất thường dựa trên ý tưởng điểm dị thường bị cô lập bằng ít lần chia ngẫu nhiên hơn.',
     tags: ['thuat-toan', 'bat-thuong'],
@@ -350,7 +350,7 @@ export const TERMS: Term[] = [
   },
   {
     id: 'gradient-descent',
-    vi: 'Hạ gradient',
+    vi: 'Gradient descent',
     en: 'Gradient descent',
     def: 'Thuật toán tối ưu đi ngược hướng dốc của hàm mất mát để giảm sai số từng bước nhỏ.',
     tags: ['nen-tang', 'deep-learning'],
@@ -454,7 +454,7 @@ export const TERMS: Term[] = [
     id: 'edr',
     vi: 'Phát hiện và phản hồi điểm cuối',
     en: 'EDR',
-    def: 'Tác tử trên máy trạm ghi lại tiến trình, tệp, mạng, registry và cho phép phản hồi từ xa.',
+    def: 'Agent trên máy trạm ghi lại tiến trình, tệp, mạng, registry và cho phép phản hồi từ xa.',
     tags: ['nen-tang-bao-mat', 'du-lieu'],
   },
   {
@@ -598,7 +598,7 @@ export const TERMS: Term[] = [
     id: 'injection-gian-tiep',
     vi: 'Chèn lệnh gián tiếp',
     en: 'Indirect prompt injection',
-    def: 'Chỉ dẫn độc hại nằm sẵn trong nội dung bên ngoài (trang web, email, tài liệu) mà tác tử sẽ đọc.',
+    def: 'Chỉ dẫn độc hại nằm sẵn trong nội dung bên ngoài (trang web, email, tài liệu) mà agent sẽ đọc.',
     tags: ['llm'],
   },
   {
@@ -612,7 +612,7 @@ export const TERMS: Term[] = [
     id: 'guardrail',
     vi: 'Rào chắn',
     en: 'Guardrail',
-    def: 'Lớp kiểm soát đặt quanh LLM để lọc đầu vào/đầu ra và ràng buộc hành động của tác tử.',
+    def: 'Lớp kiểm soát đặt quanh LLM để lọc đầu vào/đầu ra và ràng buộc hành động của agent.',
     tags: ['llm'],
   },
   {
@@ -632,10 +632,10 @@ export const TERMS: Term[] = [
   },
   {
     id: 'agent',
-    vi: 'Tác tử',
+    vi: 'Agent',
     en: 'Agent',
     def: 'Hệ thống dùng LLM để lập kế hoạch và gọi công cụ thực hiện hành động, không chỉ sinh văn bản.',
-    notToConfuseWith: 'Chatbot — chỉ trả lời; tác tử có khả năng hành động, nên rủi ro cao hơn nhiều.',
+    notToConfuseWith: 'Chatbot — chỉ trả lời; agent có khả năng hành động, nên rủi ro cao hơn nhiều.',
     tags: ['llm'],
   },
 
@@ -656,7 +656,7 @@ export const TERMS: Term[] = [
   },
   {
     id: 'gian-cach',
-    vi: 'Lặp lại ngắt quãng',
+    vi: 'Lặp lại giãn cách',
     en: 'Spaced repetition',
     def: 'Ôn lại vào thời điểm sắp quên, khoảng cách tăng dần sau mỗi lần nhớ thành công.',
     tags: ['cach-hoc'],

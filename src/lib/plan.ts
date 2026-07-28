@@ -16,7 +16,7 @@
  *  Nguyên tắc "trần thẻ mới": nếu hôm nay học 80 thẻ mới, 3 ngày nữa bạn sẽ có
  *  80 thẻ đến hạn cộng dồn với lượng cũ. Vài lần như vậy là núi nợ ôn tập dựng
  *  lên và người học bỏ cuộc. Đây là nguyên nhân số 1 khiến người ta rời bỏ các
- *  app lặp lại ngắt quãng, nên ta chặn nó ngay từ đầu.
+ *  app lặp lại giãn cách, nên ta chặn nó ngay từ đầu.
  * ============================================================================
  */
 

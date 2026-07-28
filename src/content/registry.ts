@@ -29,12 +29,12 @@ export const FIGURE_IDS = [
   'fig-rag', // Luồng RAG và điểm chèn độc
   'fig-soc-pipeline', // Mô hình trong quy trình SOC
   'fig-drift', // Trôi dữ liệu & trôi khái niệm theo thời gian
-  'fig-forgetting', // Đường cong quên và hiệu ứng ôn ngắt quãng
+  'fig-forgetting', // Đường cong quên và hiệu ứng ôn tập giãn cách
   'fig-kill-chain', // Chuỗi tấn công và điểm ML can thiệp
   'fig-detection-lifecycle', // Vòng đời một luật/mô hình phát hiện
   'fig-entropy-scale', // Thang entropy của chuỗi ký tự
   'fig-dimensionality', // Lời nguyền số chiều
-  'fig-gradient-descent', // Hạ gradient trên mặt lỗi
+  'fig-gradient-descent', // Gradient descent trên mặt lỗi
   'fig-ensemble', // Bagging vs Boosting
   'fig-autoencoder', // Autoencoder phát hiện bất thường
   'fig-graph-lateral', // Đồ thị di chuyển ngang trong mạng
@@ -55,12 +55,12 @@ export const LAB_IDS = [
   'lab-tree', // Cây quyết định & information gain
   'lab-knn', // k-NN và ranh giới quyết định 2D
   'lab-overfit', // Quá khớp / thiên lệch – phương sai
-  'lab-gradient', // Hạ gradient & tốc độ học
+  'lab-gradient', // Gradient descent & tốc độ học
   'lab-anomaly', // Phát hiện bất thường trên dữ liệu đăng nhập
   'lab-kmeans', // Phân cụm k-means trên luồng mạng
   'lab-adversarial', // Né tránh: chỉnh đặc trưng để lật nhãn
   'lab-poison', // Đầu độc dữ liệu: lật nhãn, xem ranh giới dịch
-  'lab-prompt-injection', // Hộp cát prompt injection cho tác tử LLM
+  'lab-prompt-injection', // Sandbox prompt injection cho agent LLM
   'lab-drift', // Mô phỏng trôi khái niệm theo thời gian
   'lab-alert-load', // Máy tính tải cảnh báo SOC
   'lab-url-features', // Trích xuất đặc trưng từ URL bất kỳ
@@ -69,13 +69,13 @@ export const LAB_IDS = [
   'lab-calibration', // Hiệu chuẩn xác suất
   'lab-mcnemar', // So sánh hai mô hình bằng phép kiểm theo cặp
   'lab-conformal', // Tập dự đoán conformal và bảo đảm phủ
-  'lab-seasonality', // Phân rã mùa vụ và bẫy tự nâng mức nền
+  'lab-seasonality', // Phân rã thành phần mùa và bẫy tự nâng mức nền
   'lab-auth-graph', // Đồ thị xác thực và di chuyển ngang
   'lab-split', // Chia tập ngẫu nhiên / theo thời gian / theo nhóm
   'lab-entity', // Hợp nhất thực thể: đếm trên dữ liệu bẩn
   'lab-labels', // Ngưỡng đa engine và cửa sổ chín muồi nhãn
   'lab-explain', // MDI thiên vị cột nhiều giá trị, permutation thì không
-  'lab-tabular', // Rừng so với mạng nơ-ron trên dữ liệu bảng
+  'lab-tabular', // Random Forest so với mạng nơ-ron trên dữ liệu bảng
   'lab-forgetting', // Mô phỏng đường cong quên & lịch ôn
   'lab-pe-features', // Đọc đặc trưng tệp PE giả lập
   'lab-cost-threshold', // Tối ưu ngưỡng theo ma trận chi phí

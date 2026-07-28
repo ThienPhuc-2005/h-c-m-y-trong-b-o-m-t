@@ -317,13 +317,13 @@ export function LabPoison() {
 }
 
 /* ========================================================================== */
-/*  lab-prompt-injection — Hộp cát tác tử LLM                                  */
+/*  lab-prompt-injection — Sandbox agent LLM                                  */
 /* ========================================================================== */
 
 const SCENARIOS = [
   {
     id: 'email',
-    name: 'Tác tử tóm tắt hộp thư',
+    name: 'Agent tóm tắt hộp thư',
     system: 'Bạn là trợ lý tóm tắt email. Đọc email và tóm tắt ngắn gọn cho người dùng.',
     tools: ['đọc_email', 'gửi_email', 'tìm_kiếm_web'],
     content:
@@ -332,7 +332,7 @@ const SCENARIOS = [
   },
   {
     id: 'web',
-    name: 'Tác tử nghiên cứu web',
+    name: 'Agent nghiên cứu web',
     system: 'Bạn là trợ lý nghiên cứu. Tìm kiếm và tổng hợp thông tin từ web.',
     tools: ['tìm_kiếm_web', 'đọc_trang', 'chạy_lệnh'],
     content:
@@ -341,7 +341,7 @@ const SCENARIOS = [
   },
   {
     id: 'ticket',
-    name: 'Tác tử phân loại phiếu sự cố',
+    name: 'Agent phân loại phiếu sự cố',
     system: 'Bạn là trợ lý SOC. Phân loại mức độ nghiêm trọng của phiếu sự cố.',
     tools: ['đọc_phiếu', 'cập_nhật_phiếu', 'đóng_phiếu'],
     content:
@@ -360,7 +360,7 @@ const SCENARIOS = [
 
 const DEFENCES = [
   { id: 'delim', name: 'Đánh dấu ranh giới dữ liệu', power: 0.15, note: 'Bọc nội dung ngoài trong thẻ rõ ràng. Giảm rủi ro chút ít, không giải quyết gốc rễ.' },
-  { id: 'privsep', name: 'Tách đặc quyền (tác tử đọc ≠ tác tử hành động)', power: 0.4, note: 'Tác tử đọc dữ liệu ngoài KHÔNG có quyền gọi công cụ nguy hiểm. Đây là biện pháp mạnh nhất.' },
+  { id: 'privsep', name: 'Tách đặc quyền (agent đọc ≠ agent hành động)', power: 0.4, note: 'Agent đọc dữ liệu ngoài KHÔNG có quyền gọi công cụ nguy hiểm. Đây là biện pháp mạnh nhất.' },
   { id: 'humanloop', name: 'Con người xác nhận hành động rủi ro', power: 0.45, note: 'Mọi hành động không hoàn tác được đều cần một cú bấm của người thật.' },
   { id: 'outfilter', name: 'Lọc đầu ra & giám sát lời gọi công cụ', power: 0.2, note: 'Bắt được hành vi bất thường sau khi nó xảy ra, không ngăn được nó.' },
   { id: 'allowlist', name: 'Danh sách trắng cho đích đến', power: 0.35, note: 'Chỉ gửi mail/gọi API tới địa chỉ đã duyệt trước.' },
@@ -381,13 +381,13 @@ export function LabPromptInjection() {
   return (
     <LabShell
       id="lab-prompt-injection"
-      title="Hộp cát prompt injection"
+      title="Sandbox prompt injection"
       takeaway={
         <>
           Điều quan trọng nhất bạn cần mang đi: <b>prompt injection không phải lỗi có thể vá</b>. Nó là hệ quả
           trực tiếp của việc LLM nhận chỉ dẫn và dữ liệu qua cùng một kênh văn bản. Bạn không "sửa" được nó
           bằng cách viết system prompt hay hơn, hay bằng cách lọc từ khoá — kẻ tấn công có vô hạn cách diễn đạt.
-          Cách phòng thủ thật sự hiệu quả là <b>kiến trúc</b>: giả định tác tử SẼ bị chiếm quyền, rồi thiết kế
+          Cách phòng thủ thật sự hiệu quả là <b>kiến trúc</b>: giả định agent SẼ bị chiếm quyền, rồi thiết kế
           sao cho lúc đó nó không làm được gì nghiêm trọng. Hãy bật "tách đặc quyền" + "con người xác nhận" và
           để ý rằng chúng mạnh hơn hẳn mọi biện pháp lọc chuỗi.
         </>
@@ -407,11 +407,11 @@ export function LabPromptInjection() {
             <div className="mono" style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>{s.system}</div>
           </div>
           <div className="panel" style={{ borderColor: s.injected ? 'var(--bad-border)' : 'var(--border-subtle)' }}>
-            <div className="stat-k" style={{ marginBottom: 6 }}>Nội dung bên ngoài mà tác tử đọc</div>
+            <div className="stat-k" style={{ marginBottom: 6 }}>Nội dung bên ngoài mà agent đọc</div>
             <pre className="mono" style={{ fontSize: 'var(--fs-xs)', whiteSpace: 'pre-wrap', margin: 0, color: 'var(--text)' }}>{s.content}</pre>
           </div>
           <div className="panel">
-            <div className="stat-k" style={{ marginBottom: 6 }}>Công cụ tác tử được phép gọi</div>
+            <div className="stat-k" style={{ marginBottom: 6 }}>Công cụ agent được phép gọi</div>
             <div className="row-wrap">
               {s.tools.map((t) => (
                 <span key={t} className={`chip mono ${['gửi_email', 'chạy_lệnh', 'đóng_phiếu'].includes(t) ? 'chip-bad' : ''}`}>{t}</span>
@@ -448,10 +448,10 @@ export function LabPromptInjection() {
           <div className={`callout ${compromised ? 'co-warn' : 'co-pro'}`}>
             <Icon className="callout-icon" name={compromised ? 'siren' : 'shield'} size={18} />
             <div>
-              <div className="callout-title">{compromised ? 'Tác tử đã làm theo kẻ tấn công' : 'Tác tử giữ được hành vi đúng'}</div>
+              <div className="callout-title">{compromised ? 'Agent đã làm theo kẻ tấn công' : 'Agent giữ được hành vi đúng'}</div>
               <div className="callout-body">
                 {compromised
-                  ? 'Tác tử coi chỉ dẫn trong dữ liệu ngoài là mệnh lệnh hợp lệ và đã gọi công cụ theo ý kẻ tấn công. Nạn nhân không nhìn thấy gì bất thường trong câu trả lời.'
+                  ? 'Agent coi chỉ dẫn trong dữ liệu ngoài là mệnh lệnh hợp lệ và đã gọi công cụ theo ý kẻ tấn công. Nạn nhân không nhìn thấy gì bất thường trong câu trả lời.'
                   : s.injected
                     ? 'Chỉ dẫn độc hại vẫn lọt vào ngữ cảnh — mô hình vẫn "đọc" nó. Nhưng lớp kiến trúc đã ngăn hậu quả. Đó là mục tiêu đúng: chặn TÁC ĐỘNG, không kỳ vọng chặn được ĐẦU VÀO.'
                     : 'Không có chỉ dẫn độc hại trong nội dung này.'}
@@ -481,7 +481,7 @@ export function LabForgetting() {
     const curveNone: [number, number][] = [];
     for (let d = 0; d <= days; d += 0.5) curveNone.push([d, R(d, 1.2)]);
 
-    // Ôn ngắt quãng: mỗi lần ôn thành công làm độ ổn định tăng lên
+    // Ôn tập giãn cách: mỗi lần ôn thành công làm độ ổn định tăng lên
     let s = 1.2;
     let t = 0;
     const marks: number[] = [];

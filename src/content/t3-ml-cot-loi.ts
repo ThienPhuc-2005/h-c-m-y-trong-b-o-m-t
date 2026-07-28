@@ -20,7 +20,7 @@ export const track3: Track = {
   icon: 'brain',
   hue: 't3',
   blurb:
-    'Tám bài về nhóm thuật toán chiếm gần như toàn bộ công việc ML bảo mật thực tế: hồi quy logistic, Naive Bayes, cây quyết định, rừng ngẫu nhiên và gradient boosting, cùng k-NN và SVM. Bạn sẽ hiểu từng mô hình đủ sâu để chọn đúng, chỉnh đúng và biết nó hỏng ở đâu — chứ không phải chỉ gọi được hàm fit.',
+    'Tám bài về nhóm thuật toán chiếm gần như toàn bộ công việc ML bảo mật thực tế: hồi quy logistic, Naive Bayes, cây quyết định, Random Forest và gradient boosting, cùng k-NN và SVM. Bạn sẽ hiểu từng mô hình đủ sâu để chọn đúng, chỉnh đúng và biết nó hỏng ở đâu — chứ không phải chỉ gọi được hàm fit.',
   outcomes: [
     'Chọn đúng kiểu học và họ mô hình cho một bài toán bảo mật cụ thể, có lý do bảo vệ được',
     'Đọc và giải thích được trọng số của mô hình tuyến tính cho người không làm kỹ thuật',
@@ -114,7 +114,7 @@ export const track3: Track = {
         { t: 'h', text: 'Tăng cường — hiếm, nhưng có chỗ dùng thật', level: 2 },
         {
           t: 'p',
-          md: 'Tác tử (agent) quan sát trạng thái, chọn hành động, nhận phần thưởng, và học chính sách tối đa hoá phần thưởng dài hạn. Trong bảo mật, chỗ dùng thật hiện nay khá hẹp: mô phỏng đường tấn công trong môi trường ảo (CyberBattleSim của Microsoft là một ví dụ mã nguồn mở), điều khiển bộ sinh đầu vào trong fuzzing, và tinh chỉnh mô hình ngôn ngữ bằng phản hồi (RLHF).',
+          md: 'Agent (agent) quan sát trạng thái, chọn hành động, nhận phần thưởng, và học chính sách tối đa hoá phần thưởng dài hạn. Trong bảo mật, chỗ dùng thật hiện nay khá hẹp: mô phỏng đường tấn công trong môi trường ảo (CyberBattleSim của Microsoft là một ví dụ mã nguồn mở), điều khiển bộ sinh đầu vào trong fuzzing, và tinh chỉnh mô hình ngôn ngữ bằng phản hồi (RLHF).',
         },
         {
           t: 'callout',
@@ -288,7 +288,7 @@ export const track3: Track = {
             ['Gom 200.000 mẫu mã độc thành các họ', 'Không giám sát (phân cụm)'],
             ['Xếp hạng cảnh báo dựa trên 3 năm lịch sử xử lý', 'Có giám sát'],
             ['40 sự cố đã xác nhận, 400 triệu dòng log', 'Bán giám sát / học chủ động'],
-            ['Tối ưu chuỗi hành động của tác tử trong môi trường mô phỏng', 'Tăng cường'],
+            ['Tối ưu chuỗi hành động của agent trong môi trường mô phỏng', 'Tăng cường'],
           ],
           why: 'Bốn cặp này bao trọn phổ tình huống bạn sẽ gặp. Điểm chung: kiểu học được suy ra từ dữ liệu sẵn có, không phải từ mức độ "hiện đại" của thuật toán. Nếu nhớ được bốn cặp này, bạn đã có phản xạ đúng cho phần lớn cuộc họp đầu tiên của một dự án.',
         },
@@ -434,9 +434,9 @@ export const track3: Track = {
           t: 'callout',
           kind: 'math',
           title: 'Một tính chất đáng giá: hàm mất mát lồi',
-          md: 'Với hồi quy logistic, mặt lỗi là **lồi (convex)** — nó chỉ có đúng một đáy. Nghĩa là hạ gradient chạy từ điểm khởi tạo nào cũng về cùng một nghiệm tối ưu, không có cực tiểu địa phương để mắc kẹt, và chạy lại hai lần cho đúng cùng kết quả. Mạng nơ-ron thì ngược lại: mặt lỗi lồi lõm, khởi tạo khác nhau cho mô hình khác nhau. Tính lặp lại được này rất có giá trị khi bạn phải giải trình một quyết định chặn từ sáu tháng trước.',
+          md: 'Với hồi quy logistic, mặt lỗi là **lồi (convex)** — nó chỉ có đúng một đáy. Nghĩa là gradient descent chạy từ điểm khởi tạo nào cũng về cùng một nghiệm tối ưu, không có cực tiểu địa phương để mắc kẹt, và chạy lại hai lần cho đúng cùng kết quả. Mạng nơ-ron thì ngược lại: mặt lỗi lồi lõm, khởi tạo khác nhau cho mô hình khác nhau. Tính lặp lại được này rất có giá trị khi bạn phải giải trình một quyết định chặn từ sáu tháng trước.',
         },
-        { t: 'figure', id: 'fig-gradient-descent', caption: 'Hạ gradient trên mặt lỗi. Với hồi quy logistic mặt này là một cái bát — đi hướng nào cũng về đáy.' },
+        { t: 'figure', id: 'fig-gradient-descent', caption: 'Gradient descent trên mặt lỗi. Với hồi quy logistic mặt này là một cái bát — đi hướng nào cũng về đáy.' },
         {
           t: 'code',
           lang: 'python',
@@ -508,10 +508,10 @@ export const track3: Track = {
           t: 'list',
           ordered: true,
           items: [
-            '**Rất mạnh trên không gian thưa nhiều chiều.** Biểu diễn URL hoặc dòng log bằng TF-IDF trên n-gram ký tự cho ra hàng chục nghìn cột thưa. Ở đó mô hình tuyến tính thường ngang ngửa hoặc thắng cây tăng cường, mà nhanh hơn nhiều bậc.',
+            '**Rất mạnh trên không gian thưa nhiều chiều.** Biểu diễn URL hoặc dòng log bằng TF-IDF trên n-gram ký tự cho ra hàng chục nghìn cột thưa. Ở đó mô hình tuyến tính thường ngang ngửa hoặc thắng gradient boosting, mà nhanh hơn nhiều bậc.',
             '**Suy luận gần như miễn phí.** Một phép nhân vector: vài micro-giây, vài trăm kilobyte bộ nhớ. Đủ để chạy inline trên proxy hoặc nhúng vào agent trên endpoint.',
             '**Xác suất tương đối trung thực.** Vì hàm mất mát là log loss, đầu ra thường đã gần hiệu chuẩn — quan trọng khi bạn cần xếp hạng theo rủi ro hoặc nhân với chi phí (chặng 4).',
-            '**Giải trình được ở mức từng quyết định.** Bạn liệt kê được đóng góp của từng đặc trưng cho đúng URL này, và tổng của chúng bằng đúng điểm số. Với cây tăng cường bạn phải viện đến SHAP; với mô hình tuyến tính thì đó là phép cộng.',
+            '**Giải trình được ở mức từng quyết định.** Bạn liệt kê được đóng góp của từng đặc trưng cho đúng URL này, và tổng của chúng bằng đúng điểm số. Với gradient boosting bạn phải viện đến SHAP; với mô hình tuyến tính thì đó là phép cộng.',
             '**Là thước đo cho mọi thứ phía sau.** Nếu mô hình phức tạp của bạn chỉ hơn hồi quy logistic 0,3 điểm PR-AUC, hãy nghiêm túc cân nhắc chi phí vận hành trước khi triển khai nó.',
           ],
         },
@@ -615,7 +615,7 @@ export const track3: Track = {
             'k-NN với khoảng cách cosine',
           ],
           answer: 1,
-          why: 'Không gian thưa rất nhiều chiều là sân nhà của mô hình tuyến tính: huấn luyện trong vài phút trên ma trận thưa, không cần chuẩn hoá đặc biệt, và cho kết quả thường ngang ngửa các mô hình nặng hơn. Cây tăng cường phải chia nhánh trên từng cột nên rất chậm và kém hiệu quả ở đây. k-NN chết vì phải quét toàn bộ 900.000 mẫu cho mỗi truy vấn. Mạng nơ-ron có thể thắng, nhưng chỉ khi bạn đã có đường cơ sở để chứng minh phần thắng đó xứng đáng.',
+          why: 'Không gian thưa rất nhiều chiều là sân nhà của mô hình tuyến tính: huấn luyện trong vài phút trên ma trận thưa, không cần chuẩn hoá đặc biệt, và cho kết quả thường ngang ngửa các mô hình nặng hơn. Gradient boosting phải chia nhánh trên từng cột nên rất chậm và kém hiệu quả ở đây. k-NN chết vì phải quét toàn bộ 900.000 mẫu cho mỗi truy vấn. Mạng nơ-ron có thể thắng, nhưng chỉ khi bạn đã có đường cơ sở để chứng minh phần thắng đó xứng đáng.',
           distractorWhy: [
             'Cây phải duyệt qua 60.000 cột ở mỗi lần chia nhánh — chậm và kém hiệu quả với đặc trưng thưa.',
             '',
@@ -816,7 +816,7 @@ export const track3: Track = {
             items: [
               'Cần xác suất hiệu chuẩn để nhân với chi phí',
               'Ngữ nghĩa quan trọng hơn từ khoá (mô hình transformer thắng rõ)',
-              'Đặc trưng số liên tục và tương tác phức tạp (cây tăng cường thắng)',
+              'Đặc trưng số liên tục và tương tác phức tạp (gradient boosting thắng)',
               'Đối thủ chủ động chèn từ vô hại để pha loãng bằng chứng',
               'Bài toán mà thứ tự từ mang thông tin (dòng lệnh, mã nguồn)',
             ],
@@ -959,7 +959,7 @@ export const track3: Track = {
       objectives: [
         'Tính được Gini và information gain của một phép chia cụ thể bằng tay',
         'Giải thích được cơ chế khiến cây quá khớp, và nêu bốn tham số chặn nó lại',
-        'Nhận ra cái bẫy đặc trưng có lực lượng cao khi đọc một cây đã huấn luyện',
+        'Nhận ra cái bẫy đặc trưng có nhiều giá trị phân biệt khi đọc một cây đã huấn luyện',
       ],
       blocks: [
         {
@@ -1036,7 +1036,7 @@ export const track3: Track = {
         {
           t: 'callout',
           kind: 'pitfall',
-          title: 'Cái bẫy lớn nhất: đặc trưng có lực lượng cao',
+          title: 'Cái bẫy lớn nhất: đặc trưng có nhiều giá trị phân biệt',
           md: 'Nếu bạn để `src_ip`, `hostname`, `user_agent` hay `session_id` vào cây dưới dạng hạng mục, thuật toán sẽ mê chúng ngay. Lý do thuần cơ học: một đặc trưng có 50.000 giá trị khác nhau luôn tìm được cách chia làm giảm độ vẩn đục nhiều hơn một đặc trưng chỉ có 2 giá trị — kể cả khi nó hoàn toàn vô nghĩa. Cây sẽ tạo ra luật kiểu "nếu `src_ip = 10.4.1.77` thì độc hại", tức là ghi nhớ máy tính, không phải học hành vi. Kiểm tra nhanh: nhìn 10 phép chia đầu tiên; nếu có bất kỳ định danh nào ở đó, hãy bỏ hoặc thay bằng đặc trưng dẫn xuất (số kết nối, độ tuổi tài khoản, thuộc dải mạng nào).',
         },
         {
@@ -1108,7 +1108,7 @@ export const track3: Track = {
         'Cây cắt không gian thành hộp song song với trục, nên bắt tương tác rất tự nhiên nhưng xấp xỉ ranh giới chéo rất tệ.',
         'Cây không giới hạn độ sâu sẽ ghi nhớ dữ liệu: 100% trên tập huấn luyện là dấu hiệu xấu, không phải thành tích.',
         'Bốn cái phanh: max_depth, min_samples_leaf, min_samples_split, ccp_alpha.',
-        'Đặc trưng có lực lượng cao (IP, hostname, session id) làm cây ghi nhớ định danh thay vì học hành vi.',
+        'Đặc trưng có nhiều giá trị phân biệt (IP, hostname, session id) làm cây ghi nhớ định danh thay vì học hành vi.',
         'Cây rất bất ổn định trước thay đổi nhỏ của dữ liệu — điểm yếu này chính là nguyên liệu cho Random Forest.',
       ],
       cards: [
@@ -1134,7 +1134,7 @@ export const track3: Track = {
         {
           id: 't3l4-c4',
           front: 'Vì sao không nên đưa src_ip hay hostname vào cây dưới dạng hạng mục?',
-          back: 'Đặc trưng lực lượng cao luôn tìm được phép chia giảm vẩn đục nhiều nhất, nên cây sẽ ghi nhớ định danh cụ thể thay vì học hành vi tổng quát.',
+          back: 'Đặc trưng nhiều giá trị phân biệt luôn tìm được phép chia giảm vẩn đục nhiều nhất, nên cây sẽ ghi nhớ định danh cụ thể thay vì học hành vi tổng quát.',
           tags: ['cay-quyet-dinh', 'dac-trung'],
         },
         {
@@ -1217,7 +1217,7 @@ export const track3: Track = {
         },
         {
           title: 'scikit-learn — Decision Trees, mục Tips on practical use',
-          note: 'Danh sách ngắn các lời khuyên thực tế, trong đó có cảnh báo về đặc trưng lực lượng cao.',
+          note: 'Danh sách ngắn các lời khuyên thực tế, trong đó có cảnh báo về đặc trưng nhiều giá trị phân biệt.',
         },
       ],
     },
@@ -1239,7 +1239,7 @@ export const track3: Track = {
           'Bạn có 4,2 triệu dòng NetFlow đã trích 87 đặc trưng, hạn 2 tuần, không GPU. Bạn cần một mô hình đủ tốt để đưa vào production và một bảng giải thích đặc trưng nào quan trọng để thuyết phục ban lãnh đạo. Đây gần như là định nghĩa của bài toán mà gradient boosting sinh ra để giải.',
         roles: ['Security Data Scientist', 'ML Engineer', 'Detection Engineer'],
         costOfNotKnowing:
-          'Bạn trình bày bảng feature importance mặc định của thư viện, ai đó dựa vào đó ra quyết định thu thập dữ liệu, và ba tháng sau phát hiện đặc trưng đứng đầu bảng chỉ là một định danh có lực lượng cao.',
+          'Bạn trình bày bảng feature importance mặc định của thư viện, ai đó dựa vào đó ra quyết định thu thập dữ liệu, và ba tháng sau phát hiện đặc trưng đứng đầu bảng chỉ là một định danh có nhiều giá trị phân biệt.',
       },
       objectives: [
         'Phân biệt bagging và boosting theo cơ chế giảm phương sai hay giảm thiên lệch',
@@ -1270,7 +1270,7 @@ export const track3: Track = {
           t: 'callout',
           kind: 'insight',
           title: 'Bagging giảm phương sai, không giảm thiên lệch',
-          md: 'Trung bình N ước lượng không thiên lệch nhưng nhiễu sẽ cho một ước lượng ít nhiễu hơn — nhưng vẫn **giữ nguyên** thiên lệch. Nghĩa là: nếu từng cây riêng lẻ đã bỏ sót một quy luật (vì bạn giới hạn độ sâu quá chặt chẳng hạn), rừng cũng bỏ sót. Đó là lý do trong Random Forest người ta thường để cây **mọc sâu**: mỗi cây thiên lệch thấp, phương sai cao, và phép trung bình sẽ lo phần phương sai.',
+          md: 'Trung bình N ước lượng không thiên lệch nhưng nhiễu sẽ cho một ước lượng ít nhiễu hơn — nhưng vẫn **giữ nguyên** thiên lệch. Nghĩa là: nếu từng cây riêng lẻ đã bỏ sót một quy luật (vì bạn giới hạn độ sâu quá chặt chẳng hạn), Random Forest cũng bỏ sót. Đó là lý do trong Random Forest người ta thường để cây **mọc sâu**: mỗi cây thiên lệch thấp, phương sai cao, và phép trung bình sẽ lo phần phương sai.',
         },
         { t: 'h', text: 'Boosting: mỗi cây sửa sai cho tổng các cây trước', level: 2 },
         {
@@ -1320,7 +1320,7 @@ export const track3: Track = {
           rows: [
             ['XGBoost (Chen & Guestrin, 2016)', 'Mọc cây theo tầng, phạt L1/L2 trên trọng số lá, xử lý thiếu dữ liệu tự động', 'Cần ổn định và hệ sinh thái rộng nhất'],
             ['LightGBM (Ke và cộng sự, 2017)', 'Mọc theo lá, chia thùng histogram, gộp đặc trưng loại trừ nhau', 'Dữ liệu lớn, cần huấn luyện nhanh nhất'],
-            ['CatBoost', 'Xử lý hạng mục bằng thống kê mục tiêu có sắp thứ tự, chống rò rỉ mục tiêu', 'Nhiều cột hạng mục lực lượng cao'],
+            ['CatBoost', 'Xử lý hạng mục bằng thống kê mục tiêu có sắp thứ tự, chống rò rỉ mục tiêu', 'Nhiều cột hạng mục nhiều giá trị phân biệt'],
             ['sklearn HistGradientBoosting', 'Cài đặt histogram trong scikit-learn, không phụ thuộc ngoài', 'Muốn ít phụ thuộc, chấp nhận chậm hơn chút'],
           ],
         },
@@ -1411,7 +1411,7 @@ export const track3: Track = {
           title: 'Bốn cái bẫy, và cách kiểm chứng thay thế',
           steps: [
             {
-              title: 'Bẫy 1 — Thiên lệch về đặc trưng lực lượng cao',
+              title: 'Bẫy 1 — Thiên lệch về đặc trưng nhiều giá trị phân biệt',
               md: 'Tầm quan trọng dựa trên độ vẩn đục (mặc định của scikit-learn và LightGBM) cộng dồn mức giảm vẩn đục ở mọi nút dùng đặc trưng đó. Đặc trưng có nhiều giá trị khác nhau có nhiều cơ hội được chọn hơn, nên nó **luôn** trông quan trọng — kể cả khi nó là số ngẫu nhiên. **Kiểm chứng:** thêm một cột nhiễu ngẫu nhiên vào dữ liệu; mọi đặc trưng xếp dưới cột nhiễu đó là rác.',
             },
             {
@@ -1441,7 +1441,7 @@ export const track3: Track = {
         'Thêm cây vào Random Forest gần như vô hại; thêm cây vào boosting SẼ quá khớp, nên luôn dùng dừng sớm.',
         'Tổ hợp cây thắng trên dữ liệu bảng vì không cần chuẩn hoá, bắt ngưỡng phi tuyến tự nhiên, chịu được cột vô dụng và xử lý giá trị thiếu.',
         'Cây không ngoại suy: giá trị vượt ngoài khoảng huấn luyện được đối xử như giá trị lớn nhất đã thấy.',
-        'Feature importance mặc định thiên lệch về đặc trưng lực lượng cao và được đo trên tập huấn luyện — dùng permutation importance trên tập kiểm tra để báo cáo.',
+        'Feature importance mặc định thiên lệch về đặc trưng nhiều giá trị phân biệt và được đo trên tập huấn luyện — dùng permutation importance trên tập kiểm tra để báo cáo.',
         'Một đặc trưng chiếm trên 50% tầm quan trọng là nghi phạm rò rỉ nhãn cho tới khi chứng minh ngược lại.',
       ],
       cards: [
@@ -1509,7 +1509,7 @@ export const track3: Track = {
             'Dùng TreeSHAP để xem cả độ lớn lẫn hướng đóng góp ở mức từng mẫu',
           ],
           answers: [0, 1, 3],
-          why: 'Ba cách hợp lệ đều có chung một đặc điểm: chúng đo tác động lên **dữ liệu mô hình chưa thấy**, hoặc đưa ra một mốc so sánh khách quan. Cột nhiễu ngẫu nhiên là mẹo rẻ tiền nhưng cực kỳ hiệu quả để lộ ra bao nhiêu đặc trưng của bạn thực chất là rác. Còn `feature_importances_` mặc định được tính trong lúc xây cây trên chính tập huấn luyện, và thiên lệch về đặc trưng lực lượng cao — nó có thể dùng để dò lỗi nhanh, nhưng không dùng để báo cáo.',
+          why: 'Ba cách hợp lệ đều có chung một đặc điểm: chúng đo tác động lên **dữ liệu mô hình chưa thấy**, hoặc đưa ra một mốc so sánh khách quan. Cột nhiễu ngẫu nhiên là mẹo rẻ tiền nhưng cực kỳ hiệu quả để lộ ra bao nhiêu đặc trưng của bạn thực chất là rác. Còn `feature_importances_` mặc định được tính trong lúc xây cây trên chính tập huấn luyện, và thiên lệch về đặc trưng nhiều giá trị phân biệt — nó có thể dùng để dò lỗi nhanh, nhưng không dùng để báo cáo.',
         },
         {
           id: 't3l5-q3',
@@ -1598,7 +1598,7 @@ export const track3: Track = {
           t: 'callout',
           kind: 'insight',
           title: 'Vì sao vẫn đáng học một thuật toán ít dùng ở quy mô lớn',
-          md: 'Vì k-NN buộc bạn phải trả lời một câu hỏi mà **mọi** mô hình đều ngầm trả lời: *"hai mẫu thế nào thì gọi là giống nhau?"* Ở k-NN câu trả lời hiện ra lồ lộ trong hàm khoảng cách. Ở rừng ngẫu nhiên nó bị giấu trong cấu trúc cây. Hiểu rõ ở chỗ dễ nhìn giúp bạn đặt đúng câu hỏi ở chỗ khó nhìn.',
+          md: 'Vì k-NN buộc bạn phải trả lời một câu hỏi mà **mọi** mô hình đều ngầm trả lời: *"hai mẫu thế nào thì gọi là giống nhau?"* Ở k-NN câu trả lời hiện ra lồ lộ trong hàm khoảng cách. Ở Random Forest nó bị giấu trong cấu trúc cây. Hiểu rõ ở chỗ dễ nhìn giúp bạn đặt đúng câu hỏi ở chỗ khó nhìn.',
         },
         { t: 'lab', id: 'lab-knn', intro: 'Kéo k và độ nhiễu, xem ranh giới quyết định biến dạng ra sao.' },
         { t: 'h', text: 'Chọn thước đo khoảng cách — quyết định quan trọng hơn chọn k', level: 2 },
@@ -1719,7 +1719,7 @@ mo_hinh.fit(X_train, y_train)`,
             ],
           },
           right: {
-            title: 'Chuyển sang cây tăng cường khi…',
+            title: 'Chuyển sang gradient boosting khi…',
             icon: 'x',
             items: [
               'Dữ liệu bảng có đặc trưng khác đơn vị, nhiều giá trị thiếu',
@@ -1936,7 +1936,7 @@ mo_hinh.fit(X_train, y_train)`,
         {
           t: 'callout',
           kind: 'insight',
-          title: 'Vì sao rừng ngẫu nhiên hiệu quả đến vậy',
+          title: 'Vì sao Random Forest hiệu quả đến vậy',
           md: 'Một cây sâu có **thiên lệch thấp, phương sai cao** — nó nắm được quy luật phức tạp nhưng bám quá sát dữ liệu cụ thể. Lấy trung bình hàng trăm cây như vậy, mỗi cây huấn luyện trên mẫu ngẫu nhiên khác nhau, thì các sai số thất thường triệt tiêu lẫn nhau trong khi phần quy luật chung được giữ lại. Đó chính là toàn bộ ý tưởng của bagging, diễn đạt bằng ngôn ngữ thiên lệch–phương sai.',
         },
         {

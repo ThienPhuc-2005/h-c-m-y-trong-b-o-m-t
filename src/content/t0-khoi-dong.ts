@@ -11,7 +11,7 @@ export const track0: Track = {
   id: 'khoi-dong',
   order: 0,
   title: 'Khởi động: bức tranh lớn',
-  tagline: 'Hiểu địa hình trước khi bước vào rừng',
+  tagline: 'Bức tranh toàn cảnh trước khi vào chi tiết',
   icon: 'compass',
   hue: 't0',
   blurb:
@@ -624,7 +624,7 @@ export const track0: Track = {
             ['UEBA', 'Log đăng nhập và truy cập tệp theo thời gian'],
             ['Di chuyển ngang', 'Đồ thị quan hệ tài khoản – máy'],
           ],
-          why: 'Mỗi bài toán có một "hình dạng dữ liệu" riêng, và hình dạng đó quyết định họ mô hình. Chuỗi ký tự → mô hình chuỗi. Bảng số → cây tăng cường. Quan hệ → đồ thị. Đây là bước suy luận đầu tiên khi gặp bài toán mới.',
+          why: 'Mỗi bài toán có một "hình dạng dữ liệu" riêng, và hình dạng đó quyết định họ mô hình. Chuỗi ký tự → mô hình chuỗi. Bảng số → gradient boosting. Quan hệ → đồ thị. Đây là bước suy luận đầu tiên khi gặp bài toán mới.',
         },
         {
           id: 't0l3-q2',
@@ -663,7 +663,7 @@ export const track0: Track = {
           'Bạn học theo cách quen thuộc — đọc lại, tô màu, xem video — những cách được chứng minh là tạo ảo giác thông thạo nhưng hiệu quả ghi nhớ thấp nhất.',
       },
       objectives: [
-        'Giải thích được đường cong quên và vì sao ôn ngắt quãng bẻ được nó',
+        'Giải thích được đường cong quên và vì sao ôn tập giãn cách bẻ được nó',
         'Phân biệt được "cảm giác thuộc bài" và "thực sự nhớ được"',
         'Sử dụng đúng bốn cơ chế của app: dự đoán, truy hồi, thẻ ôn, và xen kẽ',
       ],
@@ -689,7 +689,7 @@ export const track0: Track = {
               md: 'Các điểm dừng giữa bài buộc bạn gọi kiến thức ra khỏi đầu. Hành động lấy ra khỏi trí nhớ chính là thứ củng cố trí nhớ — đọc lại thì không. Đây là lý do app không có nút "đọc lại toàn bộ" nổi bật: nó là cái bẫy dễ chịu.',
             },
             {
-              title: 'Ôn ngắt quãng đúng thời điểm (hiệu ứng giãn cách)',
+              title: 'Ôn tập giãn cách đúng thời điểm (hiệu ứng giãn cách)',
               md: 'Mỗi bài sinh ra vài thẻ ghi nhớ. Hệ thống FSRS tính toán ngày bạn **sắp quên** và đưa thẻ đó ra đúng lúc. Ôn sớm hơn thì lãng phí, muộn hơn thì phải học lại. Bạn không cần tự quyết định — chỉ cần mở mục Ôn tập mỗi ngày.',
             },
             {
@@ -751,7 +751,7 @@ export const track0: Track = {
       keyTakeaways: [
         'Đường cong quên: không ôn thì sau 7 ngày chỉ còn ~20–25% những gì đã học.',
         'Truy hồi (cố gọi ra khỏi đầu) củng cố trí nhớ; đọc lại thì không, dù cảm giác dễ chịu hơn nhiều.',
-        'Ôn ngắt quãng đúng thời điểm sắp quên là cách rẻ nhất để biến kiến thức tạm thời thành lâu dài.',
+        'Ôn tập giãn cách đúng thời điểm sắp quên là cách rẻ nhất để biến kiến thức tạm thời thành lâu dài.',
         'Xen kẽ chủ đề khiến việc học khó hơn và chậm hơn tức thời, nhưng nhớ lâu và phân biệt tốt hơn.',
         'Ảo tưởng thông thạo là kẻ thù: cảm giác "hiểu rồi" không đồng nghĩa với "gọi ra được".',
         '20 phút/ngày đều đặn thắng 3 giờ dồn cuối tuần.',
@@ -822,7 +822,7 @@ export const track0: Track = {
           note: 'Tổng hợp dễ đọc về khoa học ghi nhớ. Đọc một lần, dùng cả đời.',
         },
         {
-          title: 'FSRS — thuật toán lặp lại ngắt quãng mã nguồn mở',
+          title: 'FSRS — thuật toán lặp lại giãn cách mã nguồn mở',
           note: 'Chính thuật toán app này dùng để tính ngày ôn. Nếu tò mò về mô hình trí nhớ ba biến, đây là nguồn gốc.',
         },
       ],

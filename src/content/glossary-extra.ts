@@ -42,7 +42,7 @@ export const TERMS_EXTRA: Term[] = [
   },
   {
     id: 'hashing-trick',
-    vi: 'Mẹo băm',
+    vi: 'Hashing trick',
     en: 'Hashing trick / Feature hashing',
     def: 'Ánh xạ số lượng hạng mục vô hạn vào một số cột cố định bằng hàm băm, thay vì lập từ điển.',
     example: 'Tên miền là tập không giới hạn; băm vào 2^18 cột cho phép xử lý cả tên miền chưa từng thấy.',
@@ -67,10 +67,10 @@ export const TERMS_EXTRA: Term[] = [
   },
   {
     id: 'cardinality',
-    vi: 'Lực lượng tập giá trị',
+    vi: 'Số giá trị phân biệt (cardinality)',
     en: 'Cardinality',
     def: 'Số giá trị khác nhau mà một trường có thể nhận.',
-    example: 'Trường "giao thức" có lực lượng thấp (vài giá trị); trường "URL" có lực lượng gần như vô hạn.',
+    example: 'Trường "giao thức" có ít giá trị phân biệt (vài giá trị); trường "URL" có số giá trị phân biệt gần như vô hạn.',
     tags: ['du-lieu', 'dac-trung'],
   },
   {
@@ -97,7 +97,7 @@ export const TERMS_EXTRA: Term[] = [
     vi: 'Định lý Bayes',
     en: "Bayes' theorem",
     def: 'Công thức đảo chiều xác suất có điều kiện: từ P(bằng chứng | giả thuyết) suy ra P(giả thuyết | bằng chứng).',
-    example: 'Từ "bộ dò bắt được 99% mã độc" suy ra "cảnh báo này có bao nhiêu phần trăm là mã độc thật" — cần thêm tỉ lệ nền.',
+    example: 'Từ "bộ phát hiện bắt được 99% mã độc" suy ra "cảnh báo này có bao nhiêu phần trăm là mã độc thật" — cần thêm tỉ lệ nền.',
     tags: ['nen-tang'],
   },
   {
@@ -294,7 +294,7 @@ export const TERMS_EXTRA: Term[] = [
     id: 'telemetry',
     vi: 'Dữ liệu đo từ xa',
     en: 'Telemetry',
-    def: 'Luồng sự kiện do tác tử trên máy hoặc thiết bị mạng gửi về liên tục.',
+    def: 'Luồng sự kiện do agent trên máy hoặc thiết bị mạng gửi về liên tục.',
     tags: ['du-lieu'],
   },
   {
@@ -515,7 +515,7 @@ export const TERMS_EXTRA: Term[] = [
   /* ---- Mã độc & mạng ---- */
   {
     id: 'sandbox',
-    vi: 'Hộp cát',
+    vi: 'Sandbox',
     en: 'Sandbox',
     def: 'Môi trường cách ly để chạy tệp nghi ngờ và quan sát hành vi của nó một cách an toàn.',
     notToConfuseWith:
@@ -667,14 +667,14 @@ export const TERMS_EXTRA: Term[] = [
     vi: 'Phòng thủ nhiều tầng',
     en: 'Defence in depth',
     def: 'Xếp chồng nhiều lớp kiểm soát độc lập, sao cho một lớp bị vượt qua vẫn còn lớp khác chặn lại.',
-    example: 'Với tác tử LLM: lọc đầu vào, tách đặc quyền, danh sách trắng đích đến, và người xác nhận hành động rủi ro.',
+    example: 'Với agent LLM: lọc đầu vào, tách đặc quyền, danh sách trắng đích đến, và người xác nhận hành động rủi ro.',
     tags: ['van-hanh', 'llm'],
   },
 
   /* ---- Học tập (sửa lỗi chính tả id) ---- */
   {
     id: 'giãn-cach',
-    vi: 'Lặp lại ngắt quãng',
+    vi: 'Lặp lại giãn cách',
     en: 'Spaced repetition',
     def: 'Ôn lại vào thời điểm sắp quên, khoảng cách tăng dần sau mỗi lần nhớ thành công.',
     notToConfuseWith: 'Cùng nghĩa với mục "gian-cach"; giữ cả hai id vì nội dung bài dùng lẫn hai cách viết.',

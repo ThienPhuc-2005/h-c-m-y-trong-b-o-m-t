@@ -18,7 +18,7 @@ import { Icon } from '../components/Icon';
 
 /**
  * Nghịch lý tỉ lệ nền, viết thẳng ra thành số. Tách khỏi component để chốt được
- * lời kết luận: giữ bộ dò "rất tốt" mà hạ tỉ lệ nền thì độ chuẩn xác sụp đổ.
+ * lời kết luận: giữ bộ phát hiện "rất tốt" mà hạ tỉ lệ nền thì độ chuẩn xác sụp đổ.
  */
 export function baseRateStats(prevPer100k: number, tpr: number, fpr: number, volume: number) {
   const positives = (volume * prevPer100k) / 100_000;
@@ -51,7 +51,7 @@ export function LabBaseRate() {
       title="Máy tính nghịch lý tỉ lệ nền"
       takeaway={
         <>
-          Kéo <b>tỉ lệ nền</b> xuống thật thấp trong khi giữ bộ dò "rất tốt" (TPR 95%, FPR 1%). Độ chuẩn xác
+          Kéo <b>tỉ lệ nền</b> xuống thật thấp trong khi giữ bộ phát hiện "rất tốt" (TPR 95%, FPR 1%). Độ chuẩn xác
           sụp đổ dù mô hình không hề tệ đi. Đây là lý do toán học khiến mọi hệ thống phát hiện xâm nhập ngập
           báo động giả — và không thuật toán nào sửa được nó ngoài việc <b>hạ FPR xuống mức cực thấp</b> hoặc{' '}
           <b>thu hẹp phạm vi để tăng tỉ lệ nền</b>.

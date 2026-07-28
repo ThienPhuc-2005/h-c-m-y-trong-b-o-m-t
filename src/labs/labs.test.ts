@@ -93,16 +93,16 @@ describe('lab-tabular — cây tới đích ngay, mạng tới được nhưng p
     expect(macDinh.ceiling).toBeCloseTo(0.759, 2);
   });
 
-  it('rừng cách trần lý thuyết chưa tới 1 điểm phần trăm mà không có núm nào', () => {
+  it('Random Forest cách trần lý thuyết chưa tới 1 điểm phần trăm mà không có núm nào', () => {
     expect(macDinh.ceiling - macDinh.forest).toBeLessThan(0.01);
   });
 
-  it('cấu hình mặc định của mạng thua rừng khoảng 3,3 điểm', () => {
+  it('cấu hình mặc định của mạng thua Random Forest khoảng 3,3 điểm', () => {
     expect(macDinh.gap).toBeGreaterThan(0.025);
     expect(macDinh.gap).toBeLessThan(0.045);
   });
 
-  it('TỒN TẠI cấu hình mạng bắt kịp và vượt rừng — lab mời người học đi tìm', () => {
+  it('TỒN TẠI cấu hình mạng bắt kịp và vượt Random Forest — lab mời người học đi tìm', () => {
     // Nếu dòng này trượt thì lời kết luận đang mời người học đuổi theo một thứ
     // không tồn tại, và cả lập luận "mạng làm được, chỉ tốn công dò" sụp theo.
     expect(thang.mlp).toBeGreaterThan(thang.forest);
@@ -309,7 +309,7 @@ describe('lab-labels — ngưỡng đa engine và cửa sổ chín muồi', () =
   });
 });
 
-describe('lab-base-rate — bộ dò không đổi, tỉ lệ nền đổi, độ chuẩn xác sụp', () => {
+describe('lab-base-rate — bộ phát hiện không đổi, tỉ lệ nền đổi, độ chuẩn xác sụp', () => {
   const tot = (prev: number) => baseRateStats(prev, 95, 1, 1_000_000);
 
   it('giữ TPR 95% và FPR 1% mà hạ tỉ lệ nền thì độ chuẩn xác rơi tự do', () => {
@@ -390,7 +390,7 @@ describe('lab-entropy — hai tên miền giả mạo thương hiệu phải L�
     expect(b).toBeLessThan(0.48);
   });
 
-  it('và cả hai đều dưới ngưỡng, tức bộ dò thật sự mù trước chúng', () => {
+  it('và cả hai đều dưới ngưỡng, tức bộ phát hiện thật sự mù trước chúng', () => {
     expect(dgaScore('paypal-login.com').score).toBeLessThan(DGA_THR);
     expect(dgaScore('vietcombank-online.com').score).toBeLessThan(DGA_THR);
   });

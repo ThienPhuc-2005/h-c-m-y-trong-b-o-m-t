@@ -1287,7 +1287,7 @@ bat_buoc_hop_rut_kinh_nghiem_trong: 3 ngay lam viec`,
           question:
             'Bạn huấn luyện Random Forest phát hiện đăng nhập bất thường, dùng `feature_importances_` mặc định của scikit-learn. Trong bộ đặc trưng có cột `session_id` (chuỗi ngẫu nhiên, hàng triệu giá trị khác nhau) bị lọt vào do sơ suất, và cột `la_ngoai_gio` (nhị phân, rất hữu ích). Cột nào sẽ có importance cao hơn?',
           reveal:
-            'Rất nhiều khả năng là **`session_id`**. Feature importance mặc định của scikit-learn cho rừng ngẫu nhiên là **mean decrease in impurity** (MDI), và nó thiên vị nặng những đặc trưng có nhiều giá trị phân biệt: một cột với hàng triệu giá trị luôn tìm được một điểm cắt làm giảm impurity trên tập huấn luyện, dù chỉ là do trùng hợp. Chính tài liệu scikit-learn cảnh báo điều này, và Strobl cùng cộng sự đã chứng minh nó từ 2007. Hệ quả rất thực tế: nếu bạn báo cáo "đặc trưng quan trọng nhất" bằng MDI, bạn có thể đang trình bày một cột rác cho cả phòng nghe. Hai cách sửa: dùng **permutation importance** đo trên tập kiểm tra, hoặc dùng **SHAP**.',
+            'Rất nhiều khả năng là **`session_id`**. Feature importance mặc định của scikit-learn cho Random Forest là **mean decrease in impurity** (MDI), và nó thiên vị nặng những đặc trưng có nhiều giá trị phân biệt: một cột với hàng triệu giá trị luôn tìm được một điểm cắt làm giảm impurity trên tập huấn luyện, dù chỉ là do trùng hợp. Chính tài liệu scikit-learn cảnh báo điều này, và Strobl cùng cộng sự đã chứng minh nó từ 2007. Hệ quả rất thực tế: nếu bạn báo cáo "đặc trưng quan trọng nhất" bằng MDI, bạn có thể đang trình bày một cột rác cho cả phòng nghe. Hai cách sửa: dùng **permutation importance** đo trên tập kiểm tra, hoặc dùng **SHAP**.',
         },
         { t: 'h', text: 'Bốn lý do phải giải thích được — chúng khác nhau và cần thứ khác nhau', level: 2 },
         {
@@ -1417,7 +1417,7 @@ def ly_do(i: int, k: int = 3) -> list[str]:
               'Permutation importance',
               'Toàn cục',
               'Trung bình (phải chấm điểm lại nhiều lần)',
-              'Không thiên vị theo lực lượng, đo trên tập kiểm tra',
+              'Không thiên vị theo số giá trị phân biệt, đo trên tập kiểm tra',
               'Sai lệch khi các đặc trưng tương quan mạnh với nhau',
             ],
             [
@@ -1506,8 +1506,8 @@ def ly_do(i: int, k: int = 3) -> list[str]:
       cards: [
         {
           id: 't10l4-c1',
-          front: 'Feature importance mặc định của scikit-learn cho rừng ngẫu nhiên bị thiên vị theo hướng nào?',
-          back: 'Thiên vị đặc trưng có nhiều giá trị phân biệt (lực lượng cao), vì chúng luôn tìm được điểm cắt giảm impurity trên tập huấn luyện. Dùng permutation importance hoặc SHAP thay thế.',
+          front: 'Feature importance mặc định của scikit-learn cho Random Forest bị thiên vị theo hướng nào?',
+          back: 'Thiên vị đặc trưng có nhiều giá trị phân biệt (cardinality cao), vì chúng luôn tìm được điểm cắt giảm impurity trên tập huấn luyện. Dùng permutation importance hoặc SHAP thay thế.',
           tags: ['giai-thich'],
         },
         {
@@ -1617,7 +1617,7 @@ def ly_do(i: int, k: int = 3) -> list[str]:
         },
         {
           title: 'scikit-learn — Permutation Importance vs Random Forest Feature Importance',
-          note: 'Trang tài liệu chính thức chứng minh bằng ví dụ chạy được rằng MDI thiên vị đặc trưng lực lượng cao.',
+          note: 'Trang tài liệu chính thức chứng minh bằng ví dụ chạy được rằng MDI thiên vị đặc trưng nhiều giá trị phân biệt.',
           url: 'https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html',
         },
       ],
@@ -2091,7 +2091,7 @@ def ly_do(i: int, k: int = 3) -> list[str]:
                 'Con số AUC đơn lẻ trên dữ liệu mất cân bằng là dấu hiệu người viết chưa hiểu bài toán.',
                 '',
                 'Nhích AUC ở vùng đã bão hoà không đổi được gì về mặt vận hành.',
-                'Đổi mô hình không giải quyết vấn đề báo cáo sai chỉ số; ngoài ra trên dữ liệu bảng thì cây tăng cường thường vẫn thắng.',
+                'Đổi mô hình không giải quyết vấn đề báo cáo sai chỉ số; ngoài ra trên dữ liệu bảng thì gradient boosting thường vẫn thắng.',
               ],
             },
             {
@@ -2473,7 +2473,7 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
               tags: ['nghe-nghiep'],
               q: 'Để chuyển sang ML bảo mật, cần học xong toàn bộ deep learning trước khi bắt đầu làm dự án.',
               answer: false,
-              why: 'Phần lớn hệ thống ML bảo mật đang chạy trong sản xuất dùng cây tăng cường trên dữ liệu bảng, cộng một ít xử lý chuỗi. Deep learning chỉ chiếm ưu thế ở một số nhánh cụ thể: phân tích byte tệp thực thi, mô hình hoá chuỗi lời gọi API, và mọi thứ liên quan tới LLM. Học theo thứ tự "toán vừa đủ → đánh giá → đặc trưng → cây tăng cường → một dự án đầu-cuối" cho bạn năng lực tuyển dụng được nhanh hơn nhiều so với học sáu tháng mạng nơ-ron trước khi chạm vào một dòng log.',
+              why: 'Phần lớn hệ thống ML bảo mật đang chạy trong sản xuất dùng gradient boosting trên dữ liệu bảng, cộng một ít xử lý chuỗi. Deep learning chỉ chiếm ưu thế ở một số nhánh cụ thể: phân tích byte tệp thực thi, mô hình hoá chuỗi lời gọi API, và mọi thứ liên quan tới LLM. Học theo thứ tự "toán vừa đủ → đánh giá → đặc trưng → gradient boosting → một dự án đầu-cuối" cho bạn năng lực tuyển dụng được nhanh hơn nhiều so với học sáu tháng mạng nơ-ron trước khi chạm vào một dòng log.',
             },
           ],
         },
@@ -2492,7 +2492,7 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
             },
             {
               title: 'Câu 3 — "Vì sao không dùng deep learning cho log dạng bảng?"',
-              md: '**Tệ:** "Vì dữ liệu ít." (Nhiều tổ chức có hàng tỉ dòng log.)\n\n**Tốt:** "Trên dữ liệu bảng điển hình, mô hình dựa trên cây thường vẫn vượt học sâu — Grinsztajn và cộng sự (NeurIPS 2022) đưa ra bằng chứng có hệ thống cho điều này. Thêm ba lý do vận hành: cây tăng cường không cần chuẩn hoá nên ít bước tiền xử lý dễ sai, suy luận nhanh và rẻ hơn nhiều, và TreeSHAP cho giải thích cục bộ chính xác trong thời gian đa thức. Tôi sẽ chọn học sâu khi đầu vào là chuỗi byte, chuỗi lời gọi API, hoặc văn bản."',
+              md: '**Tệ:** "Vì dữ liệu ít." (Nhiều tổ chức có hàng tỉ dòng log.)\n\n**Tốt:** "Trên dữ liệu bảng điển hình, mô hình dựa trên cây thường vẫn vượt học sâu — Grinsztajn và cộng sự (NeurIPS 2022) đưa ra bằng chứng có hệ thống cho điều này. Thêm ba lý do vận hành: gradient boosting không cần chuẩn hoá nên ít bước tiền xử lý dễ sai, suy luận nhanh và rẻ hơn nhiều, và TreeSHAP cho giải thích cục bộ chính xác trong thời gian đa thức. Tôi sẽ chọn học sâu khi đầu vào là chuỗi byte, chuỗi lời gọi API, hoặc văn bản."',
             },
             {
               title: 'Câu 4 — "Kể một lần mô hình hoặc luật của bạn sai."',
@@ -2597,7 +2597,7 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
         },
         {
           id: 't10l7-c4',
-          front: 'Vì sao cây tăng cường vẫn thống trị trên log dạng bảng?',
+          front: 'Vì sao gradient boosting vẫn thống trị trên log dạng bảng?',
           back: 'Chúng thường vượt học sâu trên dữ liệu bảng điển hình, không cần chuẩn hoá, suy luận rẻ, và có TreeSHAP cho giải thích cục bộ chính xác.',
           tags: ['gbdt', 'phong-van'],
         },
@@ -2672,7 +2672,7 @@ for muc_tieu in (1e-2, 1e-3, 1e-4):
           items: [
             'Nắm chắc chỉ số đánh giá và nghịch lý tỉ lệ nền để đọc được mọi báo cáo mô hình',
             'Thành thạo việc biến log thành đặc trưng, gồm cả bẫy rò rỉ dữ liệu',
-            'Làm chủ một họ mô hình dữ liệu bảng, ưu tiên cây tăng cường',
+            'Làm chủ một họ mô hình dữ liệu bảng, ưu tiên gradient boosting',
             'Hoàn thành một dự án đầu-cuối có chia theo thời gian và phân tích lỗi',
             'Bổ sung phần vận hành: giám sát trôi, chế độ bóng, tiêu chí rollback',
             'Mở rộng sang lĩnh vực hẹp phù hợp mục tiêu: LLM, đối kháng, hoặc quản trị AI',

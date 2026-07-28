@@ -188,7 +188,7 @@ orig_pkts=42  resp_pkts=68`,
               'Random Forest',
               'XGBoost, LightGBM, CatBoost',
               'Lý do: cây chỉ hỏi "x có lớn hơn ngưỡng t không", câu trả lời không đổi khi bạn đổi đơn vị',
-              'Hệ quả thực tế: trên dữ liệu bảng của bảo mật, cây tăng cường vừa mạnh vừa ít việc tiền xử lý — đó là lý do nó thống trị',
+              'Hệ quả thực tế: trên dữ liệu bảng của bảo mật, gradient boosting vừa mạnh vừa ít việc tiền xử lý — đó là lý do nó thống trị',
             ],
           },
         },
@@ -207,7 +207,7 @@ orig_pkts=42  resp_pkts=68`,
                 'Bỏ cột này vì mô hình không xử lý được chữ',
               ],
               answer: 1,
-              why: 'Đây là trường hạng mục có lực lượng trung bình. One-hot toàn bộ 180 cột tạo ra rất nhiều cột chỉ có vài mẫu — cây sẽ chia trên nhiễu. Gộp đuôi thành "khac" giữ được tín hiệu của các quốc gia đủ dữ liệu mà không nổ số chiều. (LightGBM còn có tham số `categorical_feature` xử lý trực tiếp, nhưng nguyên tắc gộp đuôi vẫn giữ nguyên.)',
+              why: 'Đây là trường hạng mục có số giá trị phân biệt vừa phải. One-hot toàn bộ 180 cột tạo ra rất nhiều cột chỉ có vài mẫu — cây sẽ chia trên nhiễu. Gộp đuôi thành "khac" giữ được tín hiệu của các quốc gia đủ dữ liệu mà không nổ số chiều. (LightGBM còn có tham số `categorical_feature` xử lý trực tiếp, nhưng nguyên tắc gộp đuôi vẫn giữ nguyên.)',
               distractorWhy: [
                 'Đánh số theo bảng chữ cái bịa ra thứ tự: Albania không "nhỏ hơn" Algeria về mặt rủi ro. Cây sẽ chia ở những chỗ vô nghĩa.',
                 '',
@@ -284,7 +284,7 @@ diem = mo_hinh.predict_proba(X_te)[:, 1]`,
         'Trường tuần hoàn (giờ, thứ) cần mã hoá bằng sin/cos, nếu không 23 giờ và 0 giờ sẽ cách nhau rất xa.',
         'Đặc trưng dẫn xuất mang hiểu biết nghiệp vụ (tỉ lệ byte gửi/nhận) thường mạnh hơn cột thô.',
         'Chuẩn hoá phải nằm trong Pipeline và chỉ fit trên tập huấn luyện, nếu không sẽ rò rỉ dữ liệu.',
-        'Mô hình khoảng cách và tuyến tính cần chuẩn hoá; cây và cây tăng cường thì không.',
+        'Mô hình khoảng cách và tuyến tính cần chuẩn hoá; cây và gradient boosting thì không.',
       ],
       cards: [
         {
@@ -309,7 +309,7 @@ diem = mo_hinh.predict_proba(X_te)[:, 1]`,
         {
           id: 't1l1-c4',
           front: 'Nêu hai họ mô hình KHÔNG cần chuẩn hoá đặc trưng và lý do.',
-          back: 'Cây quyết định và các bộ cây tăng cường (Random Forest, XGBoost, LightGBM). Chúng chỉ so sánh x với ngưỡng, nên đổi đơn vị không làm đổi cách chia.',
+          back: 'Cây quyết định và các mô hình dựa trên cây (Random Forest, XGBoost, LightGBM). Chúng chỉ so sánh x với ngưỡng, nên đổi đơn vị không làm đổi cách chia.',
           tags: ['chuan-hoa'],
         },
         {
@@ -1285,7 +1285,7 @@ print(round(z_ben(tai_xuong_mb)[-1]))  # 3944  -> khong the bo qua`,
           t: 'callout',
           kind: 'pitfall',
           title: 'Bốn cái bẫy thống kê hay gặp nhất trong UEBA',
-          md: '**1. Huấn luyện đường cơ sở trên dữ liệu đã bị nhiễm.** Nếu kẻ tấn công đã ở trong mạng suốt 60 ngày bạn dùng làm cơ sở, hành vi của hắn chính là "bình thường".\n\n**2. Bỏ qua tính mùa vụ.** Cuối tháng kế toán tải nhiều gấp 5 lần. Thứ hai đầu tuần đăng nhập nhiều gấp 3. Không tách theo thời gian thì mỗi cuối tháng bạn có một cơn bão cảnh báo.\n\n**3. Nhóm ngang hàng quá nhỏ.** Đặt ngưỡng riêng cho một người dựa trên 30 ngày dữ liệu của chính họ nghe rất hay, nhưng 30 điểm dữ liệu không đủ để ước lượng p99 — bạn đang đo nhiễu.\n\n**4. MAD bằng 0.** Rất hay xảy ra khi hơn nửa giá trị bằng nhau (ví dụ 80% người dùng có 0 lần đăng nhập thất bại). Chia cho 0 làm hỏng cả cột. Luôn có nhánh dự phòng như trong đoạn mã ở trên.',
+          md: '**1. Huấn luyện đường cơ sở trên dữ liệu đã bị nhiễm.** Nếu kẻ tấn công đã ở trong mạng suốt 60 ngày bạn dùng làm cơ sở, hành vi của hắn chính là "bình thường".\n\n**2. Bỏ qua tính mùa.** Cuối tháng kế toán tải nhiều gấp 5 lần. Thứ hai đầu tuần đăng nhập nhiều gấp 3. Không tách theo thời gian thì mỗi cuối tháng bạn có một cơn bão cảnh báo.\n\n**3. Nhóm ngang hàng quá nhỏ.** Đặt ngưỡng riêng cho một người dựa trên 30 ngày dữ liệu của chính họ nghe rất hay, nhưng 30 điểm dữ liệu không đủ để ước lượng p99 — bạn đang đo nhiễu.\n\n**4. MAD bằng 0.** Rất hay xảy ra khi hơn nửa giá trị bằng nhau (ví dụ 80% người dùng có 0 lần đăng nhập thất bại). Chia cho 0 làm hỏng cả cột. Luôn có nhánh dự phòng như trong đoạn mã ở trên.',
         },
         {
           t: 'callout',
@@ -1366,7 +1366,7 @@ print(round(z_ben(tai_xuong_mb)[-1]))  # 3944  -> khong the bo qua`,
             'Tách riêng ngày trong tuần và giai đoạn cuối tháng',
           ],
           answers: [0, 2, 3],
-          why: 'Ba việc đúng đều xử lý cùng một vấn đề: dữ liệu không đồng nhất và không phân phối chuẩn. Nhóm ngang hàng loại bỏ so sánh máy chủ với laptop; log kéo đuôi phải về gần đối xứng; tách theo thời gian loại bỏ tính mùa vụ. Ba-sigma trên toàn bộ nhân viên gộp chung là công thức chắc chắn thất bại vì vừa vi phạm giả định phân phối, vừa trộn các nhóm có hành vi hoàn toàn khác nhau.',
+          why: 'Ba việc đúng đều xử lý cùng một vấn đề: dữ liệu không đồng nhất và không phân phối chuẩn. Nhóm ngang hàng loại bỏ so sánh máy chủ với laptop; log kéo đuôi phải về gần đối xứng; tách theo thời gian loại bỏ tính mùa. Ba-sigma trên toàn bộ nhân viên gộp chung là công thức chắc chắn thất bại vì vừa vi phạm giả định phân phối, vừa trộn các nhóm có hành vi hoàn toàn khác nhau.',
         },
         {
           id: 't1l4-q3',
@@ -1958,7 +1958,7 @@ print(np.round(S, 2))
             'Chọn đặc trưng: bỏ cột gần như hằng số, cột trùng lặp, cột có tương quan trên 0,95 với cột khác',
             'Giảm chiều: PCA cho dữ liệu dày, TruncatedSVD cho ma trận thưa TF-IDF, UMAP khi chỉ cần trực quan hoá',
             'Đổi thước đo: dùng cosine thay Euclid trên dữ liệu thưa — cosine chịu được số chiều cao tốt hơn nhiều',
-            'Đổi họ mô hình: cây tăng cường chỉ chọn một cột mỗi lần chia nên gần như miễn nhiễm; đó là lý do nó thắng trên dữ liệu bảng nhiều cột',
+            'Đổi họ mô hình: gradient boosting chỉ chọn một cột mỗi lần chia nên gần như miễn nhiễm; đó là lý do nó thắng trên dữ liệu bảng nhiều cột',
           ],
         },
         {
@@ -2013,7 +2013,7 @@ print(np.round(S, 2))
         },
         {
           id: 't1l6-c5',
-          front: 'Vì sao cây tăng cường ít bị lời nguyền số chiều hơn k-NN?',
+          front: 'Vì sao gradient boosting ít bị lời nguyền số chiều hơn k-NN?',
           back: 'Vì cây chỉ xét một cột tại mỗi lần chia, không cộng gộp toàn bộ chiều vào một phép khoảng cách — nên các cột vô dụng đơn giản là không được chọn.',
           tags: ['loi-nguyen-so-chieu'],
         },
@@ -2056,7 +2056,7 @@ print(np.round(S, 2))
             'Chuyển sang LightGBM thay vì k-NN',
           ],
           answers: [0, 1, 3],
-          why: 'Ba cách đúng đều tấn công đúng nguyên nhân. Giảm chiều đưa dữ liệu về không gian mà khoảng cách còn ý nghĩa. Cosine chịu đựng số chiều cao và dữ liệu thưa tốt hơn Euclid rõ rệt. Cây tăng cường chọn từng cột một nên không bị hiệu ứng gộp chiều. Còn thêm dữ liệu thì gần như vô ích: số mẫu cần để phủ không gian tăng theo **hàm mũ** của số chiều, nên nhân 10 lần dữ liệu trong 8.000 chiều không thay đổi gì đáng kể.',
+          why: 'Ba cách đúng đều tấn công đúng nguyên nhân. Giảm chiều đưa dữ liệu về không gian mà khoảng cách còn ý nghĩa. Cosine chịu đựng số chiều cao và dữ liệu thưa tốt hơn Euclid rõ rệt. Gradient boosting chọn từng cột một nên không bị hiệu ứng gộp chiều. Còn thêm dữ liệu thì gần như vô ích: số mẫu cần để phủ không gian tăng theo **hàm mũ** của số chiều, nên nhân 10 lần dữ liệu trong 8.000 chiều không thay đổi gì đáng kể.',
         },
         {
           id: 't1l6-q4',
@@ -2099,7 +2099,7 @@ print(np.round(S, 2))
     {
       id: 't1-l7',
       trackId: 'nen-mong',
-      title: 'Đạo hàm và hạ gradient bằng trực giác',
+      title: 'Đạo hàm và gradient descent bằng trực giác',
       subtitle: 'Cách mọi mô hình học được — và cách kẻ tấn công dùng ngược đúng phép toán đó',
       minutes: 22,
       practiceMinutes: 7,
@@ -2107,7 +2107,7 @@ print(np.round(S, 2))
       prereqs: ['t1-l6'],
       why: {
         short:
-          'Hạ gradient là động cơ duy nhất đứng sau việc huấn luyện hồi quy logistic, mạng nơ-ron và mô hình ngôn ngữ — và cũng chính là công cụ sinh mẫu đối kháng để đánh lừa chúng.',
+          'Gradient descent là động cơ duy nhất đứng sau việc huấn luyện hồi quy logistic, mạng nơ-ron và mô hình ngôn ngữ — và cũng chính là công cụ sinh mẫu đối kháng để đánh lừa chúng.',
         scenario:
           'Mô hình phát hiện phishing của bạn huấn luyện xong với loss không giảm, đứng yên ở 0,693 suốt 500 vòng. Đồng nghiệp bảo "chỉnh learning rate đi". Bạn cần hiểu điều đó nghĩa là gì để biết chỉnh lên hay chỉnh xuống, và vì sao 0,693 lại là con số đáng ngờ.',
         roles: ['ML Engineer', 'Security Data Scientist', 'AI Security Engineer', 'Red Teamer'],
@@ -2116,7 +2116,7 @@ print(np.round(S, 2))
       },
       objectives: [
         'Giải thích được hàm mất mát là gì và vì sao log loss phạt nặng dự đoán tự tin mà sai',
-        'Mô tả được một bước cập nhật hạ gradient bằng lời và bằng công thức',
+        'Mô tả được một bước cập nhật gradient descent bằng lời và bằng công thức',
         'Dự đoán được hành vi huấn luyện khi tốc độ học quá lớn hoặc quá nhỏ',
         'Giải thích được vì sao cùng phép tính gradient lại sinh ra mẫu đối kháng',
       ],
@@ -2126,7 +2126,7 @@ print(np.round(S, 2))
           question:
             'Bạn đang đứng trên một sườn đồi trong sương mù dày, không nhìn thấy gì quá một mét, và cần xuống chân đồi. Bạn chỉ cảm nhận được độ dốc dưới chân. Chiến lược nào hợp lý — và chiến lược đó thất bại trong địa hình nào?',
           reveal:
-            'Chiến lược hợp lý: cảm nhận hướng dốc xuống mạnh nhất, bước một bước theo hướng đó, lặp lại. Đó **chính xác** là hạ gradient (gradient descent). Nó thất bại ở ba loại địa hình: **(1)** một cái hố nhỏ giữa sườn đồi — bạn dừng lại ở đó và tưởng đã tới chân (cực tiểu địa phương); **(2)** một cao nguyên phẳng lì — không cảm nhận được dốc nào nên không biết đi đâu (gradient tiêu biến); **(3)** một khe hẹp dốc đứng — bước quá dài thì bạn nhảy qua khe sang sườn bên kia rồi lại nhảy về, mỗi lần một xa hơn (tốc độ học quá lớn, phân kỳ).',
+            'Chiến lược hợp lý: cảm nhận hướng dốc xuống mạnh nhất, bước một bước theo hướng đó, lặp lại. Đó **chính xác** là gradient descent. Nó thất bại ở ba loại địa hình: **(1)** một cái hố nhỏ giữa sườn đồi — bạn dừng lại ở đó và tưởng đã tới chân (cực tiểu địa phương); **(2)** một cao nguyên phẳng lì — không cảm nhận được dốc nào nên không biết đi đâu (gradient tiêu biến); **(3)** một khe hẹp dốc đứng — bước quá dài thì bạn nhảy qua khe sang sườn bên kia rồi lại nhảy về, mỗi lần một xa hơn (tốc độ học quá lớn, phân kỳ).',
         },
         {
           t: 'h',
@@ -2170,7 +2170,7 @@ print(np.round(S, 2))
         },
         {
           t: 'steps',
-          title: 'Chạy tay hạ gradient trên hàm L(w) = (w − 3)², bắt đầu từ w = 0',
+          title: 'Chạy tay gradient descent trên hàm L(w) = (w − 3)², bắt đầu từ w = 0',
           steps: [
             {
               title: 'Bước 0 — Đạo hàm',
@@ -2279,7 +2279,7 @@ def huan_luyen(X, y, eta=0.1, so_vong=1000):
           t: 'callout',
           kind: 'pitfall',
           title: 'Cực tiểu địa phương bị thổi phồng — vấn đề thật là chỗ khác',
-          md: 'Sách phổ thông hay doạ về cực tiểu địa phương, nhưng thực tế phân hoá rõ:\n\n**Hồi quy logistic và SVM tuyến tính** có hàm mất mát **lồi** (convex) — chỉ có đúng một cực tiểu, hạ gradient luôn tìm được nó. Không có gì phải lo.\n\n**Mạng nơ-ron sâu** thì không lồi, nhưng nghiên cứu cho thấy trong không gian rất nhiều chiều, thứ hay gặp là **điểm yên ngựa** (saddle point) — chỗ dốc lên theo hướng này và dốc xuống theo hướng khác — chứ không phải hố cụt. Và phần lớn các cực tiểu tìm được cho chất lượng gần tương đương nhau.\n\nBa vấn đề thực sự làm hỏng việc huấn luyện của bạn, theo thứ tự tần suất: **quên chuẩn hoá đặc trưng**, **tốc độ học sai**, và **rò rỉ dữ liệu khiến kết quả đẹp giả tạo**.',
+          md: 'Sách phổ thông hay doạ về cực tiểu địa phương, nhưng thực tế phân hoá rõ:\n\n**Hồi quy logistic và SVM tuyến tính** có hàm mất mát **lồi** (convex) — chỉ có đúng một cực tiểu, gradient descent luôn tìm được nó. Không có gì phải lo.\n\n**Mạng nơ-ron sâu** thì không lồi, nhưng nghiên cứu cho thấy trong không gian rất nhiều chiều, thứ hay gặp là **điểm yên ngựa** (saddle point) — chỗ dốc lên theo hướng này và dốc xuống theo hướng khác — chứ không phải hố cụt. Và phần lớn các cực tiểu tìm được cho chất lượng gần tương đương nhau.\n\nBa vấn đề thực sự làm hỏng việc huấn luyện của bạn, theo thứ tự tần suất: **quên chuẩn hoá đặc trưng**, **tốc độ học sai**, và **rò rỉ dữ liệu khiến kết quả đẹp giả tạo**.',
         },
         {
           t: 'h',
@@ -2326,7 +2326,7 @@ def huan_luyen(X, y, eta=0.1, so_vong=1000):
         },
       ],
       keyTakeaways: [
-        'Huấn luyện = tìm bộ trọng số làm hàm mất mát nhỏ nhất; hạ gradient là cách tìm đó.',
+        'Huấn luyện = tìm bộ trọng số làm hàm mất mát nhỏ nhất; gradient descent là cách tìm đó.',
         'Log loss phạt nặng dự đoán vừa tự tin vừa sai, nên nó ép mô hình hiệu chuẩn xác suất chứ không chỉ xếp thứ tự.',
         'Loss đứng yên ở 0,693 = log(2) nghĩa là mô hình đoán 0,5 cho mọi mẫu, tức chưa học được gì.',
         'Quy tắc cập nhật: w_mới = w_cũ − η × gradient. Dấu trừ vì gradient chỉ lên dốc.',
@@ -2337,7 +2337,7 @@ def huan_luyen(X, y, eta=0.1, so_vong=1000):
       cards: [
         {
           id: 't1l7-c1',
-          front: 'Viết quy tắc cập nhật của hạ gradient và giải thích dấu trừ.',
+          front: 'Viết quy tắc cập nhật của gradient descent và giải thích dấu trừ.',
           back: 'w_mới = w_cũ − η × ∇L(w). Dấu trừ vì gradient chỉ hướng dốc LÊN mạnh nhất, mà ta muốn giảm mất mát nên phải đi ngược lại. η là tốc độ học, tức độ dài bước.',
           tags: ['gradient'],
         },
@@ -2377,7 +2377,7 @@ def huan_luyen(X, y, eta=0.1, so_vong=1000):
           why: 'Gradient tại w = 0 là 2(0 − 3) = −6. Cập nhật: w = 0 − 1,1 × (−6) = **6,6**. Điểm mới nằm ở phía **bên kia** cực tiểu và còn xa hơn điểm xuất phát (cách 3,6 so với 3 ban đầu). Bước sau sẽ nhảy về −1,32, rồi 8,184 — biên độ tăng dần cho tới khi tràn số. Đây chính là cơ chế phân kỳ do tốc độ học quá lớn.',
           distractorWhy: [
             'Đây là kết quả với η = 0,1, tức bước hợp lý.',
-            'Đây là đáp số đúng của bài toán, nhưng hạ gradient không nhảy thẳng tới đó trong một bước.',
+            'Đây là đáp số đúng của bài toán, nhưng gradient descent không nhảy thẳng tới đó trong một bước.',
             '',
             'Sai dấu: gradient âm nhân với dấu trừ trong công thức cho ra dịch chuyển dương.',
           ],
@@ -2400,7 +2400,7 @@ def huan_luyen(X, y, eta=0.1, so_vong=1000):
           id: 't1l7-q3',
           kind: 'order',
           tags: ['gradient', 'huan-luyen'],
-          q: 'Sắp xếp các bước trong một vòng lặp huấn luyện bằng hạ gradient.',
+          q: 'Sắp xếp các bước trong một vòng lặp huấn luyện bằng gradient descent.',
           items: [
             'Tính dự đoán của mô hình trên lô dữ liệu hiện tại',
             'Tính hàm mất mát bằng cách so dự đoán với nhãn thật',
@@ -2426,14 +2426,14 @@ def huan_luyen(X, y, eta=0.1, so_vong=1000):
           tags: ['gradient', 'huan-luyen'],
           q: 'Hồi quy logistic có thể bị kẹt ở cực tiểu địa phương, nên phải chạy nhiều lần với các điểm khởi tạo khác nhau.',
           answer: false,
-          why: 'Hàm mất mát của hồi quy logistic là **lồi**, nghĩa là nó chỉ có đúng một cực tiểu toàn cục và hạ gradient luôn tìm được nó bất kể khởi tạo ở đâu. Đây là một trong những lý do khiến hồi quy logistic vẫn được dùng rộng rãi trong bảo mật: kết quả tái lập được, dễ giải thích, huấn luyện ổn định. Cực tiểu địa phương chỉ là mối bận tâm với mạng nơ-ron, và ngay cả ở đó thì điểm yên ngựa và việc chuẩn hoá dữ liệu mới là vấn đề lớn hơn.',
+          why: 'Hàm mất mát của hồi quy logistic là **lồi**, nghĩa là nó chỉ có đúng một cực tiểu toàn cục và gradient descent luôn tìm được nó bất kể khởi tạo ở đâu. Đây là một trong những lý do khiến hồi quy logistic vẫn được dùng rộng rãi trong bảo mật: kết quả tái lập được, dễ giải thích, huấn luyện ổn định. Cực tiểu địa phương chỉ là mối bận tâm với mạng nơ-ron, và ngay cả ở đó thì điểm yên ngựa và việc chuẩn hoá dữ liệu mới là vấn đề lớn hơn.',
         },
       ],
       terms: ['ham-mat-mat', 'log-loss', 'gradient', 'toc-do-hoc', 'mau-doi-khang'],
       further: [
         {
           title: 'Explaining and Harnessing Adversarial Examples — Goodfellow, Shlens, Szegedy (2014)',
-          note: 'Bài báo giới thiệu FGSM. Đọc mục 4 để thấy mẫu đối kháng chỉ là hạ gradient chạy ngược. Nền cho toàn bộ chặng 8.',
+          note: 'Bài báo giới thiệu FGSM. Đọc mục 4 để thấy mẫu đối kháng chỉ là gradient descent chạy ngược. Nền cho toàn bộ chặng 8.',
         },
         {
           title: 'Deep Learning — Goodfellow, Bengio, Courville, chương 4 và 8',

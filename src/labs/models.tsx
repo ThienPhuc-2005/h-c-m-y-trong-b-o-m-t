@@ -63,7 +63,7 @@ export function LabLogistic() {
   };
   useEffect(reset, [seed]);
 
-  /** Một bước hạ gradient trên toàn bộ tập (batch gradient descent). */
+  /** Một bước gradient descent trên toàn bộ tập (batch gradient descent). */
   const stepOnce = (m: { w: number[]; b: number; epoch: number }, rate: number) => {
     const gw = [0, 0, 0, 0];
     let gb = 0;
@@ -293,7 +293,7 @@ export function LabNaiveBayes() {
           ))}
         </div>
         <div className="faint" style={{ marginTop: 8 }}>
-          Đây chính là "khả năng giải thích" mà cây tăng cường và mạng nơ-ron phải làm việc rất vất vả mới có được.
+          Đây chính là "khả năng giải thích" mà gradient boosting và mạng nơ-ron phải làm việc rất vất vả mới có được.
         </div>
       </div>
     </LabShell>
@@ -380,7 +380,7 @@ export function LabTree() {
           Cây không "thông minh" — nó chỉ thử <b>mọi đặc trưng ở mọi ngưỡng</b> rồi chọn phép chia làm giảm
           entropy nhiều nhất. Đó là toàn bộ thuật toán. Hãy tìm phép chia thủ công tốt nhất của bạn rồi so với
           đáp án máy tìm được. Điểm mạnh: mỗi nhánh là một câu tiếng Việt bạn đọc được cho analyst nghe. Điểm
-          yếu: một cây đủ sâu sẽ ghi nhớ từng mẫu — đó là quá khớp, và là lý do ta cần rừng.
+          yếu: một cây đủ sâu sẽ ghi nhớ từng mẫu — đó là quá khớp, và là lý do ta cần Random Forest.
         </>
       }
     >
@@ -636,7 +636,7 @@ export function LabOverfit() {
 }
 
 /* ========================================================================== */
-/*  lab-gradient — Hạ gradient                                                 */
+/*  lab-gradient — Gradient descent                                                 */
 /* ========================================================================== */
 
 /** Mặt lỗi một chiều có nhiều cực tiểu địa phương. */
@@ -644,7 +644,7 @@ export const gradSurface = (x: number) => 0.55 + 0.35 * Math.sin(6.1 * x) - 0.42
 const gradSlope = (x: number) => 0.35 * 6.1 * Math.cos(6.1 * x) - 0.42 + 0.84 * x;
 
 /**
- * Đường đi của hạ gradient. Tách khỏi component để chốt hai khẳng định trong
+ * Đường đi của gradient descent. Tách khỏi component để chốt hai khẳng định trong
  * lời kết luận: tốc độ học trên 0,4 thì bật lên bật xuống, và điểm khởi đầu
  * khác nhau dẫn tới cực tiểu địa phương khác nhau.
  */
@@ -705,7 +705,7 @@ export function LabGradient() {
   return (
     <LabShell
       id="lab-gradient"
-      title="Hạ gradient: đi xuống dốc trong sương mù"
+      title="Gradient descent: tốc độ học, cực tiểu địa phương và phân kỳ"
       takeaway={
         <>
           Thuật toán chỉ biết <b>độ dốc ngay dưới chân</b>, không nhìn thấy toàn cảnh. Ba chuyện xảy ra được,
@@ -731,7 +731,7 @@ export function LabGradient() {
         <Slider label="Điểm khởi đầu" value={start} min={0.02} max={0.98} step={0.01} onChange={setStart} format={(v) => v.toFixed(2)} />
         <Slider label="Số bước" value={steps} min={1} max={80} step={1} onChange={setSteps} />
       </div>
-      <Chart p={p} label="Đường đi của hạ gradient trên mặt lỗi">
+      <Chart p={p} label="Đường đi của gradient descent trên mặt lỗi">
         <Axes p={p} xLabel="Tham số" yLabel="Hàm mất mát" xTicks={4} yTicks={4} />
         <Line p={p} pts={curve} color="var(--border-strong)" width={2.4} />
         <Line p={p} pts={path} color={diverged ? COLORS.bad : COLORS.brand} width={1.6} dash="3 3" />
@@ -846,7 +846,7 @@ export function LabPerceptron() {
         <>
           Đặt số nơ-ron ẩn về <b>0</b> (perceptron đơn), chọn XOR và kéo số vòng huấn luyện lên hết cỡ: độ
           chính xác đứng nguyên <b>50%</b>, đúng bằng tung đồng xu. Ngay cả đường thẳng tốt nhất có thể cũng
-          chỉ đúng 3 trên 4 điểm, và hạ gradient trên log-loss thậm chí không tìm tới đó — nó dừng ở nghiệm
+          chỉ đúng 3 trên 4 điểm, và gradient descent trên log-loss thậm chí không tìm tới đó — nó dừng ở nghiệm
           đối xứng. Giờ thêm <b>2 nơ-ron ẩn</b> mà không đụng gì khác: 100% ngay lập tức.
           Đây chính xác là lý do "học sâu" tồn tại: các lớp ẩn dựng nên những đặc trưng phi tuyến mà bạn không
           phải tự nghĩ ra. Trong bảo mật, "XOR" là những mẫu kiểu <em>"đăng nhập lúc 3 giờ sáng thì bình
@@ -959,7 +959,7 @@ export function LabKmeans() {
   return (
     <LabShell
       id="lab-kmeans"
-      title="k-means: nhóm hành vi và tìm kẻ lạc loài"
+      title="k-means: nhóm hành vi và tìm điểm ngoại lai"
       takeaway={
         <>
           k-means không biết gì về tấn công — nó chỉ nhóm những thứ giống nhau. Giá trị bảo mật đến từ hai
@@ -1295,7 +1295,7 @@ export function LabExplain() {
   );
 }
 /* ========================================================================== */
-/*  lab-tabular — Rừng so với mạng nơ-ron trên dữ liệu bảng                    */
+/*  lab-tabular — Random Forest so với mạng nơ-ron trên dữ liệu bảng                    */
 /* ========================================================================== */
 
 /** Rời rạc hoá đặc trưng liên tục thành 16 mức, đúng cách LightGBM làm. */
@@ -1405,7 +1405,7 @@ const tabPredict = (n: TabNode, x: number[]): number =>
       : tabPredict(n.r, x);
 
 export interface TabularOut {
-  /** Độ chính xác của rừng — KHÔNG có tinh chỉnh nào. */
+  /** Độ chính xác của Random Forest — KHÔNG có tinh chỉnh nào. */
   forest: number;
   mlp: number;
   /** Trần lý thuyết: dùng thẳng luật sinh nhãn. Nhiễu nhãn chặn mọi mô hình ở đây. */
@@ -1424,7 +1424,7 @@ export function tabularRun(
   const acc = (f: (x: number[]) => number) =>
     test.filter((r) => (f(r.x) >= 0.5 ? 1 : 0) === r.y).length / test.length;
 
-  // --- Rừng ngẫu nhiên: 30 cây, sâu 6, mỗi nút xét 3 đặc trưng ngẫu nhiên ---
+  // --- Random Forest: 30 cây, sâu 6, mỗi nút xét 3 đặc trưng ngẫu nhiên ---
   const frng = mulberry32(3);
   const trees: TabNode[] = [];
   for (let k = 0; k < 30; k++) {
@@ -1437,7 +1437,7 @@ export function tabularRun(
   const forestFn = (x: number[]) =>
     trees.reduce((s, t) => s + tabPredict(t, x), 0) / trees.length;
 
-  // --- MLP một lớp ẩn, ReLU, hạ gradient theo từng mẫu ---
+  // --- MLP một lớp ẩn, ReLU, gradient descent theo từng mẫu ---
   const rng = mulberry32(11);
   let W1 = Array.from({ length: hidden }, () =>
     Array.from({ length: 8 }, () => (rng() * 2 - 1) * 0.7),
@@ -1499,7 +1499,7 @@ export function LabTabular() {
   return (
     <LabShell
       id="lab-tabular"
-      title="Rừng so với mạng nơ-ron trên đúng loại dữ liệu bạn sẽ gặp"
+      title="Random Forest so với mạng nơ-ron trên đúng loại dữ liệu bạn sẽ gặp"
       takeaway={
         <>
           Dữ liệu ở đây là dữ liệu bảng điển hình của bảo mật: tám cột, vài
@@ -1508,7 +1508,7 @@ export function LabTabular() {
           hiện luôn trong ô thứ ba để bạn biết còn cách đích bao xa.
           <br />
           <br />
-          Rừng đạt <b>75,1%</b>, tức cách trần đúng 0,8 điểm — và nó đạt được
+          Random Forest đạt <b>75,1%</b>, tức cách trần đúng 0,8 điểm — và nó đạt được
           như vậy mà <b>không có một núm nào để vặn</b>. Mạng nơ-ron với cấu
           hình trông rất hợp lý (16 nơ-ron ẩn, lr 0,1, 50 vòng) chỉ được{" "}
           <b>71,8%</b>, thua 3,3 điểm.
@@ -1517,7 +1517,7 @@ export function LabTabular() {
           Nhưng đừng dừng ở đó, vì kết luận &ldquo;mạng nơ-ron kém hơn&rdquo; là
           kết luận sai. Hãy đi tìm cấu hình tốt hơn — nó tồn tại. Có một điểm
           đặt trên ba thanh trượt cho <b>75,7%</b>, tức ngang trần và nhỉnh hơn
-          rừng. Gợi ý: nó không nằm ở phía bạn nghĩ.{" "}
+          Random Forest. Gợi ý: nó không nằm ở phía bạn nghĩ.{" "}
           <b>Mạng NHỎ nhất mới thắng</b>, không phải mạng lớn nhất.
           <br />
           <br />
@@ -1542,7 +1542,7 @@ export function LabTabular() {
 
       <div className="panel">
         <div className="stat-k" style={{ marginBottom: 10 }}>
-          Ba núm CHỈ của mạng nơ-ron — rừng không có núm nào
+          Ba núm CHỈ của mạng nơ-ron — Random Forest không có núm nào
         </div>
         <div className="grid grid-3">
           <Slider
@@ -1576,7 +1576,7 @@ export function LabTabular() {
       <Readout
         items={[
           {
-            k: "Rừng ngẫu nhiên",
+            k: "Random Forest",
             v: `${(r.forest * 100).toFixed(1)}%`,
             tone: mlpThang ? "neutral" : "ok",
             sub: "không tinh chỉnh gì",
@@ -1597,7 +1597,7 @@ export function LabTabular() {
             k: "Chênh lệch",
             v: `${r.gap >= 0 ? "+" : ""}${(r.gap * 100).toFixed(1)} đp`,
             tone: Math.abs(r.gap) < 0.01 ? "ok" : r.gap > 0 ? "warn" : "ok",
-            sub: r.gap > 0 ? "rừng đang dẫn" : "mạng đang dẫn",
+            sub: r.gap > 0 ? "Random Forest đang dẫn" : "mạng đang dẫn",
           },
         ]}
       />
@@ -1611,12 +1611,12 @@ export function LabTabular() {
         <div>
           <div className="callout-title">
             {mlpThang
-              ? "Bạn đã tìm ra cấu hình bắt kịp rừng"
-              : "Rừng vẫn đang dẫn — hãy thử tiếp"}
+              ? "Bạn đã tìm ra cấu hình bắt kịp Random Forest"
+              : "Random Forest vẫn đang dẫn — hãy thử tiếp"}
           </div>
           <div className="callout-body">
             {mlpThang
-              ? `Đúng như dự đoán: mạng nơ-ron làm được. Nhưng hãy đếm xem bạn đã kéo bao nhiêu lần để tới đây — rừng đạt ${(r.forest * 100).toFixed(1)}% ngay ở lần chạy đầu tiên, không cần một lần kéo nào. Đó chính là cái giá mà bài học nói tới.`
+              ? `Đúng như dự đoán: mạng nơ-ron làm được. Nhưng hãy đếm xem bạn đã kéo bao nhiêu lần để tới đây — Random Forest đạt ${(r.forest * 100).toFixed(1)}% ngay ở lần chạy đầu tiên, không cần một lần kéo nào. Đó chính là cái giá mà bài học nói tới.`
               : `Mạng đang kém ${(r.gap * 100).toFixed(1)} điểm phần trăm. Trước khi kết luận mạng nơ-ron không hợp dữ liệu bảng, hãy thử GIẢM số nơ-ron ẩn thay vì tăng — trên bài toán nhỏ và nhiều nhiễu, dung lượng thừa chỉ giúp mô hình học thuộc nhiễu.`}
           </div>
         </div>

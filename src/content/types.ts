@@ -17,7 +17,7 @@
  *   2. `objectives` — mục tiêu quan sát được (Bloom), không phải "hiểu về X".
  *   3. `predict`  — hỏi TRƯỚC khi giảng (pretesting effect / desirable difficulty).
  *   4. `checkpoint` — truy hồi giữa bài (testing effect), không dồn về cuối.
- *   5. `cards`    — chuyển kiến thức thành thẻ lặp lại ngắt quãng (chống quên).
+ *   5. `cards`    — chuyển kiến thức thành thẻ lặp lại giãn cách (chống quên).
  *   6. `figure`   — mã hoá kép (dual coding): chữ + hình cho cùng một ý.
  *   7. `lab`      — học bằng làm; mọi khái niệm quan trọng đều có bản thao tác được.
  * ============================================================================
@@ -241,7 +241,7 @@ export interface Lesson {
   /** Ý chính — hiển thị cuối bài và trong sổ tay ôn nhanh. */
   keyTakeaways: string[];
 
-  /** Thẻ lặp lại ngắt quãng sinh ra từ bài này. */
+  /** Thẻ lặp lại giãn cách sinh ra từ bài này. */
   cards: Card[];
 
   /** Kiểm tra cuối bài — quyết định trạng thái "đã thành thạo". */

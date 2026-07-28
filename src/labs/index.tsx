@@ -23,11 +23,11 @@ export interface LabMeta {
 }
 
 export const LABS: LabMeta[] = [
-  { id: 'lab-forgetting', title: 'Trí nhớ trong 120 ngày', blurb: 'Xem đường cong quên và tác dụng thật của ôn ngắt quãng.', track: 'khoi-dong', icon: 'hourglass', Component: LabForgetting },
+  { id: 'lab-forgetting', title: 'Trí nhớ trong 120 ngày', blurb: 'Xem đường cong quên và tác dụng thật của ôn tập giãn cách.', track: 'khoi-dong', icon: 'hourglass', Component: LabForgetting },
   { id: 'lab-alert-load', title: 'Tải cảnh báo SOC', blurb: 'Đội của bạn xử lý nổi bao nhiêu cảnh báo mỗi ngày?', track: 'khoi-dong', icon: 'siren', Component: LabAlertLoad },
-  { id: 'lab-base-rate', title: 'Nghịch lý tỉ lệ nền', blurb: 'Vì sao bộ dò 99% vẫn cho 99% cảnh báo sai.', track: 'nen-mong', icon: 'scale', Component: LabBaseRate },
+  { id: 'lab-base-rate', title: 'Nghịch lý tỉ lệ nền', blurb: 'Vì sao bộ phát hiện 99% vẫn cho 99% cảnh báo sai.', track: 'nen-mong', icon: 'scale', Component: LabBaseRate },
   { id: 'lab-entropy', title: 'Entropy & DGA', blurb: 'Đo độ khó đoán của chuỗi và thử phát hiện tên miền sinh tự động.', track: 'nen-mong', icon: 'dices', Component: LabEntropy },
-  { id: 'lab-gradient', title: 'Hạ gradient', blurb: 'Đi xuống dốc trong sương mù: tốc độ học và cực tiểu địa phương.', track: 'nen-mong', icon: 'mountain', Component: LabGradient },
+  { id: 'lab-gradient', title: 'Gradient descent', blurb: 'Tốc độ học, cực tiểu địa phương và ngưỡng làm thuật toán phân kỳ.', track: 'nen-mong', icon: 'mountain', Component: LabGradient },
   { id: 'lab-logistic', title: 'Huấn luyện hồi quy logistic', blurb: 'Xem trọng số hội tụ theo thời gian thực trên đặc trưng URL.', track: 'ml-cot-loi', icon: 'activity', Component: LabLogistic },
   { id: 'lab-naive-bayes', title: 'Bộ lọc thư rác Naive Bayes', blurb: 'Gõ email của bạn và xem từng từ đẩy quyết định đi đâu.', track: 'ml-cot-loi', icon: 'mail', Component: LabNaiveBayes },
   { id: 'lab-tree', title: 'Cây quyết định', blurb: 'Tự chọn phép chia và so với đáp án máy tìm được.', track: 'ml-cot-loi', icon: 'git-fork', Component: LabTree },
@@ -46,14 +46,14 @@ export const LABS: LabMeta[] = [
   { id: 'lab-pe-features', title: 'Đặc trưng tệp PE', blurb: 'Đọc một tệp thực thi theo cách mô hình đọc.', track: 'dac-trung', icon: 'package', Component: LabPeFeatures },
   { id: 'lab-tfidf', title: 'TF-IDF trên log', blurb: 'Từ nào thực sự mang thông tin trong một dòng log?', track: 'dac-trung', icon: 'file-text', Component: LabTfidf },
   { id: 'lab-anomaly', title: 'Phát hiện bất thường', blurb: 'So sánh ba phương pháp trên dữ liệu truy cập tệp.', track: 'ung-dung', icon: 'search', Component: LabAnomaly },
-  { id: 'lab-kmeans', title: 'Phân cụm k-means', blurb: 'Nhóm hành vi mạng và tìm những kẻ lạc loài.', track: 'ung-dung', icon: 'puzzle', Component: LabKmeans },
-  { id: 'lab-seasonality', title: 'Mùa vụ và phần dư', blurb: 'Xem một đợt tấn công tự nâng mức nền của chính khung giờ nó xảy ra.', track: 'ung-dung', icon: 'activity', Component: LabSeasonality },
+  { id: 'lab-kmeans', title: 'Phân cụm k-means', blurb: 'Nhóm hành vi mạng và tìm điểm ngoại lai.', track: 'ung-dung', icon: 'puzzle', Component: LabKmeans },
+  { id: 'lab-seasonality', title: 'Thành phần mùa và phần dư', blurb: 'Xem một đợt tấn công tự nâng mức nền của chính khung giờ nó xảy ra.', track: 'ung-dung', icon: 'activity', Component: LabSeasonality },
   { id: 'lab-auth-graph', title: 'Đồ thị xác thực', blurb: 'Di chuyển ngang nhìn từ trên xuống — và cách dựng đồ thị sai làm đảo ngược tín hiệu.', track: 'ung-dung', icon: 'network', Component: LabAuthGraph },
   { id: 'lab-perceptron', title: 'Perceptron & XOR', blurb: 'Bài toán từng khiến ngành AI đóng băng 17 năm.', track: 'deep-learning', icon: 'network', Component: LabPerceptron },
-  { id: 'lab-tabular', title: 'Rừng so với mạng nơ-ron', blurb: 'Trên dữ liệu bảng, cây tới đích ngay — mạng tới được, nhưng bắt bạn trả giá.', track: 'deep-learning', icon: 'git-fork', Component: LabTabular },
+  { id: 'lab-tabular', title: 'Random Forest so với mạng nơ-ron', blurb: 'Trên dữ liệu bảng, cây tới đích ngay — mạng tới được, nhưng bắt bạn trả giá.', track: 'deep-learning', icon: 'git-fork', Component: LabTabular },
   { id: 'lab-adversarial', title: 'Tấn công né tránh', blurb: 'Chỉnh đặc trưng để lật nhãn — và đo công sức phải bỏ ra.', track: 'adversarial', icon: 'crosshair', Component: LabAdversarial },
   { id: 'lab-poison', title: 'Đầu độc dữ liệu', blurb: 'Mở cửa hậu trong mô hình mà mọi chỉ số vẫn xanh.', track: 'adversarial', icon: 'skull', Component: LabPoison },
-  { id: 'lab-prompt-injection', title: 'Hộp cát prompt injection', blurb: 'Thử các lớp phòng thủ cho tác tử LLM và xem cái nào thật sự hiệu quả.', track: 'llm-genai', icon: 'message-alert', Component: LabPromptInjection },
+  { id: 'lab-prompt-injection', title: 'Sandbox prompt injection', blurb: 'Thử các lớp phòng thủ cho agent LLM và xem cái nào thật sự hiệu quả.', track: 'llm-genai', icon: 'message-alert', Component: LabPromptInjection },
   { id: 'lab-drift', title: 'Trôi khái niệm', blurb: 'Mô hình của bạn hỏng nhanh đến mức nào nếu không huấn luyện lại?', track: 'van-hanh', icon: 'chart', Component: LabDrift },
   { id: 'lab-explain', title: 'Feature importance nói dối', blurb: 'Một cột rác leo lên hạng nhất — và cách đo nào không bị lừa.', track: 'van-hanh', icon: 'lightbulb', Component: LabExplain },
 ];
