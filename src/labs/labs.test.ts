@@ -20,7 +20,7 @@
 import { describe, it, expect } from 'vitest';
 import { poisonModel, malScore, MAL_BASE } from './adversarial';
 import { makeScores, conformalRun, mcnemar, rocPrCurves, baseRateStats, costCurve } from './metrics';
-import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison, entityRun } from './security';
+import { seasonalRun, authGraph, dgaScore, DGA_THR, splitComparison, entityRun, labelRun } from './security';
 import { trainPerceptron, gradientPath, overfitErrors, explainRun, JUNK, tabularRun } from './models';
 import { intervalForRetention } from '../lib/srs';
 
@@ -227,6 +227,85 @@ describe('lab-entity — dữ liệu bẩn tố oan người vô can và tha b�
     // kết luận hết đúng.
     expect(entityRun(2, 6, false, false, 0).totalEvents).toBe(ban.totalEvents);
     expect(entityRun(12, 6, false, false, 0).focalCount).toBe(ban.focalCount);
+  });
+});
+
+describe('lab-labels — ngưỡng đa engine và cửa sổ chín muồi', () => {
+  const macDinh = labelRun(5, 0);
+  const chin = labelRun(5, 30);
+
+  it('trạng thái mở đầu: ngưỡng đúng nhưng nhãn chưa chín, họ mới mất sạch', () => {
+    // Lời kết luận mở đầu bằng đúng hai con số này: 0 trên 82 mẫu họ mới, và
+    // 25,7% nhãn âm là mã độc thật.
+    expect(macDinh.recallNovel).toBe(0);
+    expect(macDinh.novelTotal).toBe(82);
+    expect(macDinh.negNoise).toBeCloseTo(0.257, 3);
+  });
+
+  it('chỉ cần chờ đủ lâu, cùng ngưỡng đó: họ mới lên 92,7%, nhãn âm còn 1,8%', () => {
+    expect(chin.recallNovel).toBeCloseTo(0.927, 3);
+    expect(chin.negNoise).toBeCloseTo(0.018, 3);
+    // Và độ sạch nhãn dương gần như không đổi khi chờ — đây là chỗ lời kết luận
+    // khẳng định hai bệnh ĐỘC LẬP với nhau, không phải một đánh đổi.
+    expect(Math.abs(chin.precision - macDinh.precision)).toBeLessThan(0.05);
+  });
+
+  it('ngưỡng 1: nhãn dương nhiễm phần mềm lành, đúng 69,9%', () => {
+    const thap = labelRun(1, 30);
+    expect(thap.precision).toBeCloseTo(0.699, 3);
+    expect(thap.recallNovel).toBe(1);
+  });
+
+  it('ngưỡng 20: sạch 100% nhưng chỉ còn 1,2% họ mới và 22,3% nhãn âm là mã độc', () => {
+    const cao = labelRun(20, 30);
+    expect(cao.precision).toBe(1);
+    expect(cao.recallNovel).toBeCloseTo(0.012, 3);
+    expect(cao.negNoise).toBeCloseTo(0.223, 3);
+  });
+
+  it('ngưỡng càng cao thì nhãn âm càng bẩn — quan hệ đơn điệu, không phải một điểm lẻ', () => {
+    // Lời kết luận khẳng định thành quy luật, nên phải kiểm cả dải.
+    const noise = [2, 5, 8, 11, 14, 17, 20].map((t) => labelRun(t, 30).negNoise);
+    for (let i = 1; i < noise.length; i++) {
+      expect(noise[i], `ngưỡng thứ ${i}`).toBeGreaterThanOrEqual(noise[i - 1]);
+    }
+  });
+
+  it('vùng 4–6: cả độ sạch nhãn dương lẫn tỉ lệ bắt họ mới đều còn cao', () => {
+    for (const t of [4, 5, 6]) {
+      const r = labelRun(t, 30);
+      expect(r.precision, `ngưỡng ${t}`).toBeGreaterThan(0.85);
+      expect(r.recallNovel, `ngưỡng ${t}`).toBeGreaterThan(0.85);
+    }
+  });
+
+  it('cửa sổ càng dài thì phần nhãn CÒN sẽ đổi càng nhỏ, và bằng 0 ở mốc chín', () => {
+    const churn = [0, 7, 14, 30, 60].map((m) => labelRun(5, m).churn);
+    for (let i = 1; i < churn.length; i++) {
+      expect(churn[i], `mốc thứ ${i}`).toBeLessThanOrEqual(churn[i - 1]);
+    }
+    expect(churn[churn.length - 1]).toBe(0);
+  });
+
+  it('ca biên: ngưỡng 20 cộng cửa sổ 0 cho ĐÚNG 0 nhãn dương', () => {
+    // Tìm ra khi kiểm bằng trình duyệt: ở ca này `precision` bằng 0 theo quy
+    // ước, và bản đầu đọc thẳng nó rồi báo "nhãn dương nhiễm phần mềm lành"
+    // cho một bảng nhãn không có lấy một nhãn dương. Ô số và lời nhắc giờ kiểm
+    // `positives` trước; dòng này khoá lại chính ca đó.
+    const bien = labelRun(20, 0);
+    expect(bien.positives).toBe(0);
+    expect(bien.precision).toBe(0);
+    expect(bien.negNoise).toBeCloseTo(0.43, 2);
+  });
+
+  it('kho mẫu cố định: đổi thanh trượt không được sinh lại kho', () => {
+    // Nếu kho được sinh lại theo tham số, mọi con số trong lời kết luận sẽ
+    // nhảy khi người học chỉ vừa kéo một thanh trượt.
+    for (const [thr, m] of [[1, 0], [12, 7], [20, 60]] as [number, number][]) {
+      const r = labelRun(thr, m);
+      expect(r.evilTotal, `ngưỡng ${thr}, cửa sổ ${m}`).toBe(macDinh.evilTotal);
+      expect(r.novelTotal, `ngưỡng ${thr}, cửa sổ ${m}`).toBe(macDinh.novelTotal);
+    }
   });
 });
 

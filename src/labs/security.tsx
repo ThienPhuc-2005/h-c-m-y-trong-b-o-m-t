@@ -1613,3 +1613,335 @@ export function LabEntity() {
     </LabShell>
   );
 }
+
+/* ========================================================================== */
+/*  lab-labels — Ngưỡng đa engine và cửa sổ chín muồi nhãn                     */
+/* ========================================================================== */
+
+/**
+ * MÔ PHỎNG, không phải dữ liệu VirusTotal thật.
+ *
+ * Không có cách nào chạy 70 engine AV trong trình duyệt, nên đây là mô hình
+ * động lực phát hiện: số engine nhận ra một mẫu tăng theo tuổi mẫu, nhanh với
+ * họ đã phổ biến và chậm với họ mới; còn báo động giả trên phần mềm lành thì
+ * gần như không đổi theo thời gian. Ba tính chất đó đều lấy từ mô tả trong bài
+ * học, và lab chỉ khẳng định về CƠ CHẾ và CHIỀU biến đổi — đừng đọc con số ở
+ * đây như số đo của một mô hình cụ thể trên VirusTotal thật.
+ */
+const LBL_N = 600;
+const LBL_ENGINES = 70;
+/** Mốc coi như nhãn đã chín hẳn, dùng làm mốc so cho "nhãn còn sẽ đổi". */
+const LBL_MATURE = 60;
+
+interface LblFile {
+  evil: boolean;
+  /** Họ mã độc mới xuất hiện: engine nhận ra chậm và ít. */
+  novel: boolean;
+  plateau: number;
+  tau: number;
+  /** Số engine báo động giả trên mẫu lành — coi như không đổi theo thời gian. */
+  fp: number;
+  jitter: number;
+}
+
+export interface LabelPoint {
+  thr: number;
+  precision: number;
+  recallCommon: number;
+  recallNovel: number;
+}
+
+export interface LabelOut {
+  /** Số mẫu được gán nhãn độc, tính ở đúng cửa sổ chín muồi đang chọn. */
+  positives: number;
+  /**
+   * Bằng 0 khi KHÔNG có nhãn dương nào (ngưỡng cao + cửa sổ ngắn). Nơi hiển thị
+   * phải kiểm `positives` trước: in "độ sạch 0%" cho một bảng nhãn không có lớp
+   * dương là nói sai hẳn bản chất — không phải nhãn bẩn, mà là không có nhãn.
+   */
+  precision: number;
+  recall: number;
+  recallCommon: number;
+  recallNovel: number;
+  /** Tỉ lệ mã độc THẬT nằm lẫn trong nhãn âm — nhiễu bất đối xứng. */
+  negNoise: number;
+  /**
+   * Tỉ lệ mẫu mà nhãn ở cửa sổ đang chọn CÒN sẽ đổi nữa, so với nhãn ở mốc đã
+   * chín hẳn (60 ngày). Đây là con số bài học khuyên đo: truy vấn lại nhãn sau
+   * một thời gian và ghi lại bao nhiêu phần trăm đã đổi.
+   */
+  churn: number;
+  curve: LabelPoint[];
+  evilTotal: number;
+  novelTotal: number;
+}
+
+/** Kho mẫu cố định: thanh trượt KHÔNG được phép sinh lại kho, chỉ đọc lại nó. */
+function lblCorpus(): LblFile[] {
+  const rng = mulberry32(2016);
+  const out: LblFile[] = [];
+  for (let i = 0; i < LBL_N; i++) {
+    const evil = rng() < 0.45;
+    const jitter = (rng() - 0.5) * 3;
+    if (evil) {
+      const novel = rng() < 0.35;
+      out.push(
+        novel
+          ? { evil, novel, plateau: 5 + rng() * 15, tau: 8 + rng() * 20, fp: 0, jitter }
+          : { evil, novel, plateau: 16 + rng() * 42, tau: 1.2 + rng() * 2.3, fp: 0, jitter },
+      );
+    } else {
+      // Đuôi phải là trình cài đặt, công cụ quản trị, tệp nén bảo vệ — thứ bị
+      // vài engine gắn cờ vĩnh viễn. Đây là lý do ngưỡng 1 engine không dùng được.
+      const r = rng();
+      const fp = r < 0.7 ? 0 : r < 0.88 ? 1 + Math.floor(rng() * 2) : r < 0.97 ? 3 + Math.floor(rng() * 3) : 6 + Math.floor(rng() * 7);
+      out.push({ evil, novel: false, plateau: 0, tau: 1, fp, jitter: 0 });
+    }
+  }
+  return out;
+}
+
+/** Số engine báo độc khi mẫu đã tồn tại `age` ngày. */
+function lblDetections(f: LblFile, age: number): number {
+  if (!f.evil) return f.fp;
+  const grown = f.plateau * (1 - Math.exp(-(age + 0.5) / f.tau)) + f.jitter;
+  return clamp(Math.round(grown), 0, LBL_ENGINES);
+}
+
+/**
+ * Gán nhãn cả kho bằng quy tắc "từ `threshold` engine trở lên là độc", đo ở
+ * thời điểm mẫu đã chín `maturityDays` ngày, rồi đối chiếu với sự thật.
+ */
+export function labelRun(threshold: number, maturityDays: number): LabelOut {
+  const corpus = lblCorpus();
+
+  const measure = (thr: number, age: number) => {
+    let pos = 0;
+    let tp = 0;
+    let evil = 0;
+    let evilNeg = 0;
+    let common = 0;
+    let commonTp = 0;
+    let novel = 0;
+    let novelTp = 0;
+    for (const f of corpus) {
+      const labelled = lblDetections(f, age) >= thr;
+      if (labelled) pos++;
+      if (f.evil) {
+        evil++;
+        if (labelled) tp++;
+        else evilNeg++;
+        if (f.novel) {
+          novel++;
+          if (labelled) novelTp++;
+        } else {
+          common++;
+          if (labelled) commonTp++;
+        }
+      }
+    }
+    const neg = LBL_N - pos;
+    return {
+      positives: pos,
+      precision: pos ? tp / pos : 0,
+      recall: evil ? tp / evil : 0,
+      recallCommon: common ? commonTp / common : 0,
+      recallNovel: novel ? novelTp / novel : 0,
+      negNoise: neg ? evilNeg / neg : 0,
+      evilTotal: evil,
+      novelTotal: novel,
+    };
+  };
+
+  const now = measure(threshold, maturityDays);
+
+  // Nhãn còn sẽ đổi: so nhãn ở cửa sổ đang chọn với nhãn ở mốc đã chín hẳn.
+  // Không so với mốc 0 ngày: khi cửa sổ bằng 0 thì phép so đó bằng 0 theo đúng
+  // định nghĩa, và một ô số chết ngay ở trạng thái mở đầu thì dạy được gì.
+  let changed = 0;
+  for (const f of corpus) {
+    if ((lblDetections(f, maturityDays) >= threshold) !== (lblDetections(f, LBL_MATURE) >= threshold)) changed++;
+  }
+
+  const curve: LabelPoint[] = [];
+  for (let thr = 1; thr <= 20; thr++) {
+    const m = measure(thr, maturityDays);
+    curve.push({ thr, precision: m.precision, recallCommon: m.recallCommon, recallNovel: m.recallNovel });
+  }
+
+  return { ...now, churn: changed / LBL_N, curve };
+}
+
+export function LabLabels() {
+  const [threshold, setThreshold] = useState(5);
+  const [maturity, setMaturity] = useState(0);
+
+  const r = useMemo(() => labelRun(threshold, maturity), [threshold, maturity]);
+
+  const p = mkPlot(470, 280, [1, 20], [0, 1], { l: 46, r: 14, t: 14, b: 38 });
+  const lanhTrongDuong = Math.round(r.positives * (1 - r.precision));
+  const moiDung = Math.round(r.recallNovel * r.novelTotal);
+
+  // Ca biên phải xét TRƯỚC: ngưỡng cao cộng cửa sổ ngắn cho 0 nhãn dương, và
+  // khi đó `precision` bằng 0 theo quy ước — đọc thẳng nó sẽ báo "nhãn dương
+  // nhiễm phần mềm lành" cho một bảng nhãn không có lấy một nhãn dương.
+  const khongNhan = r.positives === 0;
+  const trangThai = khongNhan
+    ? 'khong-nhan'
+    : r.precision < 0.8
+      ? 'nhiem'
+      : r.recallNovel < 0.3
+        ? r.churn > 0.05
+          ? 'chua-chin'
+          : 'nguong-cao'
+        : r.negNoise > 0.05
+          ? 'am-nhiem'
+          : 'dung-duoc';
+
+  return (
+    <LabShell
+      id="lab-labels"
+      title="Ngưỡng đa engine và cửa sổ chín muồi: nhãn của bạn sạch tới đâu"
+      takeaway={
+        <>
+          Mở ra, lab đang ở ngưỡng <b>5 engine</b> — đúng mức thoả hiệp mà bài học và giới nghiên cứu hay
+          dùng — nhưng gán nhãn <b>ngay ngày tải mẫu về</b>. Kết quả: <b>0 trên 82 mẫu thuộc họ mới</b> được
+          gán đúng nhãn độc, và <b>25,7% số mẫu bị gán &ldquo;lành&rdquo; thật ra là mã độc</b>. Chọn đúng
+          ngưỡng không cứu được bạn khỏi nhãn muộn: hai bệnh này độc lập với nhau.
+          <br />
+          <br />
+          Kéo cửa sổ chín muồi lên 30 ngày, ngưỡng giữ nguyên: họ mới từ 0% lên <b>92,7%</b>, nhãn âm nhiễm
+          từ 25,7% xuống <b>1,8%</b>. Không có gì được cải tiến — bạn chỉ chờ đủ lâu để câu trả lời kịp hình
+          thành.
+          <br />
+          <br />
+          Giờ mới tới chuyện ngưỡng, và hãy đọc đường cong chứ đừng đọc một con số. Ngưỡng <b>1</b>: độ sạch
+          nhãn dương chỉ <b>69,9%</b> — cứ 10 mẫu bạn gọi là độc thì 3 mẫu là trình cài đặt hoặc công cụ quản
+          trị bị vài engine gắn cờ vĩnh viễn. Ngưỡng <b>20</b>: nhãn dương <b>sạch 100%</b> và cũng gần như
+          vô dụng — chỉ còn <b>1,2%</b> họ mới, tức bạn giữ lại đúng loại mã độc mà chữ ký đã bắt được từ
+          lâu, rồi huấn luyện một mô hình học lại thứ nó đã biết. Thêm nữa, 22,3% nhãn âm khi đó là mã độc
+          thật: <b>ngưỡng càng cao, nhãn âm càng bẩn</b>, và đó là nửa dữ liệu ít ai đi kiểm.
+          <br />
+          <br />
+          Vùng 4–6 là chỗ các đường cong còn cùng cao. Nó không phải con số thiêng — nó là hệ quả của việc
+          báo động giả trên phần mềm lành gần như không đổi theo thời gian, còn phát hiện mã độc thì tăng
+          dần. Hiểu cơ chế đó rồi thì bạn tự chọn được ngưỡng cho kho mẫu của mình.
+        </>
+      }
+    >
+      <div className="grid grid-2">
+        <Slider
+          label="Ngưỡng gán nhãn độc"
+          value={threshold}
+          min={1}
+          max={20}
+          step={1}
+          onChange={setThreshold}
+          format={(v) => `≥ ${v} / ${LBL_ENGINES} engine`}
+          hint="Bao nhiêu engine phải đồng thuận thì bạn mới ghi nhãn “độc”."
+        />
+        <Slider
+          label="Cửa sổ chín muồi nhãn"
+          value={maturity}
+          min={0}
+          max={60}
+          step={1}
+          onChange={setMaturity}
+          format={(v) => (v === 0 ? 'gán nhãn ngay khi thu thập' : `chờ ${v} ngày`)}
+          hint="Chờ bao lâu sau khi mẫu xuất hiện rồi mới đọc kết quả quét."
+        />
+      </div>
+
+      <Chart p={p} label="Chất lượng nhãn theo ngưỡng, ở cửa sổ chín muồi đang chọn">
+        <Axes
+          p={p}
+          xLabel="Ngưỡng: số engine tối thiểu"
+          yLabel="Tỉ lệ"
+          xTicks={19}
+          yTicks={5}
+          fmtX={(v) => String(Math.round(v))}
+          fmtY={(v) => `${Math.round(v * 100)}%`}
+        />
+        <line
+          x1={px(p, threshold)}
+          y1={p.pad.t}
+          x2={px(p, threshold)}
+          y2={p.h - p.pad.b}
+          stroke={COLORS.muted}
+          strokeWidth={1.4}
+          strokeDasharray="3 3"
+        />
+        <Line p={p} pts={r.curve.map((c) => [c.thr, c.precision] as [number, number])} color={COLORS.brand} />
+        <Line p={p} pts={r.curve.map((c) => [c.thr, c.recallCommon] as [number, number])} color={COLORS.info} width={1.9} dash="7 4" />
+        <Line p={p} pts={r.curve.map((c) => [c.thr, c.recallNovel] as [number, number])} color={COLORS.warn} width={1.9} dash="2 3" />
+      </Chart>
+      <div className="faint center">
+        Liền = độ sạch của nhãn dương · gạch dài = tỉ lệ bắt được họ mã độc đã phổ biến · gạch ngắn = tỉ lệ
+        bắt được họ mới. Vạch dọc là ngưỡng bạn đang chọn.
+      </div>
+
+      <Readout
+        items={[
+          {
+            k: 'Độ sạch nhãn dương',
+            v: khongNhan ? '—' : `${(r.precision * 100).toFixed(1)}%`,
+            sub: khongNhan
+              ? 'chưa có nhãn dương nào để nói tới độ sạch'
+              : `${r.positives} nhãn dương, ${lanhTrongDuong} trong đó là phần mềm lành`,
+            tone: khongNhan ? 'bad' : r.precision > 0.9 ? 'ok' : r.precision > 0.8 ? 'warn' : 'bad',
+          },
+          {
+            k: 'Họ mã độc MỚI gán đúng',
+            v: `${(r.recallNovel * 100).toFixed(1)}%`,
+            sub: `${moiDung} trên ${r.novelTotal} mẫu họ mới`,
+            tone: r.recallNovel > 0.8 ? 'ok' : r.recallNovel > 0.4 ? 'warn' : 'bad',
+          },
+          {
+            k: 'Nhãn âm nhiễm mã độc',
+            v: `${(r.negNoise * 100).toFixed(1)}%`,
+            sub: 'bị gán “lành” nhưng thật ra độc',
+            tone: r.negNoise < 0.03 ? 'ok' : r.negNoise < 0.1 ? 'warn' : 'bad',
+          },
+          {
+            k: 'Nhãn còn sẽ đổi',
+            v: `${(r.churn * 100).toFixed(1)}%`,
+            sub: `so với nhãn đã chín ở ${LBL_MATURE} ngày`,
+            tone: r.churn < 0.01 ? 'ok' : r.churn < 0.05 ? 'warn' : 'bad',
+          },
+        ]}
+      />
+
+      <div className={`callout ${trangThai === 'dung-duoc' ? 'co-pro' : 'co-warn'}`}>
+        <Icon className="callout-icon" name={trangThai === 'dung-duoc' ? 'check' : 'siren'} size={18} />
+        <div>
+          <div className="callout-title">
+            {trangThai === 'khong-nhan'
+              ? 'Không có lấy một nhãn dương'
+              : trangThai === 'nhiem'
+                ? 'Nhãn dương nhiễm phần mềm lành'
+                  : trangThai === 'chua-chin'
+                    ? 'Nhãn chưa chín — bạn đang đo trên câu trả lời chưa tồn tại'
+                    : trangThai === 'nguong-cao'
+                      ? 'Sạch, và chỉ còn lại mã độc đã cũ'
+                      : trangThai === 'am-nhiem'
+                        ? 'Nhãn dương ổn, nhãn âm thì chưa'
+                        : 'Nhãn đủ tốt để huấn luyện'}
+          </div>
+          <div className="callout-body">
+            {trangThai === 'khong-nhan'
+              ? `Không mẫu nào đạt ${threshold} engine ở cửa sổ ${maturity === 0 ? 'gán nhãn ngay khi thu thập' : `${maturity} ngày`}, nên cả ${LBL_N} mẫu đều mang nhãn âm — trong đó ${r.evilTotal} mẫu là mã độc thật (${(r.negNoise * 100).toFixed(1)}%). Bảng nhãn không có lớp dương thì không huấn luyện được gì; đây không phải nhãn bẩn, đây là không có nhãn.`
+              : trangThai === 'nhiem'
+                ? `Ngưỡng ${threshold} engine để ${lanhTrongDuong} mẫu phần mềm lành lọt vào nhãn dương trên tổng ${r.positives}. Mô hình huấn luyện trên đó sẽ học rằng trình cài đặt và công cụ quản trị là mã độc — rồi chặn chúng trong sản xuất.`
+              : trangThai === 'chua-chin'
+                ? `Chỉ ${moiDung} trên ${r.novelTotal} mẫu họ mới được gán đúng, và ${(r.churn * 100).toFixed(1)}% nhãn hiện tại còn sẽ đổi. Mọi mẫu độc thật đang mang nhãn “lành” ở đây chính là mẫu mà một mô hình tốt sẽ phát hiện — và bị tính là báo động giả vì bảng nhãn chưa kịp biết.`
+                : trangThai === 'nguong-cao'
+                  ? `Nhãn dương sạch ${(r.precision * 100).toFixed(1)}%, nhưng chỉ ${moiDung} trên ${r.novelTotal} mẫu họ mới còn trong đó, và ${(r.negNoise * 100).toFixed(1)}% nhãn âm là mã độc thật. Bạn vừa lọc bỏ đúng phần dữ liệu đáng học nhất: thứ chữ ký chưa bắt được.`
+                  : trangThai === 'am-nhiem'
+                    ? `Độ sạch nhãn dương ${(r.precision * 100).toFixed(1)}% là dùng được, nhưng ${(r.negNoise * 100).toFixed(1)}% nhãn âm vẫn là mã độc. Nhiễu bất đối xứng: mỗi lần mô hình phát hiện đúng một mẫu trong số đó, nó bị phạt — bạn đang huấn luyện nó im lặng.`
+                    : `Ngưỡng ${threshold} engine sau ${maturity} ngày chờ: nhãn dương sạch ${(r.precision * 100).toFixed(1)}%, bắt được ${(r.recallNovel * 100).toFixed(1)}% họ mới, nhãn âm chỉ còn ${(r.negNoise * 100).toFixed(1)}% nhiễm. Đây là vùng đáng dùng — và đổi lại, dữ liệu của ${maturity} ngày gần nhất chưa được phép dùng để đánh giá.`}
+          </div>
+        </div>
+      </div>
+    </LabShell>
+  );
+}

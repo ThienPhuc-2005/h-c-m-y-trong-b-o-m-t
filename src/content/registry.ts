@@ -73,6 +73,7 @@ export const LAB_IDS = [
   'lab-auth-graph', // Đồ thị xác thực và di chuyển ngang
   'lab-split', // Chia tập ngẫu nhiên / theo thời gian / theo nhóm
   'lab-entity', // Hợp nhất thực thể: đếm trên dữ liệu bẩn
+  'lab-labels', // Ngưỡng đa engine và cửa sổ chín muồi nhãn
   'lab-explain', // MDI thiên vị cột nhiều giá trị, permutation thì không
   'lab-tabular', // Rừng so với mạng nơ-ron trên dữ liệu bảng
   'lab-forgetting', // Mô phỏng đường cong quên & lịch ôn

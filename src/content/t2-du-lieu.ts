@@ -1215,8 +1215,8 @@ export const track2: Track = {
       trackId: 'du-lieu',
       title: 'Bài toán nhãn: lấy nhãn ở đâu',
       subtitle: 'Thứ khan hiếm nhất trong ML bảo mật không phải dữ liệu, mà là câu trả lời đúng',
-      minutes: 23,
-      practiceMinutes: 3,
+      minutes: 24,
+      practiceMinutes: 7,
       level: 'trung-cap',
       prereqs: ['t2-l1'],
       why: {
@@ -1378,6 +1378,12 @@ export const track2: Track = {
               why: 'Các engine không độc lập. Nhiều sản phẩm dùng chung engine cấp phép của bên thứ ba, tham chiếu kết quả của nhau, và cùng lấy từ các nguồn chia sẻ mẫu chung. Số phiếu vì thế là tín hiệu tương quan mạnh chứ không phải phép nhân xác suất độc lập. Trong thực tế, số phiếu hữu ích như một thang độ tin cậy thô, nhưng đừng bao giờ mô hình hoá nó như bỏ phiếu độc lập.',
             },
           ],
+        },
+        {
+          t: 'lab',
+          id: 'lab-labels',
+          intro:
+            'Câu hỏi mở đầu bài này — ngưỡng 1, 5 hay 20 engine — giờ đo được. Lab mở ra ở ngưỡng 5, đúng mức thoả hiệp phổ biến, nhưng gán nhãn ngay ngày tải mẫu về; hãy xem hai bệnh đầu tiên của nhãn hiện ra cùng lúc, rồi tự tìm cửa sổ chín muồi đủ dài trước khi đọc quy tắc ở cuối bài. Lưu ý: không chạy được 70 engine AV trong trình duyệt, nên đây là **mô phỏng** động lực phát hiện theo ba tính chất đã nêu ở trên — engine nhận ra họ phổ biến nhanh, họ mới chậm, còn báo động giả trên phần mềm lành thì gần như không đổi. Hãy đọc nó như bài học về **cơ chế và chiều biến đổi**, đừng lấy con số ở đây làm số đo của VirusTotal thật.',
         },
         { t: 'h', text: 'Khi bạn có rất ít nhãn: bốn lối thoát', level: 2 },
         {
