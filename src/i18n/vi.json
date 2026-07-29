@@ -18,7 +18,8 @@
     "next": "Câu tiếp theo",
     "mastered": "Đã thành thạo",
     "completed": "Đã hoàn thành",
-    "locked": "Khoá"
+    "locked": "Khoá",
+    "stopSession": "Dừng phiên"
   },
   "nav": {
     "skip": "Bỏ qua điều hướng, tới nội dung chính",
@@ -83,7 +84,6 @@
     "adviceOptimal": "Tỉ lệ nhớ của bạn đang ở vùng tối ưu (khoảng 85–92%). Quên một chút là dấu hiệu tốt: nó nghĩa là mỗi lần ôn đều thực sự làm việc gì đó cho trí nhớ.",
     "practiceMore": "Luyện tập thêm",
     "newCard": "thẻ mới",
-    "stop": "Dừng phiên",
     "unflag": "Bỏ đánh dấu",
     "flag": "Đánh dấu để xem lại",
     "tryRecall": "Cố nhớ lại trước đã — chính lúc vật lộn này mới là lúc trí nhớ được củng cố.",
@@ -323,7 +323,8 @@
     "totalCards": "tổng số thẻ trong khoá",
     "above95": "thẻ nhớ trên 95%",
     "labsOpened": "phòng lab đã mở",
-    "startDate": "ngày bắt đầu"
+    "startDate": "ngày bắt đầu",
+    "wantRestart": "Muốn học lại toàn bộ khoá từ đầu?"
   },
   "duration": {
     "underMinute": "< 1 phút",
@@ -415,7 +416,9 @@
     "importConfirm": "Nhập và thay thế",
     "importUndo": "Hoàn tác lần nhập",
     "importUndone": "Đã khôi phục lại tiến độ trước khi nhập.",
-    "lastBackup": "Sao lưu gần nhất: {when}"
+    "lastBackup": "Sao lưu gần nhất: {when}",
+    "resetHead": "Làm lại",
+    "resetIntro": "Học lại từ đầu sẽ xoá tiến độ bài học, thẻ ghi nhớ và lịch sử luyện tập, đưa mọi bài về trạng thái chưa học — nhưng GIỮ nguyên cài đặt, chủ đề màu và cỡ chữ của bạn. Hãy xuất một bản sao lưu ở trên trước nếu bạn còn phân vân."
   },
   "onboarding": {
     "title": "Học máy cho An ninh mạng",

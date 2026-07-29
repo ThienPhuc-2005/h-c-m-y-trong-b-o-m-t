@@ -36,13 +36,26 @@
    ========================================================================== */
 
 :root {
-  /* ---- Bậc chữ (Major Third 1.2 — đủ tương phản, không nhảy vọt) --------- */
-  /* 0,6875rem cho ra 11,7px ở gốc 17px — quá nhỏ cho tiếng Việt: dấu của "ệ",
-     "ữ" và "ỗ" bắt đầu dính vào nhau, và token này dùng cho chữ THẬT (mô tả huy
-     hiệu, nhãn ô số, ngày trong chuỗi) chứ không chỉ cho nhãn trang trí. */
-  --fs-2xs: 0.75rem;
-  --fs-xs: 0.78125rem;
-  --fs-sm: 0.875rem;
+  /* ---- Bậc chữ ----------------------------------------------------------
+     Bậc trên (base trở lên) giữ nguyên tỉ lệ Major Third. Bậc DƯỚI thì không:
+     nó bị nâng lên và nén lại, có chủ đích.
+
+     Lý do đến từ phép đo, không phải cảm giác. Đếm cỡ chữ của mọi phần tử có
+     chữ thật trên từng trang cho ra: trang Tiến độ có 47 phần tử ở 14,9px, 18
+     ở 13,3px, 17 ở 12,8px — và ĐÚNG MỘT phần tử ở 17px. Trang Cài đặt tương
+     tự. Nghĩa là ngoài phần bài học ra, gần như toàn bộ ứng dụng được dựng
+     bằng chữ dưới 15px, trong khi thân bài học đọc rất thoải mái ở 18px.
+
+     Đó không phải một thang chữ, đó là một thang chú thích. Nâng đáy lên:
+     bậc nhỏ nhất giờ là 13,8px thay vì 12,75px, và ba bậc dưới cách nhau
+     khoảng 1px thay vì giãn đều — ở vùng cỡ chữ này mắt phân biệt được thứ
+     bậc bằng màu và độ đậm tốt hơn nhiều so với bằng vài phần mười pixel.
+
+     Tiếng Việt cần đáy cao hơn tiếng Anh: dấu của "ệ", "ữ", "ỗ" chồng hai
+     tầng trên cùng một chữ cái, nên chữ 12,8px mất dấu trước khi mất nét. */
+  --fs-2xs: 0.8125rem;
+  --fs-xs: 0.875rem;
+  --fs-sm: 0.9375rem;
   --fs-base: 1rem;
   --fs-md: 1.0625rem;
   --fs-lg: 1.25rem;

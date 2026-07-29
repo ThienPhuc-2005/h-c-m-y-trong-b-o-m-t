@@ -18,7 +18,8 @@
     "next": "Next question",
     "mastered": "Mastered",
     "completed": "Completed",
-    "locked": "Locked"
+    "locked": "Locked",
+    "stopSession": "End session"
   },
   "nav": {
     "skip": "Skip navigation, go to main content",
@@ -83,7 +84,6 @@
     "adviceOptimal": "Your recall rate is in the optimal band (roughly 85–92%). Forgetting a little is a good sign: it means each review is actually doing something for your memory.",
     "practiceMore": "Practice more",
     "newCard": "new card",
-    "stop": "End session",
     "unflag": "Remove flag",
     "flag": "Flag for later",
     "tryRecall": "Try to recall first — the struggle itself is what strengthens the memory.",
@@ -323,7 +323,8 @@
     "totalCards": "cards in the course",
     "above95": "cards above 95% recall",
     "labsOpened": "labs opened",
-    "startDate": "start date"
+    "startDate": "start date",
+    "wantRestart": "Want to start the whole course over?"
   },
   "duration": {
     "underMinute": "< 1 min",
@@ -415,7 +416,9 @@
     "importConfirm": "Import and replace",
     "importUndo": "Undo import",
     "importUndone": "Restored the progress you had before importing.",
-    "lastBackup": "Last backup: {when}"
+    "lastBackup": "Last backup: {when}",
+    "resetHead": "Start over",
+    "resetIntro": "Restart learning clears lesson progress, flashcards and practice history, returning every lesson to unstarted — but KEEPS your settings, theme and text size. Export a backup above first if you are unsure."
   },
   "onboarding": {
     "title": "Machine Learning for Security",

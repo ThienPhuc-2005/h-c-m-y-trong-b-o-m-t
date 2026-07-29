@@ -291,6 +291,14 @@ export function ProgressPage() {
           <div><b>{fmtDate(p.createdAt)}</b><div className="faint">{t('progress.startDate')}</div></div>
         </div>
       </section>
+
+      {/* Lối vào thứ hai cho "Học lại từ đầu". Người học nảy ra ý muốn xoá
+          sạch khi đang NHÌN tiến độ của mình, không phải khi đang ở trang cài
+          đặt — nên đặt một lối vào ở đây, trỏ thẳng tới đúng khối đó. */}
+      <p className="faint center">
+        {t('progress.wantRestart')}{' '}
+        <a href={href('/cai-dat#lam-lai')}>{t('settings.resetLearning')}</a>
+      </p>
     </div>
   );
 }

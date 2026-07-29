@@ -191,8 +191,11 @@ export function ReviewPage() {
           {i + 1} / {queue.length}
           {isNew && <span className="chip chip-info" style={{ marginLeft: 8 }}>{tr('review.newCard')}</span>}
         </div>
-        <a href={href('/')} className="faint row" style={{ textDecoration: 'none', gap: 4 }}>
-          {tr('review.stop')} <Icon name="x" size={13} />
+        {/* Nút thoát phải TRÔNG như nút. Bản trước là một liên kết `.faint`, tức
+            chữ mờ nhất trong cả bảng màu, đặt cạnh một dòng cũng mờ như thế —
+            người đang giữa phiên không nhận ra đó là lối ra. */}
+        <a href={href('/')} className="btn btn-sm">
+          <Icon name="x" size={14} /> {tr('common.stopSession')}
         </a>
       </div>
       <div className="bar">

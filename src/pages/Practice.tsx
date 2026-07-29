@@ -154,9 +154,18 @@ export function PracticePage() {
   const q = session[idx];
   return (
     <div className="container container-narrow stack">
+      {/* Phiên luyện tập trước đây KHÔNG có lối ra nào: người học bị giữ trong
+          12–15 câu cho tới khi trả lời hết, chỉ thoát được bằng thanh điều
+          hướng chung. Câu đã trả lời được ghi lại ngay khi trả lời, nên rời
+          giữa chừng không mất gì — càng không có lý do gì để giấu nút thoát. */}
       <div className="row-wrap" style={{ justifyContent: 'space-between' }}>
         <span className="faint">{t('practice.questionN', { n: idx + 1, total: session.length })}</span>
-        <span className="chip">{q.lessonTitle}</span>
+        <div className="row" style={{ gap: 'var(--s-2)' }}>
+          <span className="chip">{q.lessonTitle}</span>
+          <button className="btn btn-sm" onClick={() => setSession(null)}>
+            <Icon name="x" size={14} /> {t('common.stopSession')}
+          </button>
+        </div>
       </div>
       <div className="bar">
         <div className="bar-fill" style={{ width: `${(idx / session.length) * 100}%` }} />

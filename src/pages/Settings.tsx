@@ -293,10 +293,17 @@ export function SettingsPage() {
 
         <hr />
 
-        <div className="stack" style={{ '--gap': 'var(--s-3)' } as React.CSSProperties}>
+        {/* Ba nút này từng nằm trần sau một đường kẻ, không tiêu đề, không một
+            dòng giải thích — nên "Học lại từ đầu" tồn tại mà người học không
+            tìm ra. Một chức năng không tìm thấy được thì bằng không tồn tại. */}
+        <div className="stack" style={{ '--gap': 'var(--s-3)' } as React.CSSProperties} id="lam-lai">
+          <h2 style={{ fontSize: 'var(--fs-lg)' }}>{t('settings.resetHead')}</h2>
+          <p className="muted" style={{ marginTop: 'calc(-1 * var(--s-2))' }}>{t('settings.resetIntro')}</p>
           {confirm === 'none' && (
             <div className="row-wrap">
-              <button className="btn btn-sm" onClick={() => setConfirm('learning')}>{t('settings.resetLearning')}</button>
+              <button className="btn btn-sm btn-primary" onClick={() => setConfirm('learning')}>
+                <Icon name="rotate-ccw" size={14} /> {t('settings.resetLearning')}
+              </button>
               <button className="btn btn-sm btn-danger" onClick={() => setConfirm('all')}>{t('settings.resetAll')}</button>
               <button className="btn btn-sm btn-ghost" onClick={() => setSettings({ ...DEFAULT_SETTINGS, onboarded: true, name: s.name })}>
                 {t('settings.resetDefaults')}
