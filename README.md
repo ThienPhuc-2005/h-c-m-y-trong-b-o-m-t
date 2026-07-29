@@ -158,7 +158,9 @@ npm run check:figures   # đo 59 hình và 33 lab trong trình duyệt thật
 
   Đây không phải phòng ngừa trên lý thuyết. Lượt rà gần nhất tìm ra bốn lab hứa những điều mã của chúng tính ra điều khác — trong đó một lab tuyên bố "phương pháp A thường thắng" dựa trên phép so ba thang điểm khác nhau bằng cùng một thanh trượt ngưỡng, và một lab in ra `NaN% rác` khi người học làm đúng thao tác mà chính lời kết luận của nó mời làm.
 
-  Giới hạn còn lại, nói thẳng: lab được chốt ở **trạng thái mặc định và các trạng thái biên chọn tay**, chưa có gì quét toàn bộ tổ hợp thanh trượt.
+- **Mọi lab ở mọi góc biên** (`npm run check:labs`): 33 lab × mọi tổ hợp hai đầu của mọi thanh trượt, công tắc và danh sách chọn — **522 trạng thái**. Mỗi trạng thái đòi không có `NaN`, `Infinity` hay `undefined` lọt ra màn hình, không lỗi ném ra, và biểu đồ không tràn khỏi khung.
+
+  Góc **hỗn hợp** mới là chỗ vỡ, không phải góc đồng nhất: ca hỏng đã biết của `lab-labels` cần ngưỡng ở max cộng cửa sổ chín ở min. Bản đầu của chính script này chỉ quét từng thanh một rồi "tất cả min / tất cả max", và nó đi ngang qua ca đó mà không thấy gì. Lượt chạy đầu sau khi sửa tìm ra một lỗi thật: nhãn "tối ưu" của `lab-cost-threshold` chạy ra ngoài khung 26 đơn vị khi ngưỡng tối ưu dạt về 0,93 — trạng thái mặc định không bao giờ lộ ra điều đó.
 
 - **Hình vẽ** (`npm run check:figures`): mở Chrome không giao diện, duyệt 59 hình và 33 lab, trượt nếu có phần tử vượt khỏi `viewBox`, hai hộp chữ đè nhau, hoặc một đường kẻ chạy xuyên giữa dòng chữ. Ba loại lỗi này chỉ tồn tại sau khi trình duyệt đã dàn chữ bằng font thật, nên không bộ test nào chạy trên jsdom thấy được. Không nằm trong CI vì runner không có trình duyệt.
 - **Đầu-cuối**: vòng học hoàn chỉnh (đọc bài → điểm dừng truy hồi → kiểm tra cuối bài → kích hoạt thẻ → phiên ôn tập) và khả năng ngoại tuyến đều được kiểm bằng trình duyệt thật.

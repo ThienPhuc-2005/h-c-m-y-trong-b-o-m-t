@@ -21,7 +21,19 @@ node scripts/calibrate-minutes.mjs        # hiệu chỉnh lại thời lượng
 node scripts/calibrate-minutes.mjs --dry  # xem thay đổi, không ghi
 npm run check:contrast                    # WCAG + khoảng cách hue cho ba bảng màu
 npm run check:figures                     # đo hình vẽ trong trình duyệt thật
+npm run check:labs                        # kéo mọi thanh trượt của mọi lab tới hai cực
 ```
+
+`check:labs` đi hết 33 lab, mỗi lab kéo từng điều khiển tới hai đầu rồi đi qua
+**mọi góc** của không gian biên (2^n tổ hợp, trần 2^6) — 522 trạng thái. Ở mỗi
+trạng thái nó đòi không có `NaN`/`Infinity`/`undefined` lọt ra màn hình, không
+lỗi ném ra, ErrorBoundary không bật, và ở góc đồng nhất thì biểu đồ không tràn
+khung. Góc HỖN HỢP mới là chỗ đáng sợ: ca hỏng của `lab-labels` cần ngưỡng ở
+max cộng cửa sổ ở min, nên quét từng thanh một rồi "tất cả min / tất cả max" là
+đi ngang qua nó mà không thấy.
+
+Nó bỏ qua phần lời kết luận khi dò chữ, vì `lab-gradient` có câu "trọng số nổ
+tung thành NaN" — đó là nội dung giảng dạy, không phải phép chia hỏng.
 
 `check:figures` mở Chrome (hoặc Edge) đã cài sẵn ở chế độ không giao diện, duyệt
 59 hình và 33 phòng lab, rồi trượt nếu có phần tử nào vượt khỏi `viewBox`, hai
@@ -74,6 +86,9 @@ scripts/build-sw.mjs  Nhúng danh sách tệp thật + phiên bản băm sau m�
 scripts/calibrate-minutes.mjs  Hiệu chỉnh minutes/practiceMinutes từ nội dung thật
 scripts/check-contrast.mjs     Đọc tokens.css, đo WCAG và khoảng cách hue
 scripts/check-figures.mjs      Đo hình bằng Chrome không giao diện, qua CDP
+scripts/check-labs.mjs         Quét mọi góc biên của mọi thanh trượt trong lab
+scripts/lib/cdp.mjs            Ống nói chuyện với Chrome, dùng chung hai script
+scripts/lib/do-hinh.mjs        Ba luật đo hình, chạy trong trang
 ```
 
 ## Ba quy ước dễ vi phạm

@@ -433,7 +433,25 @@ export function LabCostThreshold() {
         <text x={px(p, 0.5) + 5} y={p.pad.t + 14} className="svg-label" style={{ fontSize: 12.5 }}>mặc định 0,5</text>
         <line x1={px(p, best.t)} y1={p.pad.t} x2={px(p, best.t)} y2={p.h - p.pad.b} stroke="var(--ok)" strokeWidth={2.2} />
         <circle cx={px(p, best.t)} cy={py(p, best.cost)} r={6} fill="var(--ok)" />
-        <text x={px(p, best.t) + 6} y={py(p, best.cost) - 8} className="svg-label-strong" style={{ fontSize: 12 }}>tối ưu {best.t.toFixed(2)}</text>
+        {/* Nhãn phải LẬT sang trái khi ngưỡng tối ưu dạt về mép phải. Neo cứng
+            bên phải đường thì ở chi phí bỏ sót thấp nhất (ngưỡng tối ưu 0,93)
+            nó chạy ra ngoài khung 26 đơn vị — `npm run check:labs` bắt được,
+            còn trạng thái mặc định thì không bao giờ lộ ra. */}
+        {(() => {
+          const x = px(p, best.t);
+          const hetCho = x + 60 > p.w - p.pad.r;
+          return (
+            <text
+              x={hetCho ? x - 6 : x + 6}
+              y={py(p, best.cost) - 8}
+              textAnchor={hetCho ? 'end' : 'start'}
+              className="svg-label-strong"
+              style={{ fontSize: 12 }}
+            >
+              tối ưu {best.t.toFixed(2).replace('.', ',')}
+            </text>
+          );
+        })()}
       </Chart>
 
       <Readout
