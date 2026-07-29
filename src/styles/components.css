@@ -347,7 +347,14 @@
 }
 @media (max-width: 860px) {
   .grid-split {
-    grid-template-columns: 1fr;
+    /* `minmax(0, 1fr)` chứ KHÔNG phải `1fr`. Một track `1fr` trần có kích
+       thước tối thiểu tự động bằng `min-content`, nên chỉ cần bên trong có
+       một phần tử không co được (ở đây là `minWidth: 220` trong Shared.tsx)
+       là track phình to hơn chính cái lưới chứa nó — đo được 363px trong một
+       lưới 328px, và trang chủ tràn ngang 12px.
+       Luật hai cột phía trên đã dùng minmax(0, …) đúng; luật gộp cột quên.
+       Nâng thang chữ chỉ làm nó lộ ra, không phải nguyên nhân. */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

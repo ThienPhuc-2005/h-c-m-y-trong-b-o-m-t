@@ -46,19 +46,26 @@
      tự. Nghĩa là ngoài phần bài học ra, gần như toàn bộ ứng dụng được dựng
      bằng chữ dưới 15px, trong khi thân bài học đọc rất thoải mái ở 18px.
 
-     Đó không phải một thang chữ, đó là một thang chú thích. Nâng đáy lên:
-     bậc nhỏ nhất giờ là 13,8px thay vì 12,75px, và ba bậc dưới cách nhau
-     khoảng 1px thay vì giãn đều — ở vùng cỡ chữ này mắt phân biệt được thứ
-     bậc bằng màu và độ đậm tốt hơn nhiều so với bằng vài phần mười pixel.
+     Đó không phải một thang chữ, đó là một thang chú thích.
+
+     Cách sửa: dịch MỌI bậc đọc lên đúng một nấc, và không đụng tới tiêu đề
+     lớn. Bậc nhỏ nhất từ 12,75 lên 14,9px; thân bài học từ 18,1 lên 19,1px;
+     `sm` — bậc gánh phần lớn chữ trong vỏ giao diện — từ 14,9 lên thẳng 17px.
+     Từ `xl` (25,5px) trở lên giữ nguyên: h2, h1 và các con số lớn vốn đã đủ
+     to, phóng thêm chỉ làm trang loãng ra chứ không dễ đọc hơn.
+
+     `lg` phải nhích theo dù nó là cỡ tiêu đề nhỏ: giữ nó ở 21,25 trong khi
+     thân bài lên 19,1 thì h3 chỉ còn hơn chữ thường 2px, và thứ bậc tiêu đề
+     mất luôn.
 
      Tiếng Việt cần đáy cao hơn tiếng Anh: dấu của "ệ", "ữ", "ỗ" chồng hai
-     tầng trên cùng một chữ cái, nên chữ 12,8px mất dấu trước khi mất nét. */
-  --fs-2xs: 0.8125rem;
-  --fs-xs: 0.875rem;
-  --fs-sm: 0.9375rem;
-  --fs-base: 1rem;
-  --fs-md: 1.0625rem;
-  --fs-lg: 1.25rem;
+     tầng trên cùng một chữ cái, nên chữ nhỏ mất dấu trước khi mất nét. */
+  --fs-2xs: 0.875rem;
+  --fs-xs: 0.9375rem;
+  --fs-sm: 1rem;
+  --fs-base: 1.0625rem;
+  --fs-md: 1.125rem;
+  --fs-lg: 1.3125rem;
   --fs-xl: 1.5rem;
   --fs-2xl: 1.875rem;
   --fs-3xl: 2.25rem;
