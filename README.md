@@ -4,7 +4,7 @@
 
 Chạy hoàn toàn trong trình duyệt. Không tài khoản, không máy chủ, không theo dõi, dùng được ngoại tuyến thật (có service worker — xem phần *Hiệu năng và ngoại tuyến* để biết số đo) và cài được như một ứng dụng trên điện thoại lẫn máy tính.
 
-**11 chặng · 73 bài · 364 thẻ ghi nhớ · 468 câu hỏi · 24 phòng thí nghiệm · 30 hình minh hoạ · 167 thuật ngữ · ~23 giờ nội dung.**
+**11 chặng · 77 bài · 384 thẻ ghi nhớ · 497 câu hỏi · 33 phòng thí nghiệm · 59 hình minh hoạ · 167 thuật ngữ · ~29 giờ đọc + ~7 giờ thực hành.**
 
 ---
 
@@ -19,7 +19,7 @@ Phần lớn khoá học trực tuyến tối ưu cho **cảm giác đã học**
 | **Hiệu ứng kiểm tra** | Khối `checkpoint` đặt câu hỏi truy hồi **giữa bài**, không dồn hết về cuối. |
 | **Lặp lại ngắt quãng** | Cài đặt đầy đủ thuật toán **FSRS** (mô hình trí nhớ ba biến: độ ổn định, độ khó, xác suất nhớ lại) — xem `src/lib/srs.ts`. |
 | **Xen kẽ (interleaving)** | Trang Luyện tập trộn câu hỏi từ nhiều chặng và sắp lại để hai câu liền nhau không cùng chủ đề. |
-| **Mã hoá kép** | 30 hình minh hoạ SVG tự vẽ + 24 phòng thí nghiệm tương tác. Mọi khái niệm trừu tượng đều có bản nhìn thấy được. |
+| **Mã hoá kép** | 59 hình minh hoạ SVG tự vẽ + 33 phòng thí nghiệm tương tác. Không bài nào thiếu cả hai. |
 | **Siêu nhận thức** | Người học chấm mức tự tin **trước** khi trả lời; app dựng biểu đồ hiệu chuẩn cho thấy họ tự tin thái quá hay rụt rè. |
 
 Ngoài ra:
@@ -48,11 +48,11 @@ Xem phần chú thích đầy đủ trong [`src/styles/tokens.css`](src/styles/t
 |---|---|---|---|
 | 0 | Khởi động | 4 | ML làm được gì / không làm được gì trong bảo mật; cách học để không quên |
 | 1 | Nền móng | 7 | Vector đặc trưng, Bayes, **nghịch lý tỉ lệ nền**, thống kê, entropy, gradient |
-| 2 | Dữ liệu bảo mật | 6 | Nguồn log, pandas, làm sạch, bài toán nhãn, bộ dữ liệu chuẩn, **rò rỉ dữ liệu** |
+| 2 | Dữ liệu bảo mật | 8 | Nguồn log, pandas, làm sạch, bài toán nhãn, bộ dữ liệu chuẩn, **rò rỉ dữ liệu** |
 | 3 | Học máy cốt lõi | 8 | Hồi quy logistic, Naive Bayes, cây, rừng/boosting, k-NN/SVM, quá khớp, kiểm định |
 | 4 | **Đo lường** | 7 | Ma trận nhầm lẫn, precision/recall, ROC vs PR, ngưỡng theo chi phí, hiệu chuẩn, mệt mỏi cảnh báo |
 | 5 | Kỹ thuật đặc trưng | 6 | URL/email, tệp PE, luồng mạng, hành vi người dùng, TF-IDF tới embedding |
-| 6 | Ứng dụng thực chiến | 9 | Phishing, mã độc tĩnh/động, DGA, NIDS, bất thường, UEBA, log, gian lận |
+| 6 | Ứng dụng thực chiến | 11 | Phishing, mã độc tĩnh/động, DGA, NIDS, bất thường, UEBA, log, gian lận |
 | 7 | Học sâu | 6 | Nơ-ron, huấn luyện, CNN trên byte, mô hình chuỗi, và **khi nào không nên dùng** |
 | 8 | Học máy đối kháng | 6 | Né tránh, đầu độc, cửa hậu, trộm mô hình, phòng thủ, red team ML |
 | 9 | An ninh LLM & GenAI | 7 | Prompt injection, jailbreak, rủi ro RAG/tác tử, OWASP LLM Top 10, guardrails |
@@ -62,7 +62,7 @@ Chặng 4 (Đo lường) được viết dày nhất có chủ đích: phần l�
 
 ## Phòng thí nghiệm
 
-24 mô hình chạy thật bằng JavaScript ngay trong trình duyệt — không có máy chủ, không có dữ liệu nào rời khỏi máy bạn. Vài ví dụ:
+33 mô hình chạy thật bằng JavaScript ngay trong trình duyệt — không có máy chủ, không có dữ liệu nào rời khỏi máy bạn. Vài ví dụ:
 
 - **Nghịch lý tỉ lệ nền** — kéo độ hiếm của tấn công xuống và xem độ chuẩn xác sụp đổ dù mô hình không tệ đi.
 - **ROC vs PR** — chứng kiến ROC-AUC "nói dối" khi lớp dương trở nên hiếm.
@@ -83,14 +83,16 @@ Số đo thật, không phải ước lượng (Chromium, mạng mô phỏng qua
 
 | Tình huống | Thời gian |
 |---|---|
-| Lần đầu, không giới hạn băng thông | ~0,3 s |
-| Lần đầu, 4G chậm (4 Mbps, 80 ms) | ~1,7 s |
-| Lần đầu, Fast 3G (1,6 Mbps, 150 ms) | ~3,9 s |
-| **Mở lại khi NGẮT MẠNG hoàn toàn** | **~0,17 s** |
+| Lần đầu, không giới hạn băng thông | ~0,10 s |
+| Lần đầu, 4G chậm (4 Mbps, 80 ms) | ~1,8 s |
+| Lần đầu, Fast 3G (1,6 Mbps, 150 ms) | ~4,4 s |
+| **Mở lại khi NGẮT MẠNG hoàn toàn** | **~0,06 s** |
 
-Toàn bộ giáo trình là ~670 KB sau nén, và đó là chi phí có thật của lần tải đầu trên mạng chậm. Đổi lại, người học **trả một lần**: service worker nạp sẵn mọi thứ, nên từ lần thứ hai app mở tức thì và hoạt động đầy đủ khi không có mạng — kể cả ôn thẻ, đọc bài và chạy phòng lab.
+Mỗi ô là trung vị của 5 lần tải, tính tới `loadEventEnd`, cache và service worker bị xoá sạch trước mỗi lần.
 
-Giáo trình được chia **mỗi chặng một tệp**, và service worker **tái sử dụng các chặng không đổi** khi cập nhật. Đo thực tế: sửa nội dung một chặng khiến người học tải lại **226 KB** thay vì ~2,2 MB.
+Bản build là **802 KB sau nén** (2,58 MB thô, 22 tệp), trong đó riêng giáo trình chiếm 580 KB — đó là chi phí có thật của lần tải đầu trên mạng chậm. Đổi lại, người học **trả một lần**: service worker nạp sẵn mọi thứ, nên từ lần thứ hai app mở tức thì và hoạt động đầy đủ khi không có mạng — kể cả ôn thẻ, đọc bài và chạy phòng lab.
+
+Giáo trình được chia **mỗi chặng một tệp**, và service worker **tái sử dụng các chặng không đổi** khi cập nhật. Đo thực tế bằng cách sửa một chuỗi trong chặng 6 rồi dựng lại: người học tải về **166 KB** thay vì 802 KB — chunk của chặng đó, chunk khởi động (vì nó nhập chặng theo tên đã băm), `index.html` và `sw.js`. Mười chặng còn lại lấy nguyên từ cache.
 
 ## Chạy thử
 
@@ -110,6 +112,7 @@ src/
 ├── content/          Toàn bộ giáo trình dưới dạng dữ liệu thuần
 │   ├── types.ts        Lược đồ — nguyên tắc sư phạm được mã hoá thành kiểu dữ liệu
 │   ├── registry.ts     Danh sách id hình vẽ / phòng lab hợp lệ
+│   ├── reading-time.ts Mô hình ước lượng thời lượng bài học
 │   ├── glossary.ts     Từ điển thuật ngữ song ngữ
 │   └── t0…t10*.ts      11 chặng học
 ├── i18n/             Song ngữ VI/EN cho phần vỏ giao diện
@@ -124,32 +127,43 @@ src/
 │   ├── highlight.ts    Tô màu cú pháp tối giản
 │   └── utils.ts        Tiện ích số học và chuỗi
 ├── components/       Icon, dựng khối nội dung, câu hỏi, hình vẽ SVG, tìm kiếm
-├── labs/             24 phòng thí nghiệm tương tác
-├── pages/            10 trang
+├── labs/             33 phòng thí nghiệm tương tác
+├── pages/            11 trang
 └── styles/           Design tokens + thư viện thành phần
 
 public/sw.js          Service worker: nạp sẵn, cache-first, tái dùng chunk cũ
 public/manifest.webmanifest  Khai báo PWA để cài được như ứng dụng
-scripts/build-sw.mjs  Nhúng danh sách tệp thật + phiên bản băm sau mỗi lần build
+scripts/build-sw.mjs           Nhúng danh sách tệp thật + phiên bản băm sau mỗi lần build
+scripts/calibrate-minutes.mjs  Tính lại thời lượng mỗi bài từ nội dung thật
+scripts/check-contrast.mjs     Đo WCAG và khoảng cách hue cho ba bảng màu
+scripts/check-figures.mjs      Đo hình vẽ trong Chrome không giao diện, qua CDP
 ```
 
 ## Kiểm thử và bảo đảm chất lượng
 
 ```bash
-npm test        # 584 kiểm thử
+npm test              # 759 kiểm thử
 npm run lint
 npx tsc -b --noEmit
+npm run check:contrast  # WCAG + khoảng cách hue cho ba bảng màu
+npm run check:figures   # đo 59 hình và 33 lab trong trình duyệt thật
 ```
 
 - **Bộ máy trí nhớ** (`srs.test.ts`): tính đơn điệu của khoảng cách theo điểm chấm, vòng đời thẻ, và các bất biến an toàn (không sinh NaN, độ khó luôn trong [1, 10], tôn trọng trần khoảng cách).
 - **Toàn vẹn giáo trình** (`content.test.ts`): mọi bài **phải** có `why` đủ bốn phần, có điểm truy hồi, có yếu tố trực quan, có thẻ ghi nhớ; mọi câu hỏi phải có giải thích; id không trùng trên toàn khoá; bài tiên quyết tồn tại và không tạo chu trình; mọi id hình vẽ và phòng lab đều có thật.
-- **Trợ năng**: kiểm toán bằng axe-core (WCAG 2.1 A + AA) trên 8 trang × 2 chủ đề, kể cả khi bảng tìm kiếm đang mở — **0 vi phạm**.
+- **Trợ năng**: kiểm toán bằng axe-core (WCAG 2.1 A + AA) trên 8 trang × 2 chủ đề sáng/tối, kể cả khi bảng tìm kiếm đang mở — **0 vi phạm**. Đó là một lượt chạy tại một thời điểm, không phải phép kiểm tự động: chủ đề Vàng ấm thêm sau nên chưa qua lượt nào. Riêng tương phản màu thì `npm run check:contrast` đo lại được bất cứ lúc nào, cho cả ba bảng màu.
 - **Bộ biểu tượng** (`icon.test.ts`): quét toàn bộ mã giao diện để chặn emoji quay lại, và đảm bảo mọi tên icon trong dữ liệu đều trỏ tới một hình có thật.
 - **Song ngữ** (`i18n.test.ts`): hai tệp từ điển có đúng cùng tập khoá, cùng bộ biến nội suy, bản English không sót dấu tiếng Việt, và không lời gọi `t()` nào trỏ tới khoá không tồn tại.
-- **Phòng lab**: cả 24 lab được kéo thanh trượt tới hai cực, bật/tắt mọi công tắc — không sinh `NaN`, không lỗi console.
+- **Phòng lab phải làm đúng điều nó nói** (`labs.test.ts`): mỗi lab in ra một lời kết luận dạng "kéo thanh này lên và bạn sẽ thấy X". Đó là một khẳng định kiểm chứng được về chính đoạn mã bên dưới, nên phần tính toán của **cả 33 lab** được tách thành hàm thuần và có test khoá đúng những con số người học nhìn thấy. Sửa mô hình mà quên sửa lời kết luận thì bộ kiểm thử trượt.
+
+  Đây không phải phòng ngừa trên lý thuyết. Lượt rà gần nhất tìm ra bốn lab hứa những điều mã của chúng tính ra điều khác — trong đó một lab tuyên bố "phương pháp A thường thắng" dựa trên phép so ba thang điểm khác nhau bằng cùng một thanh trượt ngưỡng, và một lab in ra `NaN% rác` khi người học làm đúng thao tác mà chính lời kết luận của nó mời làm.
+
+  Giới hạn còn lại, nói thẳng: lab được chốt ở **trạng thái mặc định và các trạng thái biên chọn tay**, chưa có gì quét toàn bộ tổ hợp thanh trượt.
+
+- **Hình vẽ** (`npm run check:figures`): mở Chrome không giao diện, duyệt 59 hình và 33 lab, trượt nếu có phần tử vượt khỏi `viewBox`, hai hộp chữ đè nhau, hoặc một đường kẻ chạy xuyên giữa dòng chữ. Ba loại lỗi này chỉ tồn tại sau khi trình duyệt đã dàn chữ bằng font thật, nên không bộ test nào chạy trên jsdom thấy được. Không nằm trong CI vì runner không có trình duyệt.
 - **Đầu-cuối**: vòng học hoàn chỉnh (đọc bài → điểm dừng truy hồi → kiểm tra cuối bài → kích hoạt thẻ → phiên ôn tập) và khả năng ngoại tuyến đều được kiểm bằng trình duyệt thật.
 
-Toàn bộ ứng dụng **không dùng thư viện ngoài nào** ngoài React: bộ định tuyến, biểu đồ, hình vẽ, tô màu cú pháp, mô hình học máy, bộ dựng markdown, lớp song ngữ và bộ biểu tượng đều tự viết (hình học icon chép từ Lucide, khoảng 60 hình trong số hơn 1.500 hình của bộ gốc, thay vì kéo cả gói vào). Điều này giữ bản build nhỏ, hoạt động ngoại tuyến, và không có phần nào là hộp đen với người muốn đọc mã.
+Toàn bộ ứng dụng **không dùng thư viện ngoài nào** ngoài React: bộ định tuyến, biểu đồ, hình vẽ, tô màu cú pháp, mô hình học máy, bộ dựng markdown, lớp song ngữ và bộ biểu tượng đều tự viết (hình học icon chép từ Lucide, 86 hình trong số hơn 1.500 hình của bộ gốc, thay vì kéo cả gói vào). Điều này giữ bản build nhỏ, hoạt động ngoại tuyến, và không có phần nào là hộp đen với người muốn đọc mã.
 
 ## Dữ liệu của người học
 
